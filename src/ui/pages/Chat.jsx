@@ -5,10 +5,12 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [students, setStudents] = useState([]);
   const [text, setText] = useState("");
-  const bottomRef = useRef(null);
+  const chatWindowRef = useRef(null);
+  const isFirstLoadRef = useRef(true);
   const [replyTo, setReplyTo] = useState(null);
   const [recipientStudentId, setRecipientStudentId] = useState("");
   const [menuMessageId, setMenuMessageId] = useState("");
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -23,15 +25,28 @@ export default function Chat() {
     [messages]
   );
 
+  const scrollToLatest = () => {
+    const node = chatWindowRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  };
+
   const load = async () => {
-    const tasks = [api.get("/chat/messages").then((res) => res.data)];
-    if (user?.role === "teacher") {
-      tasks.push(api.get("/students").then((res) => res.data));
+    if (isFirstLoadRef.current) {
+      setLoadingMessages(true);
     }
-    const [chatData, studentData] = await Promise.all(tasks);
-    setMessages(chatData);
-    if (studentData) {
-      setStudents(studentData);
+    try {
+      const tasks = [api.get("/chat/messages").then((res) => res.data)];
+      if (user?.role === "teacher") {
+        tasks.push(api.get("/students").then((res) => res.data));
+      }
+      const [chatData, studentData] = await Promise.all(tasks);
+      setMessages(chatData);
+      if (studentData) {
+        setStudents(studentData);
+      }
+    } finally {
+      setLoadingMessages(false);
     }
   };
 
@@ -40,7 +55,8 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToLatest();
+    isFirstLoadRef.current = false;
   }, [messages]);
 
   useEffect(() => {
@@ -177,7 +193,12 @@ export default function Chat() {
             </select>
           </div>
         )}
-        <div className="chat-window">
+        <div className="chat-window" ref={chatWindowRef}>
+          {loadingMessages ? (
+            <div className="chat-meta" style={{ padding: "12px 0" }}>
+              Loading latest messages...
+            </div>
+          ) : null}
           {messages.map((msg) => (
             <div
               className={[
@@ -274,7 +295,6 @@ export default function Chat() {
               </div>
             </div>
           ))}
-          <div ref={bottomRef} />
         </div>
         <div className="chat-composer">
           {replyTo && (
