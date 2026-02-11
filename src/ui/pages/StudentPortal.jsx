@@ -193,12 +193,21 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     }
   };
 
+  const pageTitle =
+    section === "homework" ? "My Homework" : section === "fees" ? "My Fees" : "Student Portal";
+  const pageSubtitle =
+    section === "homework"
+      ? "View assignments and due dates."
+      : section === "fees"
+        ? "Track dues, invoices, and receipts."
+        : "Your homework, fees, and updates.";
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Student Portal</h1>
-          <p className="page-subtitle">Your homework, fees, and updates.</p>
+          <h1 className="page-title">{pageTitle}</h1>
+          <p className="page-subtitle">{pageSubtitle}</p>
         </div>
       </div>
 
@@ -206,7 +215,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
         <div>Loading...</div>
       ) : (
         <>
-          {user && (
+          {section === "dashboard" && user && (
             <div className="card" style={{ marginTop: "24px" }}>
               <h2 className="card-title">Profile</h2>
               <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
@@ -225,67 +234,71 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
             </div>
           )}
 
-          <div className="card" style={{ marginTop: "24px" }}>
-            <h2 className="card-title">Daily Message</h2>
-            <p style={{ margin: 0 }}>{dailyMessage}</p>
-            <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--muted)" }}>
-              — Ayush Gour
-            </div>
-          </div>
-
-          <div className="grid grid-2" style={{ marginTop: "24px" }}>
-            <div className="card">
-              <h2 className="card-title">{calendar.monthLabel}</h2>
-              <div className="calendar">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} className="day header">
-                    {day}
-                  </div>
-                ))}
-                {calendar.cells.map((day, idx) => (
-                  <div
-                    key={`${day}-${idx}`}
-                    className={`day${day === calendar.today ? " today" : ""}`}
-                  >
-                    {day || ""}
-                  </div>
-                ))}
+          {section === "dashboard" && (
+            <div className="card" style={{ marginTop: "24px" }}>
+              <h2 className="card-title">Daily Message</h2>
+              <p style={{ margin: 0 }}>{dailyMessage}</p>
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--muted)" }}>
+                — Ayush Gour
               </div>
             </div>
+          )}
 
-            <div className="card">
-              <h2 className="card-title">My Todo List</h2>
-              <div className="form">
-                <input
-                  className="input"
-                  placeholder="Add a task"
-                  value={todoText}
-                  onChange={(event) => setTodoText(event.target.value)}
-                />
-                <button className="btn" type="button" onClick={addTodo}>
-                  Add Task
-                </button>
-              </div>
-              <div className="todo-list" style={{ marginTop: "12px" }}>
-                {todo.map((item) => (
-                  <div className="todo-item" key={item.id}>
-                    <input
-                      type="checkbox"
-                      checked={item.done}
-                      onChange={() => toggleTodo(item.id)}
-                    />
-                    <div style={{ textDecoration: item.done ? "line-through" : "none" }}>
-                      {item.text}
+          {section === "dashboard" && (
+            <div className="grid grid-2" style={{ marginTop: "24px" }}>
+              <div className="card">
+                <h2 className="card-title">{calendar.monthLabel}</h2>
+                <div className="calendar">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                    <div key={day} className="day header">
+                      {day}
                     </div>
-                    <button className="btn btn-ghost" onClick={() => removeTodo(item.id)}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                {!todo.length && <div>No tasks yet.</div>}
+                  ))}
+                  {calendar.cells.map((day, idx) => (
+                    <div
+                      key={`${day}-${idx}`}
+                      className={`day${day === calendar.today ? " today" : ""}`}
+                    >
+                      {day || ""}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card">
+                <h2 className="card-title">My Todo List</h2>
+                <div className="form">
+                  <input
+                    className="input"
+                    placeholder="Add a task"
+                    value={todoText}
+                    onChange={(event) => setTodoText(event.target.value)}
+                  />
+                  <button className="btn" type="button" onClick={addTodo}>
+                    Add Task
+                  </button>
+                </div>
+                <div className="todo-list" style={{ marginTop: "12px" }}>
+                  {todo.map((item) => (
+                    <div className="todo-item" key={item.id}>
+                      <input
+                        type="checkbox"
+                        checked={item.done}
+                        onChange={() => toggleTodo(item.id)}
+                      />
+                      <div style={{ textDecoration: item.done ? "line-through" : "none" }}>
+                        {item.text}
+                      </div>
+                      <button className="btn btn-ghost" onClick={() => removeTodo(item.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {!todo.length && <div>No tasks yet.</div>}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {(section === "dashboard" || section === "homework") && (
             <div className="card" style={{ marginTop: "24px" }}>

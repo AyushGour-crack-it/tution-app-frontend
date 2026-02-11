@@ -25,7 +25,12 @@ const NavItem = ({ to, label, onNavigate }) => (
     className={({ isActive }) =>
       `nav-link${isActive ? " nav-link-active" : ""}`
     }
-    onClick={onNavigate}
+    onClick={(event) => {
+      onNavigate?.(event);
+    }}
+    onTouchStart={(event) => {
+      onNavigate?.(event);
+    }}
   >
     {label}
   </NavLink>
