@@ -16,6 +16,11 @@ export default function Chat() {
     }
   }, []);
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
+  const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
+  const messageLookup = useMemo(
+    () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
+    [messages]
+  );
 
   const load = async () => {
     const data = await api.get("/chat/messages").then((res) => res.data);
@@ -145,6 +150,16 @@ export default function Chat() {
     setReplyTo(msg);
   };
 
+  const formatTime = (value) => {
+    if (!value) return "";
+    return new Date(value).toLocaleString([], {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -154,33 +169,42 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: "24px" }}>
+      <div className="card chat-card" style={{ marginTop: "24px" }}>
         <div className="chat-window">
           {messages.map((msg) => (
             <div
-              className={`chat-message${msg.type === "announcement" ? " chat-announcement" : ""}`}
+              className={[
+                "chat-message",
+                msg.type === "announcement" ? "chat-announcement" : "",
+                msg.senderId === user?.id ? "chat-message-mine" : ""
+              ]
+                .filter(Boolean)
+                .join(" ")}
               key={msg._id}
             >
-              <div className="chat-meta">
-                <strong>{msg.senderName}</strong> · {msg.role}
+              <div className="chat-meta-row">
+                <div className="chat-meta">
+                  <strong>{msg.senderName}</strong> · {msg.role}
+                </div>
+                <div className="chat-meta">{formatTime(msg.createdAt)}</div>
               </div>
               {msg.replyTo && (
                 <div className="chat-reply">
-                  Replying to {messages.find((m) => m._id === msg.replyTo)?.senderName || "message"}
+                  Replying to {messageLookup[msg.replyTo]?.senderName || "message"}
                 </div>
               )}
-              {msg.type === "text" && <div>{msg.content}</div>}
-              {msg.type === "announcement" && <div>{msg.content}</div>}
+              {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
+              {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}
               {(msg.type === "image" || msg.type === "gif" || msg.type === "meme") && (
-                <img src={msg.content} alt={msg.fileName || msg.type} style={{ maxWidth: "240px" }} />
+                <img className="chat-media" src={msg.content} alt={msg.fileName || msg.type} />
               )}
               {msg.type === "video" && (
-                <video controls style={{ maxWidth: "240px" }}>
+                <video controls className="chat-media">
                   <source src={msg.content} type={msg.mimeType || "video/mp4"} />
                 </video>
               )}
               {msg.type === "audio" && (
-                <audio controls>
+                <audio controls className="chat-audio">
                   <source src={msg.content} type={msg.mimeType || "audio/webm"} />
                 </audio>
               )}
@@ -201,14 +225,14 @@ export default function Chat() {
                 )}
               </div>
               <div className="chat-reactions">
-                {["👍", "❤️", "😂", "🔥", "👏"].map((emoji) => (
+                {reactions.map((emoji) => (
                   <button key={emoji} className="emoji-btn" type="button" onClick={() => reactTo(msg._id, emoji)}>
                     {emoji}
                   </button>
                 ))}
                 {msg.reactions?.length ? (
                   <div className="chat-reaction-count">
-                    {msg.reactions.map((r) => r.emoji).join(" ")}
+                    {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
                   </div>
                 ) : null}
               </div>
@@ -216,46 +240,56 @@ export default function Chat() {
           ))}
           <div ref={bottomRef} />
         </div>
-        <div className="chat-input">
+        <div className="chat-composer">
           {replyTo && (
             <div className="chat-reply-banner">
-              Replying to {replyTo.senderName}
+              Replying to <strong>{replyTo.senderName}</strong>
               <button className="btn btn-ghost" onClick={() => setReplyTo(null)} type="button">
                 Cancel
               </button>
             </div>
           )}
-          <input
-            className="input"
-            placeholder="Type a message"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-          />
-          <button className="btn" type="button" onClick={sendText}>
-            Send
-          </button>
-          {user?.role === "teacher" && (
-            <button className="btn btn-ghost" type="button" onClick={sendAnnouncement}>
-              Announcement
+          <div className="chat-input-row">
+            <input
+              className="input chat-input-field"
+              placeholder="Type a message"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  sendText();
+                }
+              }}
+            />
+            <button className="btn" type="button" onClick={sendText}>
+              Send
             </button>
-          )}
-          <label className="btn btn-ghost">
-            Image
-            <input type="file" accept="image/*" hidden onChange={(e) => sendFile(e, "image")} />
-          </label>
-          <label className="btn btn-ghost">
-            Video
-            <input type="file" accept="video/*" hidden onChange={(e) => sendFile(e, "video")} />
-          </label>
-          <button className="btn btn-ghost" type="button" onClick={recording ? stopRecording : startRecording}>
-            {recording ? "Stop Voice" : "Voice"}
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={() => sendUrl("gif")}>
-            GIF URL
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={() => sendUrl("meme")}>
-            Meme URL
-          </button>
+            {user?.role === "teacher" && (
+              <button className="btn btn-ghost" type="button" onClick={sendAnnouncement}>
+                Announcement
+              </button>
+            )}
+          </div>
+          <div className="chat-tool-row">
+            <label className="btn btn-ghost">
+              Image
+              <input type="file" accept="image/*" hidden onChange={(e) => sendFile(e, "image")} />
+            </label>
+            <label className="btn btn-ghost">
+              Video
+              <input type="file" accept="video/*" hidden onChange={(e) => sendFile(e, "video")} />
+            </label>
+            <button className="btn btn-ghost" type="button" onClick={recording ? stopRecording : startRecording}>
+              {recording ? "Stop Voice" : "Voice"}
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={() => sendUrl("gif")}>
+              GIF URL
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={() => sendUrl("meme")}>
+              Meme URL
+            </button>
+          </div>
         </div>
         <div className="chat-emoji">
           {emojis.map((emoji) => (
