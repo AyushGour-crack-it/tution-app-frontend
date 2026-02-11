@@ -40,6 +40,9 @@ body {
   --chat-bubble-shadow: 0 4px 14px rgba(24, 32, 41, 0.08);
   --chat-announcement-bg: linear-gradient(135deg, #ffe4d8, #ffd5c2);
   --chat-announcement-mine-bg: linear-gradient(135deg, #ff925f, #ffc28f);
+  --select-bg: #ffffff;
+  --select-option-bg: #ffffff;
+  --select-option-text: #0d1b1e;
 }
 
 html[data-theme="dark"] {
@@ -65,6 +68,9 @@ html[data-theme="dark"] {
   --chat-bubble-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   --chat-announcement-bg: linear-gradient(135deg, #3a2a24, #2d211d);
   --chat-announcement-mine-bg: linear-gradient(135deg, #72452f, #5e3a28);
+  --select-bg: #111a1d;
+  --select-option-bg: #111a1d;
+  --select-option-text: #ecf1f2;
 }
 
 .sidebar {
@@ -305,6 +311,17 @@ html[data-theme="dark"] {
   font-size: 14px;
   color: var(--text-primary);
   background: transparent;
+}
+
+.select {
+  background: var(--select-bg);
+  color: var(--text-primary);
+}
+
+.select option,
+.select optgroup {
+  background: var(--select-option-bg);
+  color: var(--select-option-text);
 }
 
 .input:focus,
