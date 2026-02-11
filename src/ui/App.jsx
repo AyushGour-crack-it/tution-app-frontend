@@ -95,11 +95,20 @@ export default function App() {
           setUser(null);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
-        localStorage.removeItem("auth_user");
-        localStorage.removeItem("auth_token");
-        setUser(null);
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          localStorage.removeItem("auth_user");
+          localStorage.removeItem("auth_token");
+          setUser(null);
+          return;
+        }
+        // Keep existing local session on transient backend/network failures.
+        const existingSession = getSession();
+        if (existingSession) {
+          setUser(existingSession);
+        }
       })
       .finally(() => {
         if (!cancelled) setAuthReady(true);
