@@ -24,7 +24,7 @@ export default function Login() {
     <div className="auth-shell">
       <div className="card auth-card">
         <h1 className="page-title">Welcome back</h1>
-        <p className="page-subtitle">Sign in to your Tutor Admin workspace.</p>
+        <p className="page-subtitle">Sign in to your Our Tution workspace.</p>
         {error && <div className="auth-error">{error}</div>}
         <form className="form" onSubmit={submit}>
           <input

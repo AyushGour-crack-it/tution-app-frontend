@@ -111,10 +111,10 @@ export default function App() {
       {navOpen ? <div className="mobile-nav-overlay" onClick={() => setNavOpen(false)} /> : null}
       <aside className={`sidebar${navOpen ? " sidebar-open" : ""}`}>
         <div className="brand">
-          <span className="brand-mark">AY</span>
+          <span className="brand-mark">OT</span>
           <div>
-            <div className="brand-title">Ayush</div>
-            <div className="brand-subtitle">Tutor Workspace</div>
+            <div className="brand-title">Our Tution</div>
+            <div className="brand-subtitle">Learning Workspace</div>
           </div>
         </div>
         {user?.role === "teacher" && viewRole === "teacher" ? (
