@@ -8,6 +8,7 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const [replyTo, setReplyTo] = useState(null);
   const [recipientStudentId, setRecipientStudentId] = useState("");
+  const [menuMessageId, setMenuMessageId] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -41,6 +42,17 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const closeMenuOnOutsideClick = (event) => {
+      const clickedInsideMenu = event.target.closest(".chat-menu-wrap");
+      if (!clickedInsideMenu) {
+        setMenuMessageId("");
+      }
+    };
+    document.addEventListener("click", closeMenuOnOutsideClick);
+    return () => document.removeEventListener("click", closeMenuOnOutsideClick);
+  }, []);
 
   const sendText = async () => {
     if (!text.trim()) return;
@@ -111,6 +123,7 @@ export default function Chat() {
 
   const setReply = (msg) => {
     setReplyTo(msg);
+    setMenuMessageId("");
   };
 
   const clearChat = async () => {
@@ -180,7 +193,53 @@ export default function Chat() {
                 <div className="chat-meta">
                   <strong>{msg.senderName}</strong>
                 </div>
-                <div className="chat-meta">{formatTime(msg.createdAt)}</div>
+                <div className="chat-meta-actions">
+                  <div className="chat-meta">{formatTime(msg.createdAt)}</div>
+                  <div className="chat-menu-wrap">
+                    <button
+                      className="chat-menu-trigger"
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMenuMessageId((prev) => (prev === msg._id ? "" : msg._id));
+                      }}
+                    >
+                      •••
+                    </button>
+                    {menuMessageId === msg._id && (
+                      <div className="chat-menu">
+                        <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
+                          Reply
+                        </button>
+                        {msg.senderId === user?.id &&
+                          (msg.type === "text" || msg.type === "announcement") && (
+                            <button
+                              className="chat-menu-item"
+                              type="button"
+                              onClick={() => {
+                                editMessage(msg);
+                                setMenuMessageId("");
+                              }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                        {msg.senderId === user?.id && (
+                          <button
+                            className="chat-menu-item danger"
+                            type="button"
+                            onClick={() => {
+                              deleteMessage(msg._id);
+                              setMenuMessageId("");
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
               {msg.replyTo && (
                 <div className="chat-reply">
@@ -201,21 +260,6 @@ export default function Chat() {
                 </video>
               )}
               {msg.editedAt && <div className="chat-meta">(edited)</div>}
-              <div className="chat-actions">
-                <button className="btn btn-ghost" type="button" onClick={() => setReply(msg)}>
-                  Reply
-                </button>
-                {msg.senderId === user?.id && (msg.type === "text" || msg.type === "announcement") && (
-                  <button className="btn btn-ghost" type="button" onClick={() => editMessage(msg)}>
-                    Edit
-                  </button>
-                )}
-                {msg.senderId === user?.id && (
-                  <button className="btn btn-ghost" type="button" onClick={() => deleteMessage(msg._id)}>
-                    Delete
-                  </button>
-                )}
-              </div>
               <div className="chat-reactions">
                 {reactions.map((emoji) => (
                   <button key={emoji} className="emoji-btn" type="button" onClick={() => reactTo(msg._id, emoji)}>
