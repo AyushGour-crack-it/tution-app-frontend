@@ -56,7 +56,7 @@ html[data-theme="dark"] {
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  z-index: 20;
+  z-index: 40;
 }
 
 .brand {
@@ -478,7 +478,7 @@ html[data-theme="dark"] {
 .mobile-nav-overlay {
   position: fixed;
   inset: 0;
-  z-index: 35;
+  z-index: 30;
   background: rgba(0, 0, 0, 0.38);
 }
 

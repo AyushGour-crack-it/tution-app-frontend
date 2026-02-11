@@ -1,6 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 
+const loadRazorpaySdk = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
 export default function StudentPortal({ section = "dashboard", previewStudentId = "" }) {
   const [homework, setHomework] = useState([]);
   const [fees, setFees] = useState([]);
@@ -10,6 +23,8 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [todo, setTodo] = useState([]);
   const [todoText, setTodoText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [payingFeeId, setPayingFeeId] = useState("");
+  const [feeError, setFeeError] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -23,25 +38,26 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const upiName = "Ayush Gour";
   const phone = "8265968179";
 
+  const load = async () => {
+    setLoading(true);
+    const [homeworkData, feeData, invoiceData, receiptData] = await Promise.all([
+      api.get("/homeworks").then((res) => res.data),
+      api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
+      api.get(previewStudentId ? `/invoices?studentId=${previewStudentId}` : "/invoices").then((res) => res.data),
+      api.get(previewStudentId ? `/receipts?studentId=${previewStudentId}` : "/receipts").then((res) => res.data)
+    ]);
+    setHomework(homeworkData);
+    setFees(feeData);
+    setInvoices(invoiceData);
+    setReceipts(receiptData);
+    const markData = await api
+      .get(previewStudentId ? `/marks?studentId=${previewStudentId}` : "/marks")
+      .then((res) => res.data);
+    setMarks(markData);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [homeworkData, feeData, invoiceData, receiptData] = await Promise.all([
-        api.get("/homeworks").then((res) => res.data),
-        api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
-        api.get(previewStudentId ? `/invoices?studentId=${previewStudentId}` : "/invoices").then((res) => res.data),
-        api.get(previewStudentId ? `/receipts?studentId=${previewStudentId}` : "/receipts").then((res) => res.data)
-      ]);
-      setHomework(homeworkData);
-      setFees(feeData);
-      setInvoices(invoiceData);
-      setReceipts(receiptData);
-      const markData = await api
-        .get(previewStudentId ? `/marks?studentId=${previewStudentId}` : "/marks")
-        .then((res) => res.data);
-      setMarks(markData);
-      setLoading(false);
-    };
     load();
   }, [previewStudentId]);
 
@@ -115,6 +131,67 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
       upiLink(amount)
     )}`;
+
+  const payFeeOnline = async (feeId, amount) => {
+    if (!amount || amount <= 0) return;
+    setFeeError("");
+    setPayingFeeId(feeId);
+    let checkoutOpened = false;
+    try {
+      const sdkReady = await loadRazorpaySdk();
+      if (!sdkReady) {
+        setFeeError("Razorpay checkout failed to load.");
+        return;
+      }
+
+      const { data: order } = await api.post(`/fees/${feeId}/razorpay/order`, { amount });
+
+      const options = {
+        key: order.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || "",
+        amount: order.amount,
+        currency: order.currency || "INR",
+        name: "Ayush Tuition",
+        description: `Fee payment ₹${amount}`,
+        order_id: order.orderId,
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+          contact: user?.phone || ""
+        },
+        theme: {
+          color: "#1f7a8c"
+        },
+        handler: async (response) => {
+          await api.post(`/fees/${feeId}/razorpay/verify`, {
+            ...response,
+            amount
+          });
+          await load();
+          setPayingFeeId("");
+        },
+        modal: {
+          ondismiss: () => {
+            setPayingFeeId("");
+          }
+        }
+      };
+
+      const checkout = new window.Razorpay(options);
+      checkout.on("payment.failed", () => {
+        setFeeError("Payment failed or was cancelled.");
+        setPayingFeeId("");
+      });
+      checkoutOpened = true;
+      checkout.open();
+    } catch (error) {
+      setFeeError(error.response?.data?.message || "Unable to complete payment.");
+      setPayingFeeId("");
+    } finally {
+      if (!checkoutOpened) {
+        setPayingFeeId("");
+      }
+    }
+  };
 
   return (
     <div className="page">
@@ -233,6 +310,11 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
           {(section === "dashboard" || section === "fees") && (
             <div className="card" style={{ marginTop: "24px" }}>
               <h2 className="card-title">My Fees</h2>
+              {feeError ? (
+                <div className="auth-error" style={{ marginBottom: "12px" }}>
+                  {feeError}
+                </div>
+              ) : null}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "16px" }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>Pay via UPI</div>
@@ -268,9 +350,14 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                         <td>{due}</td>
                         <td>
                           {due > 0 ? (
-                            <a className="btn btn-ghost" href={upiLink(due)}>
-                              Pay ₹{due}
-                            </a>
+                            <button
+                              className="btn btn-ghost"
+                              type="button"
+                              onClick={() => payFeeOnline(row._id, due)}
+                              disabled={payingFeeId === row._id}
+                            >
+                              {payingFeeId === row._id ? "Opening..." : `Pay ₹${due}`}
+                            </button>
                           ) : (
                             <span className="badge">Paid</span>
                           )}
