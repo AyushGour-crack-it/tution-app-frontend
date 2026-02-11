@@ -113,6 +113,17 @@ export default function Chat() {
     setReplyTo(msg);
   };
 
+  const clearChat = async () => {
+    const message =
+      user?.role === "teacher"
+        ? "Clear entire chat for everyone?"
+        : "Clear your sent chat messages?";
+    if (!window.confirm(message)) return;
+    await api.delete("/chat/messages/clear");
+    setReplyTo(null);
+    load();
+  };
+
   const formatTime = (value) => {
     if (!value) return "";
     return new Date(value).toLocaleString([], {
@@ -130,6 +141,9 @@ export default function Chat() {
           <h1 className="page-title">Chat</h1>
           <p className="page-subtitle">Message your classroom community.</p>
         </div>
+        <button className="btn btn-ghost" type="button" onClick={clearChat}>
+          {user?.role === "teacher" ? "Clear Chat" : "Clear My Chat"}
+        </button>
       </div>
 
       <div className="card chat-card" style={{ marginTop: "24px" }}>

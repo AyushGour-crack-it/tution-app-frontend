@@ -47,6 +47,12 @@ export default function Notifications() {
     load();
   };
 
+  const clearNotifications = async () => {
+    if (!window.confirm("Clear notifications from your inbox?")) return;
+    await api.delete("/notifications/clear");
+    load();
+  };
+
   const isRead = (item) => item.readBy?.includes(user?.id);
 
   return (
@@ -56,6 +62,9 @@ export default function Notifications() {
           <h1 className="page-title">Notifications</h1>
           <p className="page-subtitle">Broadcasts and alerts.</p>
         </div>
+        <button className="btn btn-ghost" type="button" onClick={clearNotifications}>
+          Clear Notifications
+        </button>
       </div>
 
       {user?.role === "teacher" && (
