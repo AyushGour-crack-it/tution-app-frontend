@@ -5,8 +5,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [students, setStudents] = useState([]);
   const [text, setText] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
   const bottomRef = useRef(null);
   const [replyTo, setReplyTo] = useState(null);
   const [recipientStudentId, setRecipientStudentId] = useState("");
@@ -80,12 +78,7 @@ export default function Chat() {
     });
     const content = upload.data.url;
     const resolvedType =
-      type ||
-      (file.type.startsWith("image/")
-        ? "image"
-        : file.type.startsWith("video/")
-          ? "video"
-          : "audio");
+      type || (file.type.startsWith("image/") ? "image" : "video");
     await api.post("/chat/messages", {
       type: resolvedType,
       content,
@@ -97,53 +90,6 @@ export default function Chat() {
     event.target.value = "";
     setReplyTo(null);
     load();
-  };
-
-  const sendUrl = async (type) => {
-    const url = prompt(`Paste ${type.toUpperCase()} URL`);
-    if (!url) return;
-    await api.post("/chat/messages", {
-      type,
-      content: url,
-      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
-    });
-    load();
-  };
-
-  const startRecording = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) return;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
-    const chunks = [];
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: "audio/webm" });
-      const formData = new FormData();
-      formData.append("file", blob, "voice-message.webm");
-      const upload = await api.post("/chat/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      const content = upload.data.url;
-      await api.post("/chat/messages", {
-        type: "audio",
-        content,
-        fileName: "voice-message.webm",
-        mimeType: "audio/webm",
-        replyTo: replyTo?._id || null,
-        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
-      });
-      setReplyTo(null);
-      stream.getTracks().forEach((track) => track.stop());
-      load();
-    };
-    recorder.start();
-    setMediaRecorder(recorder);
-    setRecording(true);
-  };
-
-  const stopRecording = () => {
-    mediaRecorder?.stop();
-    setRecording(false);
   };
 
   const editMessage = async (msg) => {
@@ -218,7 +164,7 @@ export default function Chat() {
             >
               <div className="chat-meta-row">
                 <div className="chat-meta">
-                  <strong>{msg.senderName}</strong> · {msg.role}
+                  <strong>{msg.senderName}</strong>
                 </div>
                 <div className="chat-meta">{formatTime(msg.createdAt)}</div>
               </div>
@@ -239,11 +185,6 @@ export default function Chat() {
                 <video controls className="chat-media">
                   <source src={msg.content} type={msg.mimeType || "video/mp4"} />
                 </video>
-              )}
-              {msg.type === "audio" && (
-                <audio controls className="chat-audio">
-                  <source src={msg.content} type={msg.mimeType || "audio/webm"} />
-                </audio>
               )}
               {msg.editedAt && <div className="chat-meta">(edited)</div>}
               <div className="chat-actions">
@@ -317,15 +258,6 @@ export default function Chat() {
               Video
               <input type="file" accept="video/*" hidden onChange={(e) => sendFile(e, "video")} />
             </label>
-            <button className="btn btn-ghost" type="button" onClick={recording ? stopRecording : startRecording}>
-              {recording ? "Stop Voice" : "Voice"}
-            </button>
-            <button className="btn btn-ghost" type="button" onClick={() => sendUrl("gif")}>
-              GIF URL
-            </button>
-            <button className="btn btn-ghost" type="button" onClick={() => sendUrl("meme")}>
-              Meme URL
-            </button>
           </div>
         </div>
         <div className="chat-emoji">
