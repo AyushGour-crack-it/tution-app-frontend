@@ -75,8 +75,12 @@ export default function App() {
   React.useEffect(() => {
     let cancelled = false;
     const token = localStorage.getItem("auth_token");
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setAuthReady(true);
+    }, 7000);
 
     if (!token) {
+      clearTimeout(timeoutId);
       setAuthReady(true);
       return;
     }
@@ -111,11 +115,15 @@ export default function App() {
         }
       })
       .finally(() => {
-        if (!cancelled) setAuthReady(true);
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setAuthReady(true);
+        }
       });
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, []);
 
