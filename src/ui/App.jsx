@@ -18,6 +18,7 @@ import Marks from "./pages/Marks.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
+import { api } from "./api.js";
 
 const NavItem = ({ to, label, onNavigate }) => (
   <NavLink
@@ -49,7 +50,8 @@ const getSession = () => {
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getSession();
+  const [user, setUser] = React.useState(() => getSession());
+  const [authReady, setAuthReady] = React.useState(false);
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("ui_theme") || "light"
   );
@@ -64,8 +66,47 @@ export default function App() {
   const logout = () => {
     localStorage.removeItem("auth_user");
     localStorage.removeItem("auth_token");
+    setUser(null);
     navigate("/login");
   };
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const token = localStorage.getItem("auth_token");
+
+    if (!token) {
+      setAuthReady(true);
+      return;
+    }
+
+    api
+      .get("/auth/me")
+      .then((res) => {
+        if (cancelled) return;
+        const freshUser = res?.data?.user || null;
+        if (freshUser) {
+          localStorage.setItem("auth_user", JSON.stringify(freshUser));
+          setUser(freshUser);
+        } else {
+          localStorage.removeItem("auth_user");
+          localStorage.removeItem("auth_token");
+          setUser(null);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("auth_token");
+        setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAuthReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -83,6 +124,28 @@ export default function App() {
   React.useEffect(() => {
     setNavOpen(false);
   }, [location.pathname]);
+
+  React.useEffect(() => {
+    const sessionUser = getSession();
+    if (sessionUser && !user) {
+      setUser(sessionUser);
+      return;
+    }
+    if (!sessionUser && !localStorage.getItem("auth_token") && user) {
+      setUser(null);
+    }
+  }, [location.pathname, user]);
+
+  if (!authReady) {
+    return (
+      <div className="auth-shell">
+        <div className="card auth-card">
+          <h1 className="page-title">Loading your session...</h1>
+          <p className="page-subtitle">Please wait.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (
     !user &&

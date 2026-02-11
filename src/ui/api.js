@@ -12,4 +12,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const hasToken = Boolean(localStorage.getItem("auth_token"));
+    if (status === 401 && hasToken) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const fetcher = (path) => api.get(path).then((res) => res.data);
