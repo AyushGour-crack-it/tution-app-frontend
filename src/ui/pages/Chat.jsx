@@ -3,11 +3,13 @@ import { api } from "../api.js";
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
+  const [students, setStudents] = useState([]);
   const [text, setText] = useState("");
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const bottomRef = useRef(null);
   const [replyTo, setReplyTo] = useState(null);
+  const [recipientStudentId, setRecipientStudentId] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -23,8 +25,15 @@ export default function Chat() {
   );
 
   const load = async () => {
-    const data = await api.get("/chat/messages").then((res) => res.data);
-    setMessages(data);
+    const tasks = [api.get("/chat/messages").then((res) => res.data)];
+    if (user?.role === "teacher") {
+      tasks.push(api.get("/students").then((res) => res.data));
+    }
+    const [chatData, studentData] = await Promise.all(tasks);
+    setMessages(chatData);
+    if (studentData) {
+      setStudents(studentData);
+    }
   };
 
   useEffect(() => {
@@ -40,7 +49,8 @@ export default function Chat() {
     await api.post("/chat/messages", {
       type: "text",
       content: text.trim(),
-      replyTo: replyTo?._id || null
+      replyTo: replyTo?._id || null,
+      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
     });
     setText("");
     setReplyTo(null);
@@ -52,7 +62,8 @@ export default function Chat() {
     await api.post("/chat/messages", {
       type: "announcement",
       content: text.trim(),
-      replyTo: replyTo?._id || null
+      replyTo: replyTo?._id || null,
+      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
     });
     setText("");
     setReplyTo(null);
@@ -80,7 +91,8 @@ export default function Chat() {
       content,
       fileName: file.name,
       mimeType: file.type,
-      replyTo: replyTo?._id || null
+      replyTo: replyTo?._id || null,
+      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
     });
     event.target.value = "";
     setReplyTo(null);
@@ -90,7 +102,11 @@ export default function Chat() {
   const sendUrl = async (type) => {
     const url = prompt(`Paste ${type.toUpperCase()} URL`);
     if (!url) return;
-    await api.post("/chat/messages", { type, content: url });
+    await api.post("/chat/messages", {
+      type,
+      content: url,
+      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+    });
     load();
   };
 
@@ -113,7 +129,8 @@ export default function Chat() {
         content,
         fileName: "voice-message.webm",
         mimeType: "audio/webm",
-        replyTo: replyTo?._id || null
+        replyTo: replyTo?._id || null,
+        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
       });
       setReplyTo(null);
       stream.getTracks().forEach((track) => track.stop());
@@ -170,6 +187,23 @@ export default function Chat() {
       </div>
 
       <div className="card chat-card" style={{ marginTop: "24px" }}>
+        {user?.role === "teacher" && (
+          <div className="chat-audience">
+            <span className="chat-audience-label">Send to</span>
+            <select
+              className="select chat-audience-select"
+              value={recipientStudentId}
+              onChange={(event) => setRecipientStudentId(event.target.value)}
+            >
+              <option value="">All Students</option>
+              {students.map((student) => (
+                <option key={student._id} value={student._id}>
+                  {student.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="chat-window">
           {messages.map((msg) => (
             <div
@@ -192,6 +226,9 @@ export default function Chat() {
                 <div className="chat-reply">
                   Replying to {messageLookup[msg.replyTo]?.senderName || "message"}
                 </div>
+              )}
+              {msg.recipientStudentId && (
+                <div className="chat-meta">To: {msg.recipientName || "Student"}</div>
               )}
               {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
               {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}
