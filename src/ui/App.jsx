@@ -29,9 +29,6 @@ const NavItem = ({ to, label, onNavigate }) => (
     onClick={(event) => {
       onNavigate?.(event);
     }}
-    onTouchStart={(event) => {
-      onNavigate?.(event);
-    }}
   >
     {label}
   </NavLink>
@@ -62,6 +59,11 @@ export default function App() {
     () => localStorage.getItem("preview_student_id") || ""
   );
   const [navOpen, setNavOpen] = React.useState(false);
+  const closeMobileNavOnNavigate = React.useCallback(() => {
+    if (window.matchMedia("(max-width: 1024px)").matches) {
+      setNavOpen(false);
+    }
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("auth_user");
@@ -187,29 +189,29 @@ export default function App() {
         </div>
         {user?.role === "teacher" && viewRole === "teacher" ? (
           <nav className="nav">
-            <NavItem to="/" label="Overview" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/classes" label="Classes" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/students" label="Students" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/homework" label="Homework" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/syllabus" label="Syllabus" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/attendance" label="Attendance" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/marks" label="Marks" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/fees" label="Fees" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/invoices" label="Invoices" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/leaderboard" label="Leaderboard" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/holidays" label="Holidays" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/chat" label="Chat" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/notifications" label="Notifications" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/profile" label="Profile" onNavigate={() => setNavOpen(false)} />
+            <NavItem to="/" label="Overview" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/classes" label="Classes" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/homework" label="Homework" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/syllabus" label="Syllabus" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/attendance" label="Attendance" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/marks" label="Marks" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/invoices" label="Invoices" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/notifications" label="Notifications" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
           </nav>
         ) : (
           <nav className="nav">
-            <NavItem to="/student" label="My Dashboard" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/student/homework" label="My Homework" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/student/fees" label="My Fees" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/chat" label="Chat" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/notifications" label="Notifications" onNavigate={() => setNavOpen(false)} />
-            <NavItem to="/profile" label="Profile" onNavigate={() => setNavOpen(false)} />
+            <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/notifications" label="Notifications" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
           </nav>
         )}
         <div className="sidebar-footer">
