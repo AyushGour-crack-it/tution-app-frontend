@@ -16,10 +16,6 @@ export default function Chat() {
   const [clearingChat, setClearingChat] = useState(false);
   const [localClearAfter, setLocalClearAfter] = useState(0);
   const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
-  const localClearStorageKey = useMemo(
-    () => (user?.id ? `chat_local_clear_after_${user.id}` : "chat_local_clear_after_guest"),
-    [user?.id]
-  );
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -27,6 +23,10 @@ export default function Chat() {
       return null;
     }
   }, []);
+  const localClearStorageKey = useMemo(
+    () => (user?.id ? `chat_local_clear_after_${user.id}` : "chat_local_clear_after_guest"),
+    [user?.id]
+  );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
   const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
   const messageLookup = useMemo(
@@ -479,3 +479,7 @@ export default function Chat() {
     </div>
   );
 }
+
+
+
+
