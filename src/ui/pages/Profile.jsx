@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { resolveAvatarFrame } from "../avatarFrame.js";
 
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
@@ -125,6 +126,13 @@ export default function Profile() {
     );
   }
 
+  const profileFrame = resolveAvatarFrame({
+    badges: badgeStats.earned || [],
+    totalXp: badgeStats.level?.totalXp || 0,
+    level: badgeStats.level?.level || 1,
+    rank: null
+  });
+
   return (
     <div className="page">
       <div className="page-header">
@@ -136,13 +144,22 @@ export default function Profile() {
 
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.name}
-              style={{ width: "84px", height: "84px", borderRadius: "20px", objectFit: "cover" }}
-            />
-          ) : null}
+          <div className={`avatar-frame avatar-frame-profile ${profileFrame.frameClass}`} title={profileFrame.frameLabel}>
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                style={{ width: "84px", height: "84px", borderRadius: "16px", objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                className="student-directory-avatar student-directory-avatar-fallback"
+                style={{ width: "84px", height: "84px", borderRadius: "16px" }}
+              >
+                {String(user.name || "U").slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
           <div>
             <div style={{ fontWeight: 600 }}>{user.name}</div>
             <div style={{ color: "var(--muted)" }}>{user.email}</div>

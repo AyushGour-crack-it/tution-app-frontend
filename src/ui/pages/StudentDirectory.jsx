@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
+import { resolveAvatarFrame } from "../avatarFrame.js";
 
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
@@ -18,7 +19,10 @@ const emptyProfile = {
   bio: "",
   studentProfileId: "",
   rollNumber: "",
-  grade: ""
+  grade: "",
+  level: { level: 1 },
+  totalXp: 0,
+  badges: []
 };
 
 export default function StudentDirectory() {
@@ -83,6 +87,12 @@ export default function StudentDirectory() {
   }, [filtered, selected]);
 
   const selectedLevelTierClass = getXpTierClass(selected?.totalXp || 0);
+  const selectedFrame = resolveAvatarFrame({
+    badges: selected?.badges || [],
+    totalXp: selected?.totalXp || 0,
+    level: selected?.level?.level || 1,
+    rank: selectedRank
+  });
 
   return (
     <div className="page student-directory-page">
@@ -110,38 +120,43 @@ export default function StudentDirectory() {
               <div>Loading students...</div>
             ) : (
               <div className="list student-directory-list-grid">
-                {filtered.map((student, index) => (
-                  <button
-                    type="button"
-                    key={student.userId}
-                    className={`student-directory-item${
-                      selected?.userId === student.userId ? " student-directory-item-active" : ""
-                    }`}
-                    onClick={() => setSelected(student)}
-                  >
-                    <div className="student-directory-rank">#{index + 1}</div>
-                    {student.avatarUrl ? (
-                      <img
-                        src={student.avatarUrl}
-                        alt={student.name}
-                        className="student-directory-avatar"
-                      />
-                    ) : (
-                      <div className="student-directory-avatar student-directory-avatar-fallback">
-                        {String(student.name || "S").slice(0, 1).toUpperCase()}
+                {filtered.map((student, index) => {
+                  const frame = resolveAvatarFrame({
+                    badges: student.badges || [],
+                    totalXp: student.totalXp || 0,
+                    level: student.level?.level || 1,
+                    rank: index + 1
+                  });
+
+                  return (
+                    <button
+                      type="button"
+                      key={student.userId}
+                      className={`student-directory-item${
+                        selected?.userId === student.userId ? " student-directory-item-active" : ""
+                      }`}
+                      onClick={() => setSelected(student)}
+                    >
+                      <div className="student-directory-rank">#{index + 1}</div>
+                      <div className={`avatar-frame avatar-frame-sm ${frame.frameClass}`} title={frame.frameLabel}>
+                        {student.avatarUrl ? (
+                          <img src={student.avatarUrl} alt={student.name} className="student-directory-avatar" />
+                        ) : (
+                          <div className="student-directory-avatar student-directory-avatar-fallback">
+                            {String(student.name || "S").slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="student-directory-item-body">
-                      <div className="student-directory-name">{student.name}</div>
-                      <div className="student-directory-meta">
-                        Lv {student.level?.level || 1} • {student.totalXp || 0} XP
+                      <div className="student-directory-item-body">
+                        <div className="student-directory-name">{student.name}</div>
+                        <div className="student-directory-meta">
+                          Lv {student.level?.level || 1} • {student.totalXp || 0} XP
+                        </div>
+                        <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                       </div>
-                      <div className="student-directory-bio-preview">
-                        {student.bio || "No bio yet."}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
                 {!filtered.length && <div>No students found.</div>}
               </div>
             )}
@@ -153,17 +168,18 @@ export default function StudentDirectory() {
             <div className="student-profile-view">
               <div className={`student-profile-level-banner ${selectedLevelTierClass}`}>
                 <div className="student-profile-level-banner-left">
-                  {selected.avatarUrl ? (
-                    <img
-                      src={selected.avatarUrl}
-                      alt={selected.name}
-                      className="student-profile-avatar"
-                    />
-                  ) : (
-                    <div className="student-profile-avatar student-directory-avatar-fallback">
-                      {String(selected.name || "S").slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
+                  <div
+                    className={`avatar-frame avatar-frame-lg ${selectedFrame.frameClass}`}
+                    title={selectedFrame.frameLabel}
+                  >
+                    {selected.avatarUrl ? (
+                      <img src={selected.avatarUrl} alt={selected.name} className="student-profile-avatar" />
+                    ) : (
+                      <div className="student-profile-avatar student-directory-avatar-fallback">
+                        {String(selected.name || "S").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <h2 className="card-title" style={{ marginBottom: "6px" }}>
                       {selected.name}
@@ -173,9 +189,7 @@ export default function StudentDirectory() {
                     </div>
                   </div>
                 </div>
-                <div className="student-profile-rank-pill">
-                  Rank {selectedRank ? `#${selectedRank}` : "-"}
-                </div>
+                <div className="student-profile-rank-pill">Rank {selectedRank ? `#${selectedRank}` : "-"}</div>
               </div>
 
               <div className="student-profile-pills">

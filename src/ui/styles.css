@@ -791,6 +791,38 @@ html[data-theme="dark"] {
   flex-shrink: 0;
 }
 
+.avatar-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  padding: 4px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-frame > img,
+.avatar-frame > div {
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-frame-sm {
+  border-radius: 15px;
+  padding: 4px;
+}
+
+.avatar-frame-lg {
+  border-radius: 22px;
+  padding: 6px;
+}
+
+.avatar-frame-profile {
+  border-radius: 20px;
+  padding: 5px;
+}
+
 .student-directory-avatar-fallback {
   display: inline-flex;
   align-items: center;
@@ -841,8 +873,8 @@ html[data-theme="dark"] {
   border-radius: 24px;
   object-fit: cover;
   margin-bottom: 0;
-  border: 2px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+  border: none;
+  box-shadow: none;
 }
 
 .student-profile-level-banner {
@@ -1073,6 +1105,135 @@ html[data-theme="dark"] {
     transform: scale(1);
     opacity: 0.45;
   }
+}
+
+@keyframes framePulse {
+  0% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes frameSweep {
+  0% {
+    transform: translateX(-140%) rotate(18deg);
+  }
+  100% {
+    transform: translateX(180%) rotate(18deg);
+  }
+}
+
+@keyframes frameOrbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.frame-standard-gray {
+  background: linear-gradient(140deg, #59616b, #848d99);
+}
+
+.frame-standard-blue {
+  background: linear-gradient(140deg, #2f75d9, #64a2ff);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
+}
+
+.frame-standard-green {
+  background: linear-gradient(140deg, #0b9b6d, #39d09d);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+}
+
+.frame-premium-electric {
+  background: linear-gradient(140deg, #0f4fff, #5fc3ff);
+  box-shadow: 0 0 18px rgba(39, 135, 255, 0.45);
+  animation: framePulse 2.6s ease-in-out infinite;
+}
+
+.frame-premium-royal {
+  background: linear-gradient(140deg, #4f2aa8, #8f51ff);
+  box-shadow: 0 0 18px rgba(124, 66, 255, 0.45);
+  animation: framePulse 2.4s ease-in-out infinite;
+}
+
+.frame-premium-flame {
+  background: linear-gradient(140deg, #d74a1a, #ff9d2f);
+  box-shadow: 0 0 20px rgba(255, 112, 45, 0.5);
+  animation: framePulse 1.8s ease-in-out infinite;
+}
+
+.frame-premium-emerald {
+  background: linear-gradient(140deg, #0f8a67, #3ce4aa);
+  box-shadow: 0 0 20px rgba(60, 228, 170, 0.48);
+  animation: framePulse 2s ease-in-out infinite;
+}
+
+.frame-premium-crystal {
+  background: linear-gradient(140deg, #d6e2f0, #ffffff 45%, #bed4ea);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.4);
+}
+
+.frame-premium-crystal::after {
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 180%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: frameSweep 2.8s linear infinite;
+  z-index: 0;
+}
+
+.frame-legendary-gold {
+  background: linear-gradient(140deg, #a96d00, #ffcc52, #b37600);
+  box-shadow: 0 0 26px rgba(255, 196, 77, 0.6);
+  animation: framePulse 1.4s ease-in-out infinite;
+}
+
+.frame-legendary-dual {
+  background: linear-gradient(140deg, #c08a13, #ffcf53, #7127c8);
+  box-shadow: 0 0 28px rgba(197, 109, 255, 0.5);
+  animation: framePulse 1.5s ease-in-out infinite;
+}
+
+.frame-legendary-cosmic {
+  background:
+    radial-gradient(circle at 16% 20%, rgba(146, 95, 255, 0.78), transparent 36%),
+    radial-gradient(circle at 82% 20%, rgba(94, 225, 255, 0.72), transparent 40%),
+    radial-gradient(circle at 46% 88%, rgba(255, 115, 220, 0.58), transparent 46%),
+    linear-gradient(140deg, #080b1f, #0a1732 58%, #140d26);
+  box-shadow: 0 0 30px rgba(132, 150, 255, 0.55), 0 0 44px rgba(95, 225, 255, 0.25);
+}
+
+.frame-legendary-cosmic::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(134, 255, 254, 0.35),
+    rgba(140, 109, 255, 0.32),
+    rgba(255, 148, 230, 0.33),
+    rgba(134, 255, 254, 0.35)
+  );
+  animation: frameOrbit 3.6s linear infinite;
+  z-index: 0;
+}
+
+.frame-legendary-cosmic::after {
+  content: "";
+  position: absolute;
+  width: 58%;
+  height: 220%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.85), transparent);
+  animation: frameSweep 2s linear infinite;
+  z-index: 0;
 }
 
 .xp-tier-20 {
