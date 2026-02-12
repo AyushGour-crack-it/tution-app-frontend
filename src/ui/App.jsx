@@ -290,7 +290,9 @@ export default function App() {
             <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} />
+            {user?.role === "student" ? (
+              <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} />
+            ) : null}
             <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
             <NavItem
@@ -459,10 +461,10 @@ export default function App() {
           <Route
             path="/student/badges"
             element={
-              user?.role === "student" || viewRole === "student" ? (
+              user?.role === "student" ? (
                 <Badges />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/student" replace />
               )
             }
           />
