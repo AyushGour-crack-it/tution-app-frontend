@@ -33,7 +33,17 @@ export default function Chat() {
     [user?.id]
   );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
-  const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
+const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
+  const senderNameColorClasses = [
+    "chat-sender-color-1",
+    "chat-sender-color-2",
+    "chat-sender-color-3",
+    "chat-sender-color-4",
+    "chat-sender-color-5",
+    "chat-sender-color-6",
+    "chat-sender-color-7",
+    "chat-sender-color-8"
+  ];
   const messageLookup = useMemo(
     () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
     [messages]
@@ -221,6 +231,16 @@ export default function Chat() {
     return seenByCount === 1 ? "Seen by 1" : `Seen by ${seenByCount}`;
   };
 
+  const getSenderColorClass = (msg) => {
+    if (msg?.senderId === user?.id) return "chat-sender-color-me";
+    const seed = String(msg?.senderId || msg?.senderName || "");
+    let hash = 0;
+    for (let index = 0; index < seed.length; index += 1) {
+      hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+    }
+    return senderNameColorClasses[hash % senderNameColorClasses.length];
+  };
+
   const visibleMessages = useMemo(() => {
     if (!localClearAfter) return messages;
     return messages.filter((msg) => {
@@ -402,6 +422,7 @@ export default function Chat() {
                     ? "chat-message-media"
                     : "",
                   msg.type === "announcement" ? "chat-announcement" : "",
+                  msg.role === "teacher" ? "chat-message-teacher" : "",
                   msg.senderId === user?.id ? "chat-message-mine" : ""
                 ]
                   .filter(Boolean)
@@ -410,7 +431,7 @@ export default function Chat() {
               >
               <div className="chat-meta-row">
                 <div className="chat-meta">
-                  <strong>{msg.senderName}</strong>
+                  <strong className={getSenderColorClass(msg)}>{msg.senderName}</strong>
                 </div>
                 <div className="chat-meta-actions">
                   <div className="chat-meta">{formatTime(msg.createdAt)}</div>
