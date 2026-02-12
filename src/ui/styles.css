@@ -1428,6 +1428,16 @@ html[data-theme="dark"] {
   overflow: hidden;
 }
 
+.profile-badge-art {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 4px;
+}
+
 .profile-showcase-title {
   font-weight: 700;
   line-height: 1.2;
@@ -1597,6 +1607,16 @@ html[data-theme="dark"] {
   border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
+}
+
+.badge-card-image {
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.32);
+  padding: 6px;
 }
 
 .badge-card-title {

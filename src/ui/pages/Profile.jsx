@@ -202,6 +202,9 @@ export default function Profile() {
                   key={badge.key}
                   className={`profile-showcase-badge ${getXpTierClass(badge.xpValue)}`}
                 >
+                  {badge.imageUrl ? (
+                    <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />
+                  ) : null}
                   <div className="profile-showcase-title">{badge.title}</div>
                   <div className="profile-showcase-meta">
                     {String(badge.rarity || "").toUpperCase()} • {badge.xpValue} XP

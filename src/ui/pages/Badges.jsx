@@ -7,10 +7,11 @@ const CATEGORY_META = {
   consistency: { label: "Consistency", hint: "Attendance and streaks" },
   personality: { label: "Personality", hint: "Social and leadership traits" },
   inspired: { label: "Inspired", hint: "Pop-culture inspired titles" },
-  secret: { label: "Secret", hint: "Hidden unlock conditions" }
+  secret: { label: "Secret", hint: "Hidden unlock conditions" },
+  fun_event: { label: "Fun & Event", hint: "Festival and seasonal achievements" }
 };
 
-const CATEGORY_ORDER = ["academic", "consistency", "personality", "inspired", "secret"];
+const CATEGORY_ORDER = ["academic", "consistency", "personality", "inspired", "fun_event", "secret"];
 
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
@@ -219,6 +220,9 @@ export default function Badges() {
                             .filter(Boolean)
                             .join(" ")}
                         >
+                          {badge.imageUrl ? (
+                            <img src={badge.imageUrl} alt={badge.title} className="badge-card-image" />
+                          ) : null}
                           <div className="badge-card-title">{badge.title}</div>
                           <div className="student-directory-meta">
                             {String(badge.rarity || "").toUpperCase()} • {badge.xpValue} XP

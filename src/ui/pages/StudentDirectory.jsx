@@ -280,6 +280,9 @@ export default function StudentDirectory() {
                       badge.xpValue
                     )}`}
                   >
+                    {badge.imageUrl ? (
+                      <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />
+                    ) : null}
                     <div className="profile-showcase-title">{badge.title}</div>
                     <div className="profile-showcase-meta">
                       {String(badge.rarity || "").toUpperCase()} • {badge.xpValue || 0} XP
