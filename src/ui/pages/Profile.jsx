@@ -3,6 +3,7 @@ import { api } from "../api.js";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+  const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
   const [form, setForm] = useState({ name: "", phone: "", bio: "", avatar: null });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -26,6 +27,19 @@ export default function Profile() {
         bio: data.bio || "",
         avatar: null
       });
+      if (data.role === "student") {
+        try {
+          const badgeData = await api.get("/badges/me").then((res) => res.data);
+          setBadgeStats({
+            level: badgeData.level || null,
+            earned: badgeData.earned || []
+          });
+        } catch {
+          setBadgeStats({ level: null, earned: [] });
+        }
+      } else {
+        setBadgeStats({ level: null, earned: [] });
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load profile. Please log in again.");
     }
@@ -101,6 +115,8 @@ export default function Profile() {
     );
   }
 
+  const rarityClass = (rarity) => `rarity-${String(rarity || "").toLowerCase()}`;
+
   return (
     <div className="page">
       <div className="page-header">
@@ -122,9 +138,37 @@ export default function Profile() {
           <div>
             <div style={{ fontWeight: 600 }}>{user.name}</div>
             <div style={{ color: "var(--muted)" }}>{user.email}</div>
+            {badgeStats.level ? (
+              <div style={{ color: "var(--muted)", marginTop: "4px" }}>
+                Level {badgeStats.level.level} • {badgeStats.level.totalXp} XP
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
+
+      {user.role === "student" ? (
+        <div className="card" style={{ marginTop: "24px" }}>
+          <h2 className="card-title">Badge Showcase</h2>
+          {badgeStats.earned.length ? (
+            <div className="profile-showcase-grid">
+              {badgeStats.earned.map((badge) => (
+                <div
+                  key={badge.key}
+                  className={`profile-showcase-badge ${rarityClass(badge.rarity)}`}
+                >
+                  <div className="profile-showcase-title">{badge.title}</div>
+                  <div className="profile-showcase-meta">
+                    {String(badge.rarity || "").toUpperCase()} • {badge.xpValue} XP
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="student-directory-meta">No badges unlocked yet.</div>
+          )}
+        </div>
+      ) : null}
 
       <div className="card" style={{ marginTop: "24px" }}>
         <h2 className="card-title">Edit Profile</h2>

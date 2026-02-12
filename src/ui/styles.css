@@ -848,6 +848,31 @@ html[data-theme="dark"] {
   border: 1px solid transparent;
 }
 
+.profile-showcase-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.profile-showcase-badge {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-showcase-title {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.profile-showcase-meta {
+  font-size: 11px;
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
 .badge-level-card {
   border: 1px solid var(--border);
 }
@@ -939,53 +964,85 @@ html[data-theme="dark"] {
   }
 }
 
+@keyframes rarityAura {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+}
+
 .rarity-common {
-  border-color: #a5b1bc;
+  border-color: #bcc8d3;
 }
 
 .rarity-common.badge-card-unlocked,
-.profile-badge-chip.rarity-common {
-  background: linear-gradient(120deg, #dbe1e7, #b9c3ce, #dbe1e7);
+.profile-badge-chip.rarity-common,
+.profile-showcase-badge.rarity-common {
+  background: linear-gradient(120deg, #f2f5f8, #c9d3dd, #f2f5f8);
   background-size: 220px 100%;
-  animation: rarityShimmer 3s linear infinite;
-  color: #1d2a33;
+  animation: rarityShimmer 3s linear infinite, rarityGlow 3.2s ease-in-out infinite;
+  color: #1b2731;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 6px 16px rgba(116, 133, 148, 0.22);
 }
 
 .rarity-rare {
-  border-color: #d9af63;
+  border-color: #e2b56b;
 }
 
 .rarity-rare.badge-card-unlocked,
-.profile-badge-chip.rarity-rare {
-  background: linear-gradient(120deg, #ffe2a8, #f7bf60, #ffe2a8);
+.profile-badge-chip.rarity-rare,
+.profile-showcase-badge.rarity-rare {
+  background: linear-gradient(120deg, #fff1c6, #eab257, #ffe8b3);
   background-size: 220px 100%;
-  animation: rarityShimmer 2.7s linear infinite;
+  animation: rarityShimmer 2.5s linear infinite, rarityGlow 2.8s ease-in-out infinite;
   color: #36230b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 20px rgba(189, 130, 42, 0.28);
 }
 
 .rarity-epic {
-  border-color: #7dc4df;
+  border-color: #bfb8ff;
 }
 
 .rarity-epic.badge-card-unlocked,
-.profile-badge-chip.rarity-epic {
-  background: linear-gradient(120deg, #cfefff, #9fd7f4, #e2f6ff);
+.profile-badge-chip.rarity-epic,
+.profile-showcase-badge.rarity-epic {
+  background: linear-gradient(120deg, #ece6ff, #c6baff, #f4f0ff);
   background-size: 220px 100%;
-  animation: rarityShimmer 2.4s linear infinite, rarityGlow 2.2s ease-in-out infinite;
-  color: #112833;
+  animation: rarityShimmer 2.2s linear infinite, rarityGlow 2s ease-in-out infinite;
+  color: #271b4f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 10px 26px rgba(116, 84, 219, 0.3);
 }
 
 .rarity-legendary {
-  border-color: #7bd2ff;
+  border-color: #7dd5ff;
 }
 
 .rarity-legendary.badge-card-unlocked,
-.profile-badge-chip.rarity-legendary {
-  background: linear-gradient(120deg, #ddf6ff, #7bd2ff, #f0fbff);
+.profile-badge-chip.rarity-legendary,
+.profile-showcase-badge.rarity-legendary {
+  background: linear-gradient(120deg, #e8fbff, #72d3ff, #f4fdff);
   background-size: 220px 100%;
-  animation: rarityShimmer 1.8s linear infinite, rarityGlow 1.6s ease-in-out infinite;
-  color: #0f2430;
-  box-shadow: 0 0 18px rgba(123, 210, 255, 0.55);
+  animation: rarityShimmer 1.4s linear infinite, rarityGlow 1.5s ease-in-out infinite;
+  color: #0b2330;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 0 1px rgba(114, 211, 255, 0.55), 0 0 26px rgba(114, 211, 255, 0.6);
+}
+
+.rarity-legendary.badge-card-unlocked::after,
+.profile-showcase-badge.rarity-legendary::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle, rgba(114, 211, 255, 0.2), transparent 62%);
+  pointer-events: none;
+  animation: rarityAura 2.6s ease-in-out infinite;
 }
 
 .mobile-nav-toggle {
