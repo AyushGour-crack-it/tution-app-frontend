@@ -232,7 +232,7 @@ export default function Chat() {
   }, [messages, localClearAfter]);
 
   return (
-    <div className="page">
+    <div className="page chat-page">
       {showClearConfirm ? (
         <div className="confirm-popup-overlay" onClick={() => setShowClearConfirm(false)}>
           <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()}>
@@ -280,50 +280,47 @@ export default function Chat() {
           </div>
         </div>
       ) : null}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Chat</h1>
-          <p className="page-subtitle">Message your classroom community.</p>
-        </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {localClearAfter ? (
-            <button className="btn btn-ghost" type="button" onClick={resetLocalClear}>
-              Show Older Messages
-            </button>
-          ) : null}
-          {user?.role === "teacher" ? (
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => setShowLocalClearConfirm(true)}
-            >
-              Clear On This Device
-            </button>
-          ) : null}
-          <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
-            {user?.role === "teacher" ? "Clear Chat For Everyone" : "Clear My Chat"}
-          </button>
-        </div>
-      </div>
-
-      <div className="card chat-card" style={{ marginTop: "24px" }}>
-        {user?.role === "teacher" && (
-          <div className="chat-audience">
-            <span className="chat-audience-label">Send to</span>
-            <select
-              className="select chat-audience-select"
-              value={recipientStudentId}
-              onChange={(event) => setRecipientStudentId(event.target.value)}
-            >
-              <option value="">All Students</option>
-              {students.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
+      <div className="card chat-card">
+        <div className="chat-toolbar">
+          <div className="chat-toolbar-left">
+            {user?.role === "teacher" ? (
+              <div className="chat-audience">
+                <span className="chat-audience-label">Send to</span>
+                <select
+                  className="select chat-audience-select"
+                  value={recipientStudentId}
+                  onChange={(event) => setRecipientStudentId(event.target.value)}
+                >
+                  <option value="">All Students</option>
+                  {students.map((student) => (
+                    <option key={student._id} value={student._id}>
+                      {student.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
-        )}
+          <div className="chat-toolbar-actions">
+            {localClearAfter ? (
+              <button className="btn btn-ghost" type="button" onClick={resetLocalClear}>
+                Show Older
+              </button>
+            ) : null}
+            {user?.role === "teacher" ? (
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setShowLocalClearConfirm(true)}
+              >
+                Clear Here
+              </button>
+            ) : null}
+            <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
+              {user?.role === "teacher" ? "Clear All" : "Clear My Chat"}
+            </button>
+          </div>
+        </div>
         <div className="chat-window" ref={chatWindowRef}>
           {loadingMessages ? (
             <div className="chat-meta" style={{ padding: "12px 0" }}>
