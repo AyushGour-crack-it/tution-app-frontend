@@ -24,7 +24,9 @@ const emptyProfile = {
   grade: "",
   level: { level: 1 },
   totalXp: 0,
-  badges: []
+  badges: [],
+  likesCount: 0,
+  likedByMe: false
 };
 
 export default function StudentDirectory() {
@@ -32,11 +34,27 @@ export default function StudentDirectory() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
+  const [liking, setLiking] = useState(false);
+  const viewer = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("auth_user") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const load = async ({ withLoading = true } = {}) => {
+    if (withLoading) setLoading(true);
+    const data = await api.get("/students/directory").then((res) => res.data || []);
+    setStudents(data);
+    if (withLoading) setLoading(false);
+    return data;
+  };
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      setLoading(true);
+    const run = async () => {
+      if (loading) setLoading(true);
       try {
         const data = await api.get("/students/directory").then((res) => res.data || []);
         if (cancelled) return;
@@ -45,7 +63,7 @@ export default function StudentDirectory() {
         if (!cancelled) setLoading(false);
       }
     };
-    load();
+    run();
     return () => {
       cancelled = true;
     };
@@ -95,6 +113,20 @@ export default function StudentDirectory() {
     level: selected?.level?.level || 1,
     rank: selectedRank
   });
+  const canLikeSelected = viewer?.role === "student" && selected?.userId && viewer?.id !== selected?.userId;
+
+  const toggleLike = async () => {
+    if (!canLikeSelected || liking) return;
+    setLiking(true);
+    try {
+      await api.post(`/students/${selected.userId}/like`);
+      const refreshed = await load({ withLoading: false });
+      const updated = refreshed.find((student) => student.userId === selected.userId);
+      if (updated) setSelected(updated);
+    } finally {
+      setLiking(false);
+    }
+  };
 
   return (
     <div className="page student-directory-page">
@@ -156,6 +188,7 @@ export default function StudentDirectory() {
                         <div className="student-directory-meta">
                           Lv {student.level?.level || 1} • {student.totalXp || 0} XP
                         </div>
+                        <div className="student-directory-meta">Likes {student.likesCount || 0}</div>
                         <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                       </div>
                     </button>
@@ -199,6 +232,17 @@ export default function StudentDirectory() {
               <div className="student-profile-pills">
                 <span className="pill">Roll: {selected.rollNumber || "-"}</span>
                 <span className="pill">Grade: {selected.grade || "-"}</span>
+                <span className="pill">Likes: {selected.likesCount || 0}</span>
+                {canLikeSelected ? (
+                  <button
+                    type="button"
+                    className={`btn ${selected.likedByMe ? "btn-ghost" : ""}`}
+                    onClick={toggleLike}
+                    disabled={liking}
+                  >
+                    {selected.likedByMe ? (liking ? "Updating..." : "Unlike") : liking ? "Liking..." : "Like"}
+                  </button>
+                ) : null}
               </div>
               <p className="student-profile-bio">{selected.bio || "No bio yet."}</p>
               <div className="student-profile-badges-grid">
