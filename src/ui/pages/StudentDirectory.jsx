@@ -209,7 +209,9 @@ export default function StudentDirectory() {
                           </span>{" "}
                           • {student.totalXp || 0} XP
                         </div>
-                        <div className="student-directory-meta">Likes {student.likesCount || 0}</div>
+                        <div className="student-directory-meta">
+                          Badges {student.badges?.length || 0} • Likes {student.likesCount || 0}
+                        </div>
                         <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                       </div>
                     </button>
@@ -256,6 +258,7 @@ export default function StudentDirectory() {
               <div className="student-profile-pills">
                 <span className="pill">Roll: {selected.rollNumber || "-"}</span>
                 <span className="pill">Grade: {selected.grade || "-"}</span>
+                <span className="pill">Badges: {sortedSelectedBadges.length}</span>
                 <span className="pill">Likes: {selected.likesCount || 0}</span>
                 {canLikeSelected ? (
                   <button

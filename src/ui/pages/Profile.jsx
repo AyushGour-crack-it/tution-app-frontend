@@ -148,6 +148,7 @@ export default function Profile() {
     if (xpDelta !== 0) return xpDelta;
     return String(a?.title || "").localeCompare(String(b?.title || ""));
   });
+  const totalBadges = sortedEarnedBadges.length;
 
   return (
     <div className="page">
@@ -184,7 +185,7 @@ export default function Profile() {
                 <span className={`level-pill ${getLevelTierClass(badgeStats.level.level)}`}>
                   Level {badgeStats.level.level}
                 </span>{" "}
-                • {badgeStats.level.totalXp} XP
+                • {badgeStats.level.totalXp} XP • {totalBadges} Badges
               </div>
             ) : null}
           </div>
@@ -193,7 +194,7 @@ export default function Profile() {
 
       {user.role === "student" ? (
         <div className="card" style={{ marginTop: "24px" }}>
-          <h2 className="card-title">Badge Showcase</h2>
+          <h2 className="card-title">Badge Showcase ({totalBadges})</h2>
           {sortedEarnedBadges.length ? (
             <div className="profile-showcase-grid">
               {sortedEarnedBadges.map((badge) => (
