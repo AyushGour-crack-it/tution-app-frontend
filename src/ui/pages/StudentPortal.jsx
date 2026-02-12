@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const loadRazorpaySdk = () =>
   new Promise((resolve) => {
@@ -63,6 +64,19 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   useEffect(() => {
     load();
   }, [previewStudentId]);
+
+  useEffect(() => {
+    if (section !== "fees" && section !== "dashboard") return undefined;
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const onFeeUpdated = () => {
+      load();
+    };
+    socket.on("fee:updated", onFeeUpdated);
+    return () => socket.off("fee:updated", onFeeUpdated);
+  }, [section, previewStudentId]);
 
   useEffect(() => {
     if (!effectiveStudentId) return;

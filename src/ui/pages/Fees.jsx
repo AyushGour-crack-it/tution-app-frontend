@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const emptyForm = { studentId: "", month: "", total: "", payment: "" };
 
@@ -23,6 +24,18 @@ export default function Fees() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const onFeeUpdated = () => {
+      load();
+    };
+    socket.on("fee:updated", onFeeUpdated);
+    return () => socket.off("fee:updated", onFeeUpdated);
   }, []);
 
   const submit = async (event) => {

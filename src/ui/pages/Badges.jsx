@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const CATEGORY_META = {
   all: { label: "All Categories", hint: "Complete badge catalog" },
@@ -71,6 +72,22 @@ export default function Badges() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => {
+      load();
+    };
+    socket.on("badge:request-updated", refresh);
+    socket.on("badge:awarded", refresh);
+    return () => {
+      socket.off("badge:request-updated", refresh);
+      socket.off("badge:awarded", refresh);
+    };
   }, []);
 
   useEffect(() => {

@@ -401,7 +401,62 @@ export default function App() {
       setUnreadChatCount((prev) => prev + 1);
     };
 
-    const onNotificationNew = () => {
+    const onNotificationNew = (item) => {
+      if (item?._id && badgePopupSeenKey && item?.title === "Badge Approved") {
+        let seenIds = [];
+        try {
+          const raw = localStorage.getItem(badgePopupSeenKey);
+          seenIds = raw ? JSON.parse(raw) : [];
+        } catch {
+          seenIds = [];
+        }
+        if (!seenIds.includes(item._id)) {
+          const rawMessage = String(item?.message || "");
+          const match = rawMessage.match(/You unlocked "(.+)" \(\+(\d+)\s*XP\)\./i);
+          const unlockEvent = {
+            id: item._id,
+            badgeName: match?.[1] || "New Badge",
+            xpValue: Number(match?.[2]) || 0,
+            message: rawMessage
+          };
+          setBadgeUnlockQueue((prev) => {
+            if (prev.some((entry) => entry.id === unlockEvent.id)) return prev;
+            return [...prev, unlockEvent];
+          });
+          localStorage.setItem(
+            badgePopupSeenKey,
+            JSON.stringify([...seenIds, item._id].slice(-200))
+          );
+        }
+      }
+
+      if (item?._id && user?.role === "teacher" && item?.title === "Fee Received") {
+        const feeSeenKey = `fee_payment_popup_seen_${user.id}`;
+        let seenFeeIds = [];
+        try {
+          const raw = localStorage.getItem(feeSeenKey);
+          seenFeeIds = raw ? JSON.parse(raw) : [];
+        } catch {
+          seenFeeIds = [];
+        }
+        if (!seenFeeIds.includes(item._id)) {
+          const feeEvent = {
+            id: item._id,
+            title: item.title,
+            message: String(item?.message || ""),
+            createdAt: item?.createdAt || null
+          };
+          setFeePaymentQueue((prev) => {
+            if (prev.some((entry) => entry.id === feeEvent.id)) return prev;
+            return [...prev, feeEvent];
+          });
+          localStorage.setItem(
+            feeSeenKey,
+            JSON.stringify([...seenFeeIds, item._id].slice(-200))
+          );
+        }
+      }
+
       if (locationPathRef.current === "/notifications") return;
       setUnreadNotificationCount((prev) => prev + 1);
     };
@@ -413,7 +468,7 @@ export default function App() {
       socket.off("chat:new", onChatNew);
       socket.off("notification:new", onNotificationNew);
     };
-  }, [user?.id]);
+  }, [user?.id, user?.role, badgePopupSeenKey]);
 
   React.useEffect(() => {
     if (!user) return;

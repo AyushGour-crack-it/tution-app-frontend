@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 export default function BadgeRequests() {
   const [items, setItems] = useState([]);
@@ -16,6 +17,20 @@ export default function BadgeRequests() {
 
   useEffect(() => {
     load();
+  }, [status]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => {
+      load();
+    };
+    socket.on("badge:request-updated", refresh);
+    return () => {
+      socket.off("badge:request-updated", refresh);
+    };
   }, [status]);
 
   const review = async (id, action) => {
