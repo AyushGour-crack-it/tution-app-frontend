@@ -33,7 +33,7 @@ export default function Chat() {
     [user?.id]
   );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
-const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
+  const reactions = ["👍", "❤️", "😂", "🔥", "👏", "👎", "😤", "❌", "🚫", "🙅"];
   const senderNameColorClasses = [
     "chat-sender-color-1",
     "chat-sender-color-2",
@@ -451,6 +451,7 @@ const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
                         <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
                           Reply
                         </button>
+                        <div className="chat-menu-label">React</div>
                         <div className="chat-menu-emojis">
                           {reactions.map((emoji) => (
                             <button

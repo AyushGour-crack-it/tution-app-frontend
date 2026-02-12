@@ -745,44 +745,64 @@ html[data-theme="dark"] {
   top: calc(100% + 6px);
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  min-width: 120px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+  border-radius: 12px;
+  min-width: 184px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
   display: grid;
+  gap: 4px;
+  padding: 6px;
   z-index: 8;
 }
 
 .chat-menu-item {
-  border: none;
-  background: transparent;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text-primary);
   text-align: left;
   padding: 8px 10px;
   cursor: pointer;
   font-size: 13px;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 .chat-menu-item:hover {
   background: rgba(255, 122, 89, 0.12);
+  border-color: rgba(255, 122, 89, 0.22);
 }
 
 .chat-menu-item.danger {
   color: #b04a35;
 }
 
+.chat-menu-label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 4px 4px 0;
+}
+
 .chat-menu-emojis {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 4px 2px 6px;
 }
 
 .chat-menu-emoji-btn {
-  border: 1px solid var(--chat-emoji-border);
+  border: 1px solid rgba(255, 122, 89, 0.16);
   background: var(--chat-emoji-bg);
-  border-radius: 8px;
+  border-radius: 10px;
   min-height: 32px;
   cursor: pointer;
+  font-size: 16px;
+}
+
+.chat-menu-emoji-btn:hover {
+  background: rgba(255, 122, 89, 0.12);
+  border-color: rgba(255, 122, 89, 0.38);
 }
 
 .chat-content {
