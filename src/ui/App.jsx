@@ -256,8 +256,14 @@ export default function App() {
       {showWelcomePopup ? (
         <div className="welcome-popup-overlay" onClick={() => setShowWelcomePopup(false)}>
           <div className="welcome-popup-card" onClick={(event) => event.stopPropagation()}>
-            <h2 className="welcome-popup-title">Welcome to Our Tution Arena</h2>
+            <div className="welcome-popup-badge">New Session Ready</div>
+            <h2 className="welcome-popup-title">
+              Welcome to <span className="welcome-popup-brand">Our Tution</span> Arena
+            </h2>
             <p className="welcome-popup-text">Use larger screens for seamless experience.</p>
+            <p className="welcome-popup-subtext">
+              Track classes, badges, performance, and progress in one premium workspace.
+            </p>
             <button className="btn" type="button" onClick={() => setShowWelcomePopup(false)}>
               Continue
             </button>

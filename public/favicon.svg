@@ -1,20 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ff7a59" />
-      <stop offset="100%" stop-color="#ffb66e" />
+      <stop offset="55%" stop-color="#ff9d7a" />
+      <stop offset="100%" stop-color="#ffcc8a" />
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff4d8" />
+      <stop offset="100%" stop-color="#ffe6b7" />
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g)" />
+
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)" />
+  <rect x="7" y="7" width="50" height="50" rx="13" fill="none" stroke="url(#ring)" stroke-width="1.4" opacity="0.9" />
+
+  <path d="M18 24L32 17L46 24L32 31Z" fill="#132226" opacity="0.92" />
+  <path d="M23 31V36C23 40.5 41 40.5 41 36V31L32 36Z" fill="#132226" opacity="0.92" />
+
   <text
     x="32"
-    y="40"
+    y="48"
     text-anchor="middle"
-    font-family="Arial, sans-serif"
-    font-size="24"
+    font-family="Space Grotesk, Arial, sans-serif"
+    font-size="13"
     font-weight="700"
-    fill="#132226"
+    letter-spacing="0.8"
+    fill="#102026"
   >
-    AY
+    OT
   </text>
 </svg>
