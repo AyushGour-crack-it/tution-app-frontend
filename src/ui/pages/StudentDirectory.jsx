@@ -64,7 +64,7 @@ export default function StudentDirectory() {
         </div>
       </div>
 
-      <div className="card student-directory-list-card">
+      <div className="card student-directory-list-card student-section-fill">
         <div className="student-directory-toolbar">
           <div className="student-directory-count">{filtered.length} students</div>
           <input
@@ -131,4 +131,3 @@ export default function StudentDirectory() {
     </div>
   );
 }
-

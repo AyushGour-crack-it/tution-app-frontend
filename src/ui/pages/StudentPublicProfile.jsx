@@ -113,7 +113,7 @@ export default function StudentPublicProfile() {
         </button>
       </div>
 
-      <div className="card student-profile-card" style={{ marginTop: "24px" }}>
+      <div className="card student-profile-card student-section-fill" style={{ marginTop: "24px" }}>
         {loading ? (
           <div>Loading profile...</div>
         ) : student ? (
@@ -144,10 +144,18 @@ export default function StudentPublicProfile() {
             </div>
 
             <div className="student-profile-pills">
-              <span className="pill">Roll: {student.rollNumber || "-"}</span>
-              <span className="pill">Grade: {student.grade || "-"}</span>
-              <span className="pill">Badges: {sortedBadges.length}</span>
-              <span className="pill">Likes: {student.likesCount || 0}</span>
+              <span className="pill student-stat-pill student-stat-pill-roll">
+                Roll No <strong>{student.rollNumber || "-"}</strong>
+              </span>
+              <span className="pill student-stat-pill student-stat-pill-grade">
+                Grade <strong>{student.grade || "-"}</strong>
+              </span>
+              <span className="pill student-stat-pill student-stat-pill-badges">
+                Badges <strong>{sortedBadges.length}</strong>
+              </span>
+              <span className="pill student-stat-pill student-stat-pill-likes">
+                Likes <strong>{student.likesCount || 0}</strong>
+              </span>
               {canLike ? (
                 <button
                   type="button"
@@ -188,4 +196,3 @@ export default function StudentPublicProfile() {
     </div>
   );
 }
-

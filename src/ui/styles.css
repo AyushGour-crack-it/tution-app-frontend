@@ -989,6 +989,12 @@ html[data-theme="dark"] {
   padding: 16px;
 }
 
+.student-section-fill {
+  min-height: calc(100dvh - 170px);
+  display: flex;
+  flex-direction: column;
+}
+
 .student-directory-toolbar {
   display: grid;
   gap: 10px;
@@ -1006,7 +1012,9 @@ html[data-theme="dark"] {
 }
 
 .student-directory-list {
-  max-height: 66vh;
+  max-height: none;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -1160,6 +1168,7 @@ html[data-theme="dark"] {
   display: grid;
   justify-items: start;
   gap: 12px;
+  width: 100%;
 }
 
 .student-profile-avatar {
@@ -1209,7 +1218,62 @@ html[data-theme="dark"] {
 .student-profile-pills {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+.student-stat-pill {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  padding: 7px 12px;
+}
+
+.student-stat-pill strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-stat-pill-roll {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(14, 165, 233, 0.15));
+  color: #0c3a66;
+  border-color: rgba(59, 130, 246, 0.34);
+}
+
+.student-stat-pill-grade {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(45, 212, 191, 0.14));
+  color: #0a4a3f;
+  border-color: rgba(16, 185, 129, 0.34);
+}
+
+.student-stat-pill-badges {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.15));
+  color: #5a3407;
+  border-color: rgba(217, 119, 6, 0.34);
+}
+
+.student-stat-pill-likes {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.16), rgba(236, 72, 153, 0.14));
+  color: #6a1335;
+  border-color: rgba(236, 72, 153, 0.34);
+}
+
+html[data-theme="dark"] .student-stat-pill-roll {
+  color: #9dd8ff;
+}
+
+html[data-theme="dark"] .student-stat-pill-grade {
+  color: #93f4da;
+}
+
+html[data-theme="dark"] .student-stat-pill-badges {
+  color: #ffd995;
+}
+
+html[data-theme="dark"] .student-stat-pill-likes {
+  color: #ffb4cd;
 }
 
 .student-profile-bio {
@@ -2588,6 +2652,10 @@ html[data-theme="dark"] {
   .student-directory-shell {
     grid-template-columns: 1fr;
     gap: 14px;
+  }
+
+  .student-section-fill {
+    min-height: auto;
   }
 
   .student-directory-list {
