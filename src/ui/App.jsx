@@ -63,11 +63,20 @@ export default function App() {
   );
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
+  const notificationSeenKey = React.useMemo(
+    () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
+    [user?.id]
+  );
   const closeMobileNavOnNavigate = React.useCallback(() => {
     if (window.matchMedia("(max-width: 1024px)").matches) {
       setNavOpen(false);
     }
   }, []);
+  const markNotificationsSeen = React.useCallback(() => {
+    if (!notificationSeenKey) return;
+    localStorage.setItem(notificationSeenKey, new Date().toISOString());
+    setUnreadNotificationCount(0);
+  }, [notificationSeenKey]);
 
   const logout = () => {
     localStorage.removeItem("auth_user");
@@ -167,10 +176,18 @@ export default function App() {
       try {
         const items = await api.get("/notifications").then((res) => res.data || []);
         if (cancelled) return;
-        const unread = items.filter(
-          (item) => !item?.readBy?.some((id) => String(id) === String(user.id))
-        ).length;
-        setUnreadNotificationCount(unread);
+        const existingSeen = localStorage.getItem(notificationSeenKey);
+        if (!existingSeen) {
+          localStorage.setItem(notificationSeenKey, new Date().toISOString());
+          setUnreadNotificationCount(0);
+          return;
+        }
+        const seenTime = new Date(existingSeen).getTime();
+        const freshCount = items.filter((item) => {
+          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
+          return createdAt > seenTime;
+        }).length;
+        setUnreadNotificationCount(freshCount);
       } catch {
         if (!cancelled) setUnreadNotificationCount(0);
       }
@@ -182,7 +199,13 @@ export default function App() {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [user?.id, location.pathname]);
+  }, [user?.id, location.pathname, notificationSeenKey]);
+
+  React.useEffect(() => {
+    if (location.pathname === "/notifications") {
+      markNotificationsSeen();
+    }
+  }, [location.pathname, markNotificationsSeen]);
 
   if (!authReady) {
     return (
@@ -250,7 +273,10 @@ export default function App() {
             <NavItem
               to="/notifications"
               label="Notifications"
-              onNavigate={closeMobileNavOnNavigate}
+              onNavigate={() => {
+                markNotificationsSeen();
+                closeMobileNavOnNavigate();
+              }}
               badgeCount={unreadNotificationCount}
             />
             <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
@@ -264,7 +290,10 @@ export default function App() {
             <NavItem
               to="/notifications"
               label="Notifications"
-              onNavigate={closeMobileNavOnNavigate}
+              onNavigate={() => {
+                markNotificationsSeen();
+                closeMobileNavOnNavigate();
+              }}
               badgeCount={unreadNotificationCount}
             />
             <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
