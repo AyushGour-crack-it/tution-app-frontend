@@ -11,6 +11,8 @@ export default function Chat() {
   const [recipientStudentId, setRecipientStudentId] = useState("");
   const [menuMessageId, setMenuMessageId] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearingChat, setClearingChat] = useState(false);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -143,14 +145,15 @@ export default function Chat() {
   };
 
   const clearChat = async () => {
-    const message =
-      user?.role === "teacher"
-        ? "Clear entire chat for everyone?"
-        : "Clear your sent chat messages?";
-    if (!window.confirm(message)) return;
-    await api.delete("/chat/messages/clear");
-    setReplyTo(null);
-    load();
+    setClearingChat(true);
+    try {
+      await api.delete("/chat/messages/clear");
+      setReplyTo(null);
+      await load();
+      setShowClearConfirm(false);
+    } finally {
+      setClearingChat(false);
+    }
   };
 
   const formatTime = (value) => {
@@ -165,12 +168,37 @@ export default function Chat() {
 
   return (
     <div className="page">
+      {showClearConfirm ? (
+        <div className="confirm-popup-overlay" onClick={() => setShowClearConfirm(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()}>
+            <h3 className="confirm-popup-title">Are you sure?</h3>
+            <p className="confirm-popup-text">
+              {user?.role === "teacher"
+                ? "Clear entire chat for everyone?"
+                : "Clear your sent chat messages?"}
+            </p>
+            <div className="confirm-popup-actions">
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearingChat}
+              >
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={clearChat} disabled={clearingChat}>
+                {clearingChat ? "Clearing..." : "Yes, Clear"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <h1 className="page-title">Chat</h1>
           <p className="page-subtitle">Message your classroom community.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={clearChat}>
+        <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
           {user?.role === "teacher" ? "Clear Chat" : "Clear My Chat"}
         </button>
       </div>

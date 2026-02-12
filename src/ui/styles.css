@@ -1884,6 +1884,45 @@ html[data-theme="dark"] {
   color: rgba(255, 235, 208, 0.78);
 }
 
+.confirm-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 73;
+  background: rgba(5, 10, 16, 0.5);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.confirm-popup-card {
+  width: min(380px, 92vw);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.26);
+}
+
+.confirm-popup-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 20px;
+}
+
+.confirm-popup-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.confirm-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 @media (max-width: 1024px) {
   .app-shell {
     grid-template-columns: 1fr;

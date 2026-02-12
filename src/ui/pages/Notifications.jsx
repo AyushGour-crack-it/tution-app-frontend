@@ -8,6 +8,8 @@ export default function Notifications() {
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -48,21 +50,47 @@ export default function Notifications() {
   };
 
   const clearNotifications = async () => {
-    if (!window.confirm("Clear notifications from your inbox?")) return;
-    await api.delete("/notifications/clear");
-    load();
+    setClearing(true);
+    try {
+      await api.delete("/notifications/clear");
+      await load();
+      setShowClearConfirm(false);
+    } finally {
+      setClearing(false);
+    }
   };
 
   const isRead = (item) => item.readBy?.includes(user?.id);
 
   return (
     <div className="page">
+      {showClearConfirm ? (
+        <div className="confirm-popup-overlay" onClick={() => setShowClearConfirm(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()}>
+            <h3 className="confirm-popup-title">Are you sure?</h3>
+            <p className="confirm-popup-text">Clear all notifications from your inbox?</p>
+            <div className="confirm-popup-actions">
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearing}
+              >
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={clearNotifications} disabled={clearing}>
+                {clearing ? "Clearing..." : "Yes, Clear"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <h1 className="page-title">Notifications</h1>
           <p className="page-subtitle">Broadcasts and alerts.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={clearNotifications}>
+        <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
           Clear Notifications
         </button>
       </div>
