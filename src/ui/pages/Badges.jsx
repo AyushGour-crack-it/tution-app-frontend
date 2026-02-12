@@ -5,7 +5,9 @@ const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
   if (xp >= 1000) return "xp-tier-1000";
   if (xp >= 450) return "xp-tier-450";
-  if (xp >= 120) return "xp-tier-120-200";
+  if (xp >= 200) return "xp-tier-200";
+  if (xp >= 150) return "xp-tier-150";
+  if (xp >= 120) return "xp-tier-120";
   if (xp >= 50) return "xp-tier-50";
   if (xp >= 30) return "xp-tier-30";
   return "xp-tier-20";

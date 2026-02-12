@@ -763,6 +763,30 @@ html[data-theme="dark"] {
   border-color: var(--input-border);
 }
 
+.student-directory-item-rank-1 {
+  background:
+    radial-gradient(circle at 10% 16%, rgba(255, 224, 122, 0.3), transparent 40%),
+    linear-gradient(135deg, rgba(255, 215, 110, 0.18), var(--card-bg));
+  border-color: rgba(241, 187, 70, 0.55);
+  box-shadow: 0 14px 24px rgba(190, 128, 20, 0.2);
+}
+
+.student-directory-item-rank-2 {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(208, 223, 255, 0.28), transparent 40%),
+    linear-gradient(135deg, rgba(188, 210, 247, 0.2), var(--card-bg));
+  border-color: rgba(156, 182, 221, 0.55);
+  box-shadow: 0 12px 22px rgba(95, 128, 182, 0.2);
+}
+
+.student-directory-item-rank-3 {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(255, 207, 153, 0.24), transparent 40%),
+    linear-gradient(135deg, rgba(234, 181, 129, 0.2), var(--card-bg));
+  border-color: rgba(213, 149, 89, 0.55);
+  box-shadow: 0 12px 22px rgba(172, 102, 47, 0.2);
+}
+
 .student-directory-item-active {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(255, 157, 122, 0.18);
@@ -929,6 +953,28 @@ html[data-theme="dark"] {
   margin-top: 12px;
 }
 
+.student-profile-badges-grid {
+  width: 100%;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.student-directory-badge-card {
+  min-height: 74px;
+  border-width: 2px;
+}
+
+.student-directory-badge-card .profile-showcase-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-directory-badge-card .profile-showcase-meta {
+  font-size: 11px;
+}
+
 .profile-badge-chip {
   border: 1px solid transparent;
   font-weight: 700;
@@ -953,11 +999,26 @@ html[data-theme="dark"] {
   color: #200f3f;
 }
 
-.student-profile-level-banner.xp-tier-120-200 {
-  background: linear-gradient(110deg, #f9dc93, #f1c86b 40%, #e6b350);
+.student-profile-level-banner.xp-tier-120 {
+  background: linear-gradient(110deg, #f8dca7, #efc575 42%, #dba658);
   background-size: 260px 100%;
-  animation: rarityShimmer 2.1s linear infinite;
-  color: #3c2405;
+  animation: rarityShimmer 2.3s linear infinite;
+  color: #3f2a0a;
+}
+
+.student-profile-level-banner.xp-tier-150 {
+  background: linear-gradient(115deg, #f7d38f, #e9b95a 44%, #d18d2e);
+  background-size: 250px 100%;
+  animation: rarityShimmer 1.9s linear infinite;
+  color: #321f04;
+}
+
+.student-profile-level-banner.xp-tier-200 {
+  background: linear-gradient(120deg, #ffe6a9, #ffcb58 36%, #e49a1f 68%, #fff0bf 100%);
+  background-size: 280px 100%;
+  animation: rarityShimmer 1.5s linear infinite;
+  color: #2c1800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 12px 22px rgba(180, 116, 15, 0.28);
 }
 
 .student-profile-level-banner.xp-tier-450 {
@@ -1272,18 +1333,46 @@ html[data-theme="dark"] {
   color: #2c1350;
 }
 
-.xp-tier-120-200 {
-  border-color: #f0bf63;
+.xp-tier-120 {
+  border-color: #e6b864;
 }
 
-.xp-tier-120-200.badge-card-unlocked,
-.profile-badge-chip.xp-tier-120-200,
-.profile-showcase-badge.xp-tier-120-200 {
-  background: linear-gradient(110deg, #fff6d2 0%, #f1c86b 35%, #fff3be 55%, #e8b252 75%, #fff6d2 100%);
-  background-size: 260px 100%;
-  animation: rarityShimmer 2.1s linear infinite;
-  color: #3c2405;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 10px 22px rgba(201, 137, 24, 0.26);
+.xp-tier-120.badge-card-unlocked,
+.profile-badge-chip.xp-tier-120,
+.profile-showcase-badge.xp-tier-120 {
+  background: linear-gradient(112deg, #fff3cf 0%, #edc578 38%, #f9e8bb 62%, #dba55a 100%);
+  background-size: 240px 100%;
+  animation: rarityShimmer 2.5s linear infinite;
+  color: #3a2505;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 8px 18px rgba(171, 117, 28, 0.22);
+}
+
+.xp-tier-150 {
+  border-color: #de9f3d;
+}
+
+.xp-tier-150.badge-card-unlocked,
+.profile-badge-chip.xp-tier-150,
+.profile-showcase-badge.xp-tier-150 {
+  background: linear-gradient(115deg, #ffe7b5 0%, #edb455 35%, #ffd579 58%, #d88d23 100%);
+  background-size: 250px 100%;
+  animation: rarityShimmer 1.9s linear infinite;
+  color: #2f1c02;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 20px rgba(177, 104, 9, 0.26);
+}
+
+.xp-tier-200 {
+  border-color: #ffbe33;
+}
+
+.xp-tier-200.badge-card-unlocked,
+.profile-badge-chip.xp-tier-200,
+.profile-showcase-badge.xp-tier-200 {
+  background: linear-gradient(120deg, #fff2c4 0%, #ffc84c 28%, #ffdd79 50%, #eb9f11 76%, #fff4d0 100%);
+  background-size: 270px 100%;
+  animation: rarityShimmer 1.4s linear infinite;
+  color: #291500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 12px 24px rgba(192, 116, 3, 0.32);
 }
 
 .xp-tier-450 {

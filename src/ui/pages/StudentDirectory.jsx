@@ -6,7 +6,9 @@ const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
   if (xp >= 1000) return "xp-tier-1000";
   if (xp >= 450) return "xp-tier-450";
-  if (xp >= 120) return "xp-tier-120-200";
+  if (xp >= 200) return "xp-tier-200";
+  if (xp >= 150) return "xp-tier-150";
+  if (xp >= 120) return "xp-tier-120";
   if (xp >= 50) return "xp-tier-50";
   if (xp >= 30) return "xp-tier-30";
   return "xp-tier-20";
@@ -134,7 +136,9 @@ export default function StudentDirectory() {
                       key={student.userId}
                       className={`student-directory-item${
                         selected?.userId === student.userId ? " student-directory-item-active" : ""
-                      }`}
+                      } ${index === 0 ? "student-directory-item-rank-1" : ""} ${
+                        index === 1 ? "student-directory-item-rank-2" : ""
+                      } ${index === 2 ? "student-directory-item-rank-3" : ""}`}
                       onClick={() => setSelected(student)}
                     >
                       <div className="student-directory-rank">#{index + 1}</div>
@@ -197,11 +201,19 @@ export default function StudentDirectory() {
                 <span className="pill">Grade: {selected.grade || "-"}</span>
               </div>
               <p className="student-profile-bio">{selected.bio || "No bio yet."}</p>
-              <div className="student-profile-badges">
+              <div className="student-profile-badges-grid">
                 {(selected.badges || []).slice(0, 12).map((badge) => (
-                  <span key={badge.key} className={`pill profile-badge-chip ${getXpTierClass(badge.xpValue)}`}>
-                    {badge.title}
-                  </span>
+                  <div
+                    key={badge.key}
+                    className={`profile-showcase-badge student-directory-badge-card ${getXpTierClass(
+                      badge.xpValue
+                    )}`}
+                  >
+                    <div className="profile-showcase-title">{badge.title}</div>
+                    <div className="profile-showcase-meta">
+                      {String(badge.rarity || "").toUpperCase()} • {badge.xpValue || 0} XP
+                    </div>
+                  </div>
                 ))}
                 {!(selected.badges || []).length ? (
                   <div className="student-directory-meta">No badges unlocked yet.</div>
