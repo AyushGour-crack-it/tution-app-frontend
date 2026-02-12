@@ -57,6 +57,7 @@ export default function Chat() {
       }
       const [chatData, studentData] = await Promise.all(tasks);
       setMessages(chatData);
+      api.post("/chat/messages/read").catch(() => {});
       if (studentData) {
         setStudents(studentData);
       }
@@ -210,6 +211,14 @@ export default function Chat() {
       hour: "2-digit",
       minute: "2-digit"
     });
+  };
+
+  const getReadReceipt = (msg) => {
+    if (String(msg?.senderId || "") !== String(user?.id || "")) return "";
+    const readBy = Array.isArray(msg?.readBy) ? msg.readBy.map((id) => String(id)) : [];
+    const seenByCount = readBy.filter((id) => id !== String(user?.id || "")).length;
+    if (seenByCount <= 0) return "Sent";
+    return seenByCount === 1 ? "Seen by 1" : `Seen by ${seenByCount}`;
   };
 
   const visibleMessages = useMemo(() => {
@@ -490,6 +499,9 @@ export default function Chat() {
                 </audio>
               )}
               {msg.editedAt && <div className="chat-meta">(edited)</div>}
+              {getReadReceipt(msg) ? (
+                <div className="chat-meta chat-read-receipt">{getReadReceipt(msg)}</div>
+              ) : null}
               {msg.reactions?.length ? (
                 <div className="chat-reaction-count">
                   {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
