@@ -36,6 +36,7 @@ export default function Register() {
       });
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("auth_user", JSON.stringify(data.user));
+      localStorage.setItem("welcome_popup_pending", "1");
       navigate(data.user.role === "teacher" ? "/" : "/student");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");

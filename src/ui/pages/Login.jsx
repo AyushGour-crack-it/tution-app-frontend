@@ -14,6 +14,7 @@ export default function Login() {
       const { data } = await api.post("/auth/login", form);
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("auth_user", JSON.stringify(data.user));
+      localStorage.setItem("welcome_popup_pending", "1");
       navigate(data.user.role === "teacher" ? "/" : "/student");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");

@@ -66,6 +66,7 @@ export default function App() {
   );
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
+  const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
     [user?.id]
@@ -210,6 +211,15 @@ export default function App() {
     }
   }, [location.pathname, markNotificationsSeen]);
 
+  React.useEffect(() => {
+    if (!user) return;
+    const pending = localStorage.getItem("welcome_popup_pending");
+    if (pending === "1") {
+      setShowWelcomePopup(true);
+      localStorage.removeItem("welcome_popup_pending");
+    }
+  }, [user]);
+
   if (!authReady) {
     return (
       <div className="auth-shell">
@@ -243,6 +253,17 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {showWelcomePopup ? (
+        <div className="welcome-popup-overlay" onClick={() => setShowWelcomePopup(false)}>
+          <div className="welcome-popup-card" onClick={(event) => event.stopPropagation()}>
+            <h2 className="welcome-popup-title">Welcome to Our Tution Arena</h2>
+            <p className="welcome-popup-text">Use larger screens for seamless experience.</p>
+            <button className="btn" type="button" onClick={() => setShowWelcomePopup(false)}>
+              Continue
+            </button>
+          </div>
+        </div>
+      ) : null}
       <button
         className="mobile-nav-toggle"
         type="button"
