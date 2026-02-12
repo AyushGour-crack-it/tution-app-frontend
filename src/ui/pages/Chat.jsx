@@ -414,6 +414,11 @@ export default function Chat() {
                   <source src={msg.content} type={msg.mimeType || "video/mp4"} />
                 </video>
               )}
+              {msg.type === "audio" && (
+                <audio controls className="chat-audio">
+                  <source src={msg.content} type={msg.mimeType || "audio/mpeg"} />
+                </audio>
+              )}
               {msg.editedAt && <div className="chat-meta">(edited)</div>}
               {msg.reactions?.length ? (
                 <div className="chat-reaction-count">

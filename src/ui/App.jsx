@@ -519,7 +519,7 @@ export default function App() {
           ) : null}
         </div>
       </aside>
-      <main className="main">
+      <main className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}>
         <Routes>
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
