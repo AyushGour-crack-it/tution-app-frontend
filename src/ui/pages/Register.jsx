@@ -12,7 +12,8 @@ export default function Register() {
     avatar: null,
     password: "",
     role: "teacher",
-    studentId: ""
+    studentId: "",
+    teacherAccessId: ""
   });
   const [error, setError] = useState("");
 
@@ -27,6 +28,7 @@ export default function Register() {
       formData.append("password", form.password);
       formData.append("role", form.role);
       formData.append("studentId", form.role === "student" ? form.studentId || "" : "");
+      formData.append("teacherAccessId", form.role === "teacher" ? form.teacherAccessId || "" : "");
       formData.append("bio", form.bio);
       if (form.avatar) {
         formData.append("avatar", form.avatar);
@@ -98,6 +100,15 @@ export default function Register() {
             <option value="teacher">Teacher</option>
             <option value="student">Student</option>
           </select>
+          {form.role === "teacher" && (
+            <input
+              className="input"
+              placeholder="Teacher ID"
+              value={form.teacherAccessId}
+              onChange={(event) => setForm({ ...form, teacherAccessId: event.target.value })}
+              required
+            />
+          )}
           {form.role === "student" && (
             <input
               className="input"
