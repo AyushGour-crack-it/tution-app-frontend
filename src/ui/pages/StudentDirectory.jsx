@@ -14,6 +14,17 @@ const getXpTierClass = (xpValue) => {
   return "xp-tier-20";
 };
 
+const getBadgeVisualClass = (badge) => {
+  if (badge?.category === "fun_event") return "xp-tier-event";
+  return getXpTierClass(badge?.xpValue);
+};
+
+const getBadgeMetaText = (badge) => {
+  const rarity = String(badge?.rarity || "").toUpperCase();
+  if (badge?.category === "fun_event") return `${rarity} • EVENT`;
+  return `${rarity} • ${badge?.xpValue || 0} XP`;
+};
+
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
   if (level >= 13) return "level-tier-mythic";
@@ -276,16 +287,16 @@ export default function StudentDirectory() {
                 {sortedSelectedBadges.slice(0, 12).map((badge) => (
                   <div
                     key={badge.key}
-                    className={`profile-showcase-badge student-directory-badge-card ${getXpTierClass(
-                      badge.xpValue
-                    )}`}
+                    className={`profile-showcase-badge student-directory-badge-card ${
+                      badge.category === "fun_event" ? "profile-showcase-badge-event" : ""
+                    } ${getBadgeVisualClass(badge)}`}
                   >
                     {badge.imageUrl ? (
                       <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />
                     ) : null}
                     <div className="profile-showcase-title">{badge.title}</div>
                     <div className="profile-showcase-meta">
-                      {String(badge.rarity || "").toUpperCase()} • {badge.xpValue || 0} XP
+                      {getBadgeMetaText(badge)}
                     </div>
                   </div>
                 ))}

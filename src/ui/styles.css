@@ -1438,6 +1438,20 @@ html[data-theme="dark"] {
   padding: 4px;
 }
 
+.profile-showcase-badge-event {
+  display: grid;
+  justify-items: start;
+}
+
+.profile-showcase-badge-event .profile-badge-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 6px;
+}
+
 .profile-showcase-title {
   font-weight: 700;
   line-height: 1.2;
@@ -1617,6 +1631,27 @@ html[data-theme="dark"] {
   margin-bottom: 8px;
   background: rgba(255, 255, 255, 0.32);
   padding: 6px;
+}
+
+.badge-card-event {
+  padding: 10px;
+}
+
+.badge-card-event .badge-card-image {
+  height: 170px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 10px;
+}
+
+.badge-card-event .badge-card-title {
+  font-size: 17px;
+  margin-top: 2px;
+}
+
+.badge-card-event .badge-card-description {
+  min-height: 0;
+  margin-top: 6px;
 }
 
 .badge-card-title {
@@ -1933,6 +1968,33 @@ html[data-theme="dark"] {
     conic-gradient(from 0deg, rgba(134, 255, 254, 0.32), rgba(139, 110, 255, 0.26), rgba(255, 147, 230, 0.3), rgba(134, 255, 254, 0.32));
   pointer-events: none;
   animation: rarityAura 2.2s linear infinite;
+}
+
+.xp-tier-event {
+  border-color: #ff7f50;
+}
+
+.xp-tier-event.badge-card-unlocked,
+.profile-badge-chip.xp-tier-event,
+.profile-showcase-badge.xp-tier-event {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 92, 150, 0.45), transparent 34%),
+    radial-gradient(circle at 84% 22%, rgba(0, 209, 255, 0.42), transparent 38%),
+    radial-gradient(circle at 52% 82%, rgba(137, 255, 0, 0.35), transparent 42%),
+    linear-gradient(130deg, #ff7a18 0%, #ffd200 36%, #7f5cff 68%, #01d4ff 100%);
+  color: #1c1022;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 24px rgba(255, 122, 24, 0.34);
+}
+
+.xp-tier-event.badge-card-unlocked::after,
+.profile-showcase-badge.xp-tier-event::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  animation: rarityGlow 1.8s ease-in-out infinite;
 }
 
 .mobile-nav-toggle {

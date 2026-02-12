@@ -25,6 +25,17 @@ const getXpTierClass = (xpValue) => {
   return "xp-tier-20";
 };
 
+const getBadgeVisualClass = (badge) => {
+  if (badge?.category === "fun_event") return "xp-tier-event";
+  return getXpTierClass(badge?.xpValue);
+};
+
+const getBadgeMetaText = (badge) => {
+  const rarity = String(badge?.rarity || "").toUpperCase();
+  if (badge?.category === "fun_event") return `${rarity} • EVENT`;
+  return `${rarity} • ${badge?.xpValue || 0} XP`;
+};
+
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
   if (level >= 13) return "level-tier-mythic";
@@ -213,7 +224,8 @@ export default function Badges() {
                           className={[
                             "card",
                             "badge-card",
-                            getXpTierClass(badge.xpValue),
+                            badge.category === "fun_event" ? "badge-card-event" : "",
+                            getBadgeVisualClass(badge),
                             unlocked ? "badge-card-unlocked" : "",
                             isHiddenLocked ? "badge-card-hidden" : ""
                           ]
@@ -225,7 +237,7 @@ export default function Badges() {
                           ) : null}
                           <div className="badge-card-title">{badge.title}</div>
                           <div className="student-directory-meta">
-                            {String(badge.rarity || "").toUpperCase()} • {badge.xpValue} XP
+                            {getBadgeMetaText(badge)}
                           </div>
                           <p className="badge-card-description">{badge.description}</p>
                           {unlocked ? (
