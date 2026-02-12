@@ -107,6 +107,15 @@ export default function StudentDirectory() {
   }, [filtered, selected]);
 
   const selectedLevelTierClass = getXpTierClass(selected?.totalXp || 0);
+  const sortedSelectedBadges = useMemo(
+    () =>
+      [...(selected?.badges || [])].sort((a, b) => {
+        const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+        if (xpDelta !== 0) return xpDelta;
+        return String(a?.title || "").localeCompare(String(b?.title || ""));
+      }),
+    [selected?.badges]
+  );
   const selectedFrame = resolveAvatarFrame({
     badges: selected?.badges || [],
     totalXp: selected?.totalXp || 0,
@@ -246,7 +255,7 @@ export default function StudentDirectory() {
               </div>
               <p className="student-profile-bio">{selected.bio || "No bio yet."}</p>
               <div className="student-profile-badges-grid">
-                {(selected.badges || []).slice(0, 12).map((badge) => (
+                {sortedSelectedBadges.slice(0, 12).map((badge) => (
                   <div
                     key={badge.key}
                     className={`profile-showcase-badge student-directory-badge-card ${getXpTierClass(
@@ -259,7 +268,7 @@ export default function StudentDirectory() {
                     </div>
                   </div>
                 ))}
-                {!(selected.badges || []).length ? (
+                {!sortedSelectedBadges.length ? (
                   <div className="student-directory-meta">No badges unlocked yet.</div>
                 ) : null}
               </div>

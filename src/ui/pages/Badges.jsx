@@ -69,6 +69,15 @@ export default function Badges() {
 
   const earnedSet = useMemo(() => new Set(earned.map((item) => item.key)), [earned]);
   const pendingSet = useMemo(() => new Set(pending.map((item) => item.badgeKey)), [pending]);
+  const sortedCatalog = useMemo(
+    () =>
+      [...catalog].sort((a, b) => {
+        const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+        if (xpDelta !== 0) return xpDelta;
+        return String(a?.title || "").localeCompare(String(b?.title || ""));
+      }),
+    [catalog]
+  );
 
   const requestBadge = async (badgeKey) => {
     await api.post("/badges/requests", {
@@ -116,7 +125,7 @@ export default function Badges() {
         {loading ? (
           <div className="card">Loading badges...</div>
         ) : (
-          catalog.map((badge) => {
+          sortedCatalog.map((badge) => {
             const unlocked = earnedSet.has(badge.key);
             const isPending = pendingSet.has(badge.key);
             const isHiddenLocked = badge.hidden && !unlocked;

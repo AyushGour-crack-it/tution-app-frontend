@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 
@@ -134,6 +134,15 @@ export default function Profile() {
     level: badgeStats.level?.level || 1,
     rank: null
   });
+  const sortedEarnedBadges = useMemo(
+    () =>
+      [...(badgeStats.earned || [])].sort((a, b) => {
+        const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+        if (xpDelta !== 0) return xpDelta;
+        return String(a?.title || "").localeCompare(String(b?.title || ""));
+      }),
+    [badgeStats.earned]
+  );
 
   return (
     <div className="page">
@@ -177,9 +186,9 @@ export default function Profile() {
       {user.role === "student" ? (
         <div className="card" style={{ marginTop: "24px" }}>
           <h2 className="card-title">Badge Showcase</h2>
-          {badgeStats.earned.length ? (
+          {sortedEarnedBadges.length ? (
             <div className="profile-showcase-grid">
-              {badgeStats.earned.map((badge) => (
+              {sortedEarnedBadges.map((badge) => (
                 <div
                   key={badge.key}
                   className={`profile-showcase-badge ${getXpTierClass(badge.xpValue)}`}
