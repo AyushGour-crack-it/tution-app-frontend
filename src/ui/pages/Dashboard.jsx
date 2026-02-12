@@ -90,7 +90,7 @@ export default function Dashboard() {
         {stats.map((item) => (
           <div className="card" key={item.label}>
             <div className="tag">{item.label}</div>
-            <div style={{ fontSize: "28px", marginTop: "12px", fontWeight: 600 }}>
+            <div className="dashboard-stat-value">
               {item.value}
             </div>
           </div>
@@ -104,8 +104,8 @@ export default function Dashboard() {
             {overview.focus.map((item) => (
               <div className="list-item" key={`${item.subject}-${item.topic}`}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{item.topic}</div>
-                  <div style={{ fontSize: "12px", color: "#6b7b7f" }}>
+                  <div className="dashboard-item-title">{item.topic}</div>
+                  <div className="dashboard-item-subtitle">
                     Target: {item.targetDate ? new Date(item.targetDate).toLocaleDateString() : "-"}
                   </div>
                 </div>
@@ -122,8 +122,8 @@ export default function Dashboard() {
             {overview.upcoming.map((item) => (
               <div className="list-item" key={`${item.title}-${item.date}`}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ fontSize: "12px", color: "#6b7b7f" }}>{item.note}</div>
+                  <div className="dashboard-item-title">{item.title}</div>
+                  <div className="dashboard-item-subtitle">{item.note}</div>
                 </div>
                 <span className="badge">
                   {item.date ? new Date(item.date).toLocaleDateString() : "-"}
@@ -141,12 +141,12 @@ export default function Dashboard() {
           {announcements.map((item) => (
             <div className="list-item" key={item._id}>
               <div>
-                <div style={{ fontWeight: 600 }}>{item.title}</div>
+                <div className="dashboard-item-title">{item.title}</div>
                 {item.note ? (
-                  <div style={{ fontSize: "12px", color: "#6b7b7f" }}>{item.note}</div>
+                  <div className="dashboard-item-subtitle">{item.note}</div>
                 ) : null}
               </div>
-              <div style={{ textAlign: "right" }}>
+              <div className="dashboard-ann-actions">
                 <span className="badge">
                   {item.date ? new Date(item.date).toLocaleDateString() : "-"}
                 </span>

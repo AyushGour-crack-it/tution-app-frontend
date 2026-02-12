@@ -110,7 +110,7 @@ export default function StudentDirectory() {
   const sortedSelectedBadges = useMemo(
     () =>
       [...(selected?.badges || [])].sort((a, b) => {
-        const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+        const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
         if (xpDelta !== 0) return xpDelta;
         return String(a?.title || "").localeCompare(String(b?.title || ""));
       }),

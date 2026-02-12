@@ -135,7 +135,7 @@ export default function Profile() {
     rank: null
   });
   const sortedEarnedBadges = [...(badgeStats.earned || [])].sort((a, b) => {
-    const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+    const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
     if (xpDelta !== 0) return xpDelta;
     return String(a?.title || "").localeCompare(String(b?.title || ""));
   });
@@ -149,14 +149,14 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: "24px" }}>
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+      <div className="card profile-summary-card" style={{ marginTop: "24px" }}>
+        <div className="profile-summary-row">
           <div className={`avatar-frame avatar-frame-profile ${profileFrame.frameClass}`} title={profileFrame.frameLabel}>
             {user.avatarUrl ? (
               <img
                 src={user.avatarUrl}
                 alt={user.name}
-                style={{ width: "84px", height: "84px", borderRadius: "16px", objectFit: "cover" }}
+                className="profile-summary-avatar-img"
               />
             ) : (
               <div
@@ -167,11 +167,11 @@ export default function Profile() {
               </div>
             )}
           </div>
-          <div>
-            <div style={{ fontWeight: 600 }}>{user.name}</div>
-            <div style={{ color: "var(--muted)" }}>{user.email}</div>
+          <div className="profile-summary-meta">
+            <div className="profile-summary-name">{user.name}</div>
+            <div className="profile-summary-email">{user.email}</div>
             {badgeStats.level ? (
-              <div style={{ color: "var(--muted)", marginTop: "4px" }}>
+              <div className="profile-summary-level">
                 Level {badgeStats.level.level} • {badgeStats.level.totalXp} XP
               </div>
             ) : null}
