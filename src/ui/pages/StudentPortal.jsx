@@ -25,6 +25,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [loading, setLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState("");
   const [feeError, setFeeError] = useState("");
+  const [upiNotice, setUpiNotice] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -131,6 +132,32 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
       upiLink(amount)
     )}`;
+
+  const launchUpi = async (amount = "") => {
+    const deepLink = upiLink(amount);
+    const isMobileDevice = /android|iphone|ipad|ipod/i.test(navigator.userAgent || "");
+    if (!isMobileDevice) {
+      setUpiNotice("UPI app link works on phone. On desktop, scan QR or copy UPI ID.");
+      return;
+    }
+    try {
+      window.location.href = deepLink;
+      setTimeout(() => {
+        setUpiNotice("If app did not open, use QR or copy UPI ID.");
+      }, 1200);
+    } catch {
+      setUpiNotice("Could not open UPI app. Use QR or copy UPI ID.");
+    }
+  };
+
+  const copyUpiId = async () => {
+    try {
+      await navigator.clipboard.writeText(upiId);
+      setUpiNotice("UPI ID copied.");
+    } catch {
+      setUpiNotice(`Copy manually: ${upiId}`);
+    }
+  };
 
   const payFeeOnline = async (feeId, amount) => {
     if (!amount || amount <= 0) return;
@@ -328,15 +355,25 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   {feeError}
                 </div>
               ) : null}
+              {upiNotice ? (
+                <div className="auth-success" style={{ marginBottom: "12px" }}>
+                  {upiNotice}
+                </div>
+              ) : null}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "16px" }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>Pay via UPI</div>
                   <div style={{ fontSize: "12px", color: "var(--muted)" }}>
                     {upiName} • {upiId} • {phone}
                   </div>
-                  <a className="btn" href={upiLink("")} style={{ display: "inline-block", marginTop: "10px" }}>
-                    Pay Now
-                  </a>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" }}>
+                    <button className="btn" type="button" onClick={() => launchUpi("")}>
+                      Open UPI App
+                    </button>
+                    <button className="btn btn-ghost" type="button" onClick={copyUpiId}>
+                      Copy UPI ID
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <img src={qrUrl("")} alt="UPI QR" />
