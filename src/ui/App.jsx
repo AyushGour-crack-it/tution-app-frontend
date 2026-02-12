@@ -23,7 +23,12 @@ import StudentDirectory from "./pages/StudentDirectory.jsx";
 import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
-import { connectSocket, disconnectSocket } from "./socket.js";
+import {
+  connectSocket,
+  disconnectSocket,
+  getSocketStatus,
+  subscribeSocketStatus
+} from "./socket.js";
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -74,6 +79,7 @@ export default function App() {
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
+  const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const locationPathRef = React.useRef(location.pathname);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
@@ -380,6 +386,11 @@ export default function App() {
   }, [user?.id, user?.role, chatSeenKey, location.pathname]);
 
   React.useEffect(() => {
+    const unsubscribe = subscribeSocketStatus((status) => setSocketStatus(status));
+    return () => unsubscribe();
+  }, []);
+
+  React.useEffect(() => {
     if (location.pathname === "/chat") {
       markChatSeen();
     }
@@ -393,6 +404,38 @@ export default function App() {
     }
     const socket = connectSocket(token);
     if (!socket) return undefined;
+
+    const syncUnreadCounters = async () => {
+      try {
+        const [notifications, chatItems] = await Promise.all([
+          api.get("/notifications", { showGlobalLoader: false }).then((res) => res.data || []),
+          api.get("/chat/messages", { showGlobalLoader: false }).then((res) => res.data || [])
+        ]);
+
+        const seenNotification = localStorage.getItem(notificationSeenKey);
+        const notificationSeenAt = seenNotification ? new Date(seenNotification).getTime() : Date.now();
+        const nextNotificationCount = notifications.filter((item) => {
+          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
+          return createdAt > notificationSeenAt;
+        }).length;
+        if (locationPathRef.current !== "/notifications") {
+          setUnreadNotificationCount(nextNotificationCount);
+        }
+
+        const seenChat = localStorage.getItem(chatSeenKey);
+        const chatSeenAt = seenChat ? new Date(seenChat).getTime() : Date.now();
+        const nextChatCount = chatItems.filter((item) => {
+          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
+          const senderId = String(item?.senderId || "");
+          return createdAt > chatSeenAt && senderId !== String(user.id || "");
+        }).length;
+        if (locationPathRef.current !== "/chat") {
+          setUnreadChatCount(nextChatCount);
+        }
+      } catch {
+        // no-op on transient sync errors
+      }
+    };
 
     const onChatNew = (message) => {
       const senderId = String(message?.senderId || "");
@@ -463,12 +506,15 @@ export default function App() {
 
     socket.on("chat:new", onChatNew);
     socket.on("notification:new", onNotificationNew);
+    socket.on("connect", syncUnreadCounters);
+    syncUnreadCounters();
 
     return () => {
       socket.off("chat:new", onChatNew);
       socket.off("notification:new", onNotificationNew);
+      socket.off("connect", syncUnreadCounters);
     };
-  }, [user?.id, user?.role, badgePopupSeenKey]);
+  }, [user?.id, user?.role, badgePopupSeenKey, notificationSeenKey, chatSeenKey]);
 
   React.useEffect(() => {
     if (!user) return;
@@ -610,6 +656,13 @@ export default function App() {
             <div className="brand-title">Our Tution</div>
             <div className="brand-subtitle">Learning Workspace</div>
           </div>
+        </div>
+        <div className={`socket-status socket-status-${socketStatus}`}>
+          {socketStatus === "connected"
+            ? "Live"
+            : socketStatus === "reconnecting" || socketStatus === "connecting"
+              ? "Reconnecting..."
+              : "Offline"}
         </div>
         {user?.role === "teacher" && viewRole === "teacher" ? (
           <nav className="nav">

@@ -84,9 +84,11 @@ export default function Badges() {
     };
     socket.on("badge:request-updated", refresh);
     socket.on("badge:awarded", refresh);
+    socket.on("connect", refresh);
     return () => {
       socket.off("badge:request-updated", refresh);
       socket.off("badge:awarded", refresh);
+      socket.off("connect", refresh);
     };
   }, []);
 

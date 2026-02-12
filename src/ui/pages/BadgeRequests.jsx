@@ -28,8 +28,10 @@ export default function BadgeRequests() {
       load();
     };
     socket.on("badge:request-updated", refresh);
+    socket.on("connect", refresh);
     return () => {
       socket.off("badge:request-updated", refresh);
+      socket.off("connect", refresh);
     };
   }, [status]);
 

@@ -104,7 +104,11 @@ export default function Chat() {
     };
 
     socket.on("chat:new", onChatNew);
-    return () => socket.off("chat:new", onChatNew);
+    socket.on("connect", load);
+    return () => {
+      socket.off("chat:new", onChatNew);
+      socket.off("connect", load);
+    };
   }, [user?.id]);
 
   useEffect(() => {

@@ -35,7 +35,11 @@ export default function Fees() {
       load();
     };
     socket.on("fee:updated", onFeeUpdated);
-    return () => socket.off("fee:updated", onFeeUpdated);
+    socket.on("connect", load);
+    return () => {
+      socket.off("fee:updated", onFeeUpdated);
+      socket.off("connect", load);
+    };
   }, []);
 
   const submit = async (event) => {

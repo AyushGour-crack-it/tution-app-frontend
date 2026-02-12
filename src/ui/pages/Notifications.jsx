@@ -48,7 +48,11 @@ export default function Notifications() {
     };
 
     socket.on("notification:new", onNotificationNew);
-    return () => socket.off("notification:new", onNotificationNew);
+    socket.on("connect", load);
+    return () => {
+      socket.off("notification:new", onNotificationNew);
+      socket.off("connect", load);
+    };
   }, [user?.id]);
 
   const submit = async (event) => {
