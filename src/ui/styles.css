@@ -418,6 +418,43 @@ html[data-theme="dark"] {
   font-size: 14px;
 }
 
+.auth-separator {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  position: relative;
+  margin: 2px 0;
+}
+
+.auth-separator::before,
+.auth-separator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 42%;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-separator::before {
+  left: 0;
+}
+
+.auth-separator::after {
+  right: 0;
+}
+
+.google-auth-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .auth-error {
   background: #ffe3dc;
   color: #8a2d1a;

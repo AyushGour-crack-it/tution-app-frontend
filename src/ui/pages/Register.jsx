@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { api } from "../api.js";
 import { Link, useNavigate } from "react-router-dom";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,14 @@ export default function Register() {
     teacherAccessId: ""
   });
   const [error, setError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const finishAuth = (data) => {
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
+    localStorage.setItem("welcome_popup_pending", "1");
+    navigate(data.user.role === "teacher" ? "/" : "/student");
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -36,12 +45,39 @@ export default function Register() {
       const { data } = await api.post("/auth/register", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
-      localStorage.setItem("welcome_popup_pending", "1");
-      navigate(data.user.role === "teacher" ? "/" : "/student");
+      finishAuth(data);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
+    }
+  };
+
+  const registerWithGoogle = async (credential) => {
+    setError("");
+    if (form.role === "teacher" && !form.teacherAccessId.trim()) {
+      setError("Teacher ID is required for teacher signup.");
+      return;
+    }
+    if (form.role === "student" && !form.studentId.trim()) {
+      setError("Student profile ID is required for student signup.");
+      return;
+    }
+    setGoogleLoading(true);
+    try {
+      const { data } = await api.post("/auth/google", {
+        credential,
+        mode: "register",
+        role: form.role,
+        studentId: form.role === "student" ? form.studentId : "",
+        teacherAccessId: form.role === "teacher" ? form.teacherAccessId : "",
+        name: form.name,
+        phone: form.phone,
+        bio: form.bio
+      });
+      finishAuth(data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Google signup failed");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -122,6 +158,13 @@ export default function Register() {
             Create Account
           </button>
         </form>
+        <div className="auth-separator">or</div>
+        <GoogleAuthButton
+          text="signup_with"
+          onCredential={registerWithGoogle}
+          onError={setError}
+          disabled={googleLoading}
+        />
         <div className="auth-link">
           Already have an account? <Link to="/login">Sign in</Link>
         </div>

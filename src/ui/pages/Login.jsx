@@ -1,23 +1,42 @@
 import React, { useState } from "react";
 import { api } from "../api.js";
 import { Link, useNavigate } from "react-router-dom";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const finishAuth = (data) => {
+    localStorage.setItem("auth_token", data.token);
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
+    localStorage.setItem("welcome_popup_pending", "1");
+    navigate(data.user.role === "teacher" ? "/" : "/student");
+  };
 
   const submit = async (event) => {
     event.preventDefault();
     setError("");
     try {
       const { data } = await api.post("/auth/login", form);
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
-      localStorage.setItem("welcome_popup_pending", "1");
-      navigate(data.user.role === "teacher" ? "/" : "/student");
+      finishAuth(data);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
+    }
+  };
+
+  const signInWithGoogle = async (credential) => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const { data } = await api.post("/auth/google", { credential, mode: "login" });
+      finishAuth(data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Google sign-in failed");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -47,6 +66,13 @@ export default function Login() {
             Sign In
           </button>
         </form>
+        <div className="auth-separator">or</div>
+        <GoogleAuthButton
+          text="signin_with"
+          onCredential={signInWithGoogle}
+          onError={setError}
+          disabled={googleLoading}
+        />
         <div className="auth-link">
           No account? <Link to="/register">Create one</Link>
         </div>
