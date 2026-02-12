@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 
+const getXpTierClass = (xpValue) => {
+  const xp = Number(xpValue) || 0;
+  if (xp >= 1000) return "xp-tier-1000";
+  if (xp >= 450) return "xp-tier-450";
+  if (xp >= 120) return "xp-tier-120-200";
+  if (xp >= 50) return "xp-tier-50";
+  if (xp >= 30) return "xp-tier-30";
+  return "xp-tier-20";
+};
+
 export default function Badges() {
   const [catalog, setCatalog] = useState([]);
   const [earned, setEarned] = useState([]);
@@ -28,6 +38,33 @@ export default function Badges() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!earned.length) return;
+    const key = "last_mythic_badge_count";
+    const currentMythicCount = earned.filter((badge) => Number(badge.xpValue) >= 1000).length;
+    const previousCount = Number(localStorage.getItem(key) || 0);
+    if (currentMythicCount > previousCount) {
+      try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(880, context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, context.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(context.destination);
+        osc.start();
+        osc.stop(context.currentTime + 0.52);
+      } catch {
+        // no-op if browser blocks autoplay audio context
+      }
+    }
+    localStorage.setItem(key, String(currentMythicCount));
+  }, [earned]);
+
   const earnedSet = useMemo(() => new Set(earned.map((item) => item.key)), [earned]);
   const pendingSet = useMemo(() => new Set(pending.map((item) => item.badgeKey)), [pending]);
 
@@ -40,8 +77,6 @@ export default function Badges() {
     setSelectedBadgeKey("");
     await load();
   };
-
-  const rarityClass = (rarity) => `rarity-${String(rarity || "").toLowerCase()}`;
 
   return (
     <div className="page">
@@ -89,7 +124,7 @@ export default function Badges() {
                 className={[
                   "card",
                   "badge-card",
-                  rarityClass(badge.rarity),
+                  getXpTierClass(badge.xpValue),
                   unlocked ? "badge-card-unlocked" : "",
                   isHiddenLocked ? "badge-card-hidden" : ""
                 ]

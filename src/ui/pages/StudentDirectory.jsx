@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 
+const getXpTierClass = (xpValue) => {
+  const xp = Number(xpValue) || 0;
+  if (xp >= 1000) return "xp-tier-1000";
+  if (xp >= 450) return "xp-tier-450";
+  if (xp >= 120) return "xp-tier-120-200";
+  if (xp >= 50) return "xp-tier-50";
+  if (xp >= 30) return "xp-tier-30";
+  return "xp-tier-20";
+};
+
 const emptyProfile = {
   userId: "",
   name: "",
@@ -139,7 +149,7 @@ export default function StudentDirectory() {
               </p>
               <div className="student-profile-badges">
                 {(selected.badges || []).slice(0, 12).map((badge) => (
-                  <span key={badge.key} className={`pill profile-badge-chip rarity-${badge.rarity}`}>
+                  <span key={badge.key} className={`pill profile-badge-chip ${getXpTierClass(badge.xpValue)}`}>
                     {badge.title}
                   </span>
                 ))}

@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 
+const getXpTierClass = (xpValue) => {
+  const xp = Number(xpValue) || 0;
+  if (xp >= 1000) return "xp-tier-1000";
+  if (xp >= 450) return "xp-tier-450";
+  if (xp >= 120) return "xp-tier-120-200";
+  if (xp >= 50) return "xp-tier-50";
+  if (xp >= 30) return "xp-tier-30";
+  return "xp-tier-20";
+};
+
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
@@ -115,8 +125,6 @@ export default function Profile() {
     );
   }
 
-  const rarityClass = (rarity) => `rarity-${String(rarity || "").toLowerCase()}`;
-
   return (
     <div className="page">
       <div className="page-header">
@@ -155,7 +163,7 @@ export default function Profile() {
               {badgeStats.earned.map((badge) => (
                 <div
                   key={badge.key}
-                  className={`profile-showcase-badge ${rarityClass(badge.rarity)}`}
+                  className={`profile-showcase-badge ${getXpTierClass(badge.xpValue)}`}
                 >
                   <div className="profile-showcase-title">{badge.title}</div>
                   <div className="profile-showcase-meta">
