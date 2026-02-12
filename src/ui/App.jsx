@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications.jsx";
 import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import { api } from "./api.js";
+import StudentDirectory from "./pages/StudentDirectory.jsx";
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -286,6 +287,7 @@ export default function App() {
             <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
             <NavItem
               to="/notifications"
@@ -431,6 +433,16 @@ export default function App() {
             element={
               user?.role === "student" || viewRole === "student" ? (
                 <StudentPortal section="fees" previewStudentId={previewStudentId} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/student/students"
+            element={
+              user?.role === "student" || viewRole === "student" ? (
+                <StudentDirectory />
               ) : (
                 <Navigate to="/login" replace />
               )
