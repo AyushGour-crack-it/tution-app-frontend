@@ -38,6 +38,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const upiId = "ayushgour2526@oksbi";
   const upiName = "Ayush Gour";
   const phone = "8265968179";
+  const razorpayMeLink = "https://razorpay.me/@ayushgour8541";
 
   const load = async () => {
     setLoading(true);
@@ -367,6 +368,15 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                     {upiName} • {upiId} • {phone}
                   </div>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" }}>
+                    <a
+                      className="btn"
+                      href={razorpayMeLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                    >
+                      Pay via Razorpay Link
+                    </a>
                     <button className="btn" type="button" onClick={() => launchUpi("")}>
                       Open UPI App
                     </button>
