@@ -12,6 +12,31 @@ body {
   overflow-x: hidden;
 }
 
+.global-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(7, 12, 16, 0.18);
+  backdrop-filter: blur(1.5px);
+  display: grid;
+  place-items: center;
+}
+
+.global-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: var(--accent);
+  animation: globalSpin 0.8s linear infinite;
+}
+
+@keyframes globalSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);

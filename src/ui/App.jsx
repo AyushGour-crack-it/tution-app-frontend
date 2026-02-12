@@ -18,7 +18,7 @@ import Marks from "./pages/Marks.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
-import { api } from "./api.js";
+import { api, subscribeApiActivity } from "./api.js";
 import StudentDirectory from "./pages/StudentDirectory.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
@@ -67,6 +67,8 @@ export default function App() {
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
+  const [routeLoading, setRouteLoading] = React.useState(false);
+  const [apiLoading, setApiLoading] = React.useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
@@ -184,6 +186,31 @@ export default function App() {
   }, [location.pathname]);
 
   React.useEffect(() => {
+    setRouteLoading(true);
+    const timeoutId = setTimeout(() => setRouteLoading(false), 240);
+    return () => clearTimeout(timeoutId);
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    let offTimer = null;
+    const unsubscribe = subscribeApiActivity((active) => {
+      if (active) {
+        if (offTimer) {
+          clearTimeout(offTimer);
+          offTimer = null;
+        }
+        setApiLoading(true);
+        return;
+      }
+      offTimer = setTimeout(() => setApiLoading(false), 150);
+    });
+    return () => {
+      if (offTimer) clearTimeout(offTimer);
+      unsubscribe();
+    };
+  }, []);
+
+  React.useEffect(() => {
     const sessionUser = getSession();
     if (sessionUser && !user) {
       setUser(sessionUser);
@@ -200,7 +227,9 @@ export default function App() {
 
     const loadUnreadCount = async () => {
       try {
-        const items = await api.get("/notifications").then((res) => res.data || []);
+        const items = await api
+          .get("/notifications", { showGlobalLoader: false })
+          .then((res) => res.data || []);
         if (cancelled) return;
         const existingSeen = localStorage.getItem(notificationSeenKey);
         if (!existingSeen) {
@@ -312,7 +341,9 @@ export default function App() {
 
     const loadUnreadChat = async () => {
       try {
-        const items = await api.get("/chat/messages").then((res) => res.data || []);
+        const items = await api
+          .get("/chat/messages", { showGlobalLoader: false })
+          .then((res) => res.data || []);
         if (cancelled) return;
         const existingSeen = localStorage.getItem(chatSeenKey);
         if (!existingSeen) {
@@ -373,12 +404,19 @@ export default function App() {
       location.pathname === "/forgot")
   ) {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot" element={<ForgotPassword />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <>
+        {routeLoading || apiLoading ? (
+          <div className="global-loading-overlay">
+            <div className="global-loading-spinner" />
+          </div>
+        ) : null}
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </>
     );
   }
 
@@ -388,6 +426,11 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {routeLoading || apiLoading ? (
+        <div className="global-loading-overlay">
+          <div className="global-loading-spinner" />
+        </div>
+      ) : null}
       {activeFeePayment ? (
         <div
           className="fee-alert-popup-overlay"
