@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -85,6 +86,26 @@ export default function Chat() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!user?.id || !token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+
+    const onChatNew = (incoming) => {
+      setMessages((prev) => {
+        if (!incoming?._id || prev.some((item) => item._id === incoming._id)) return prev;
+        return [...prev, incoming];
+      });
+      if (String(incoming?.senderId || "") !== String(user.id || "")) {
+        api.post("/chat/messages/read", null, { showGlobalLoader: false }).catch(() => {});
+      }
+    };
+
+    socket.on("chat:new", onChatNew);
+    return () => socket.off("chat:new", onChatNew);
+  }, [user?.id]);
 
   useEffect(() => {
     const saved = Number(localStorage.getItem(localClearStorageKey) || 0);

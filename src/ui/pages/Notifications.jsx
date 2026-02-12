@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const emptyForm = { title: "", message: "", studentId: "" };
 
@@ -32,6 +33,23 @@ export default function Notifications() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!user?.id || !token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+
+    const onNotificationNew = (notification) => {
+      setItems((prev) => {
+        if (!notification?._id || prev.some((item) => item._id === notification._id)) return prev;
+        return [notification, ...prev].slice(0, 50);
+      });
+    };
+
+    socket.on("notification:new", onNotificationNew);
+    return () => socket.off("notification:new", onNotificationNew);
+  }, [user?.id]);
 
   const submit = async (event) => {
     event.preventDefault();

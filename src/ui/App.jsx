@@ -23,6 +23,7 @@ import StudentDirectory from "./pages/StudentDirectory.jsx";
 import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
+import { connectSocket, disconnectSocket } from "./socket.js";
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -73,6 +74,7 @@ export default function App() {
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
+  const locationPathRef = React.useRef(location.pathname);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
     [user?.id]
@@ -108,11 +110,16 @@ export default function App() {
   }, [chatSeenKey, user?.id]);
 
   const logout = () => {
+    disconnectSocket();
     localStorage.removeItem("auth_user");
     localStorage.removeItem("auth_token");
     setUser(null);
     navigate("/login");
   };
+
+  React.useEffect(() => {
+    locationPathRef.current = location.pathname;
+  }, [location.pathname]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -377,6 +384,36 @@ export default function App() {
       markChatSeen();
     }
   }, [location.pathname, markChatSeen]);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!user?.id || !token) {
+      disconnectSocket();
+      return undefined;
+    }
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+
+    const onChatNew = (message) => {
+      const senderId = String(message?.senderId || "");
+      if (senderId === String(user.id || "")) return;
+      if (locationPathRef.current === "/chat") return;
+      setUnreadChatCount((prev) => prev + 1);
+    };
+
+    const onNotificationNew = () => {
+      if (locationPathRef.current === "/notifications") return;
+      setUnreadNotificationCount((prev) => prev + 1);
+    };
+
+    socket.on("chat:new", onChatNew);
+    socket.on("notification:new", onNotificationNew);
+
+    return () => {
+      socket.off("chat:new", onChatNew);
+      socket.off("notification:new", onNotificationNew);
+    };
+  }, [user?.id]);
 
   React.useEffect(() => {
     if (!user) return;
