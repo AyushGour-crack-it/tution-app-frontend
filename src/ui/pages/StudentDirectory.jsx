@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
+import { connectSocket } from "../socket.js";
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -32,6 +33,25 @@ export default function StudentDirectory() {
     run();
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = async () => {
+      const data = await api.get("/students/directory").then((res) => res.data || []);
+      setStudents(data);
+    };
+    socket.on("students:updated", refresh);
+    socket.on("badges:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("students:updated", refresh);
+      socket.off("badges:updated", refresh);
+      socket.off("connect", refresh);
     };
   }, []);
 

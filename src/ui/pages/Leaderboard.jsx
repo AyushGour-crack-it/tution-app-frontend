@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 export default function Leaderboard() {
   const [data, setData] = useState(null);
@@ -11,6 +12,26 @@ export default function Leaderboard() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => load();
+    socket.on("leaderboard:updated", refresh);
+    socket.on("marks:updated", refresh);
+    socket.on("attendance:updated", refresh);
+    socket.on("students:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("leaderboard:updated", refresh);
+      socket.off("marks:updated", refresh);
+      socket.off("attendance:updated", refresh);
+      socket.off("students:updated", refresh);
+      socket.off("connect", refresh);
+    };
   }, []);
 
   if (!data) {

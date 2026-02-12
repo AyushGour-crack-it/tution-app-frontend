@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
+import { connectSocket } from "../socket.js";
 
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
@@ -71,6 +72,22 @@ export default function StudentPublicProfile() {
 
   useEffect(() => {
     load();
+  }, [userId]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token || !userId) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => load();
+    socket.on("students:updated", refresh);
+    socket.on("badges:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("students:updated", refresh);
+      socket.off("badges:updated", refresh);
+      socket.off("connect", refresh);
+    };
   }, [userId]);
 
   const sortedBadges = useMemo(

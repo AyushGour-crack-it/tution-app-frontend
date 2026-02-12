@@ -83,6 +83,23 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   }, [section, previewStudentId]);
 
   useEffect(() => {
+    if (section !== "dashboard" && section !== "homework") return undefined;
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => load();
+    socket.on("homework:updated", refresh);
+    socket.on("marks:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("homework:updated", refresh);
+      socket.off("marks:updated", refresh);
+      socket.off("connect", refresh);
+    };
+  }, [section, previewStudentId]);
+
+  useEffect(() => {
     if (!effectiveStudentId) return;
     const key = `todo_${effectiveStudentId}`;
     const stored = localStorage.getItem(key);

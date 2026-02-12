@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const emptyForm = {
   studentId: "",
@@ -32,6 +33,20 @@ export default function Marks() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => load();
+    socket.on("marks:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("marks:updated", refresh);
+      socket.off("connect", refresh);
+    };
   }, []);
 
   const submit = async (event) => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { connectSocket } from "../socket.js";
 
 const emptyForm = { studentId: "", classId: "", date: "", status: "present", note: "" };
 
@@ -26,6 +27,20 @@ export default function Attendance() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return undefined;
+    const socket = connectSocket(token);
+    if (!socket) return undefined;
+    const refresh = () => load();
+    socket.on("attendance:updated", refresh);
+    socket.on("connect", refresh);
+    return () => {
+      socket.off("attendance:updated", refresh);
+      socket.off("connect", refresh);
+    };
   }, []);
 
   const submit = async (event) => {
