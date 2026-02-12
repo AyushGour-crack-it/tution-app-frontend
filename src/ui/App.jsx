@@ -20,6 +20,7 @@ import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import { api, subscribeApiActivity } from "./api.js";
 import StudentDirectory from "./pages/StudentDirectory.jsx";
+import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
 
@@ -728,6 +729,16 @@ export default function App() {
             element={
               user?.role === "student" || viewRole === "student" ? (
                 <StudentDirectory />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/student/students/:userId"
+            element={
+              user?.role === "student" || viewRole === "student" ? (
+                <StudentPublicProfile />
               ) : (
                 <Navigate to="/login" replace />
               )

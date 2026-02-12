@@ -1,29 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
-
-const getXpTierClass = (xpValue) => {
-  const xp = Number(xpValue) || 0;
-  if (xp >= 1000) return "xp-tier-1000";
-  if (xp >= 450) return "xp-tier-450";
-  if (xp >= 200) return "xp-tier-200";
-  if (xp >= 150) return "xp-tier-150";
-  if (xp >= 120) return "xp-tier-120";
-  if (xp >= 50) return "xp-tier-50";
-  if (xp >= 30) return "xp-tier-30";
-  return "xp-tier-20";
-};
-
-const getBadgeVisualClass = (badge) => {
-  if (badge?.category === "fun_event") return "xp-tier-event";
-  return getXpTierClass(badge?.xpValue);
-};
-
-const getBadgeMetaText = (badge) => {
-  const rarity = String(badge?.rarity || "").toUpperCase();
-  if (badge?.category === "fun_event") return `${rarity} • EVENT`;
-  return `${rarity} • ${badge?.xpValue || 0} XP`;
-};
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -34,51 +12,19 @@ const getLevelTierClass = (levelValue) => {
   return "level-tier-starter";
 };
 
-const emptyProfile = {
-  userId: "",
-  name: "",
-  avatarUrl: "",
-  bio: "",
-  studentProfileId: "",
-  rollNumber: "",
-  grade: "",
-  level: { level: 1 },
-  totalXp: 0,
-  badges: [],
-  likesCount: 0,
-  likedByMe: false
-};
-
 export default function StudentDirectory() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
-  const [liking, setLiking] = useState(false);
-  const viewer = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("auth_user") || "null");
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const load = async ({ withLoading = true } = {}) => {
-    if (withLoading) setLoading(true);
-    const data = await api.get("/students/directory").then((res) => res.data || []);
-    setStudents(data);
-    if (withLoading) setLoading(false);
-    return data;
-  };
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      if (loading) setLoading(true);
+      setLoading(true);
       try {
         const data = await api.get("/students/directory").then((res) => res.data || []);
-        if (cancelled) return;
-        setStudents(data);
+        if (!cancelled) setStudents(data);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -109,207 +55,80 @@ export default function StudentDirectory() {
     });
   }, [students, search]);
 
-  useEffect(() => {
-    if (!filtered.length) {
-      setSelected(emptyProfile);
-      return;
-    }
-    const hasSelected = filtered.some((student) => student.userId === selected?.userId);
-    if (!hasSelected) {
-      setSelected(filtered[0]);
-    }
-  }, [filtered, selected?.userId]);
-
-  const selectedRank = useMemo(() => {
-    if (!selected?.userId) return null;
-    const rank = filtered.findIndex((student) => student.userId === selected.userId);
-    return rank >= 0 ? rank + 1 : null;
-  }, [filtered, selected]);
-
-  const selectedLevelTierClass = getXpTierClass(selected?.totalXp || 0);
-  const sortedSelectedBadges = useMemo(
-    () =>
-      [...(selected?.badges || [])].sort((a, b) => {
-        const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
-        if (xpDelta !== 0) return xpDelta;
-        return String(a?.title || "").localeCompare(String(b?.title || ""));
-      }),
-    [selected?.badges]
-  );
-  const selectedFrame = resolveAvatarFrame({
-    badges: selected?.badges || [],
-    totalXp: selected?.totalXp || 0,
-    level: selected?.level?.level || 1,
-    rank: selectedRank
-  });
-  const canLikeSelected = viewer?.role === "student" && selected?.userId && viewer?.id !== selected?.userId;
-
-  const toggleLike = async () => {
-    if (!canLikeSelected || liking) return;
-    setLiking(true);
-    try {
-      await api.post(`/students/${selected.userId}/like`);
-      const refreshed = await load({ withLoading: false });
-      const updated = refreshed.find((student) => student.userId === selected.userId);
-      if (updated) setSelected(updated);
-    } finally {
-      setLiking(false);
-    }
-  };
-
   return (
     <div className="page student-directory-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Students</h1>
-          <p className="page-subtitle">Find classmates and view profile details.</p>
+          <p className="page-subtitle">Find classmates and open their full profile.</p>
         </div>
       </div>
 
-      <div className="student-directory-shell">
-        <div className="card student-directory-list-card">
-          <div className="student-directory-toolbar">
-            <div className="student-directory-count">{filtered.length} students</div>
-            <input
-              className="input student-directory-search"
-              placeholder="Search by name or roll number"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-
-          <div className="student-directory-list">
-            {loading ? (
-              <div>Loading students...</div>
-            ) : (
-              <div className="list student-directory-list-grid">
-                {filtered.map((student, index) => {
-                  const frame = resolveAvatarFrame({
-                    badges: student.badges || [],
-                    totalXp: student.totalXp || 0,
-                    level: student.level?.level || 1,
-                    rank: index + 1
-                  });
-
-                  return (
-                    <button
-                      type="button"
-                      key={student.userId}
-                      className={`student-directory-item${
-                        selected?.userId === student.userId ? " student-directory-item-active" : ""
-                      } ${index === 0 ? "student-directory-item-rank-1" : ""} ${
-                        index === 1 ? "student-directory-item-rank-2" : ""
-                      } ${index === 2 ? "student-directory-item-rank-3" : ""}`}
-                      onClick={() => setSelected(student)}
-                    >
-                      <div className="student-directory-rank">#{index + 1}</div>
-                      <div className={`avatar-frame avatar-frame-sm ${frame.frameClass}`} title={frame.frameLabel}>
-                        {student.avatarUrl ? (
-                          <img src={student.avatarUrl} alt={student.name} className="student-directory-avatar" />
-                        ) : (
-                          <div className="student-directory-avatar student-directory-avatar-fallback">
-                            {String(student.name || "S").slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="student-directory-item-body">
-                        <div className="student-directory-name">{student.name}</div>
-                        <div className="student-directory-meta">
-                          <span className={`level-pill ${getLevelTierClass(student.level?.level)}`}>
-                            Lv {student.level?.level || 1}
-                          </span>{" "}
-                          • {student.totalXp || 0} XP
-                        </div>
-                        <div className="student-directory-meta">
-                          Badges {student.badges?.length || 0} • Likes {student.likesCount || 0}
-                        </div>
-                        <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-                {!filtered.length && <div>No students found.</div>}
-              </div>
-            )}
-          </div>
+      <div className="card student-directory-list-card">
+        <div className="student-directory-toolbar">
+          <div className="student-directory-count">{filtered.length} students</div>
+          <input
+            className="input student-directory-search"
+            placeholder="Search by name or roll number"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
         </div>
 
-        <div className="card student-profile-card">
-          {selected?.userId ? (
-            <div className="student-profile-view">
-              <div className={`student-profile-level-banner ${selectedLevelTierClass}`}>
-                <div className="student-profile-level-banner-left">
-                  <div
-                    className={`avatar-frame avatar-frame-lg ${selectedFrame.frameClass}`}
-                    title={selectedFrame.frameLabel}
-                  >
-                    {selected.avatarUrl ? (
-                      <img src={selected.avatarUrl} alt={selected.name} className="student-profile-avatar" />
-                    ) : (
-                      <div className="student-profile-avatar student-directory-avatar-fallback">
-                        {String(selected.name || "S").slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="card-title" style={{ marginBottom: "6px" }}>
-                      {selected.name}
-                    </h2>
-                    <div className="student-directory-meta student-profile-level-line">
-                      <span className={`level-pill ${getLevelTierClass(selected.level?.level)}`}>
-                        Level {selected.level?.level || 1}
-                      </span>{" "}
-                      • {selected.totalXp || 0} XP
-                    </div>
-                  </div>
-                </div>
-                <div className="student-profile-rank-pill">Rank {selectedRank ? `#${selectedRank}` : "-"}</div>
-              </div>
+        <div className="student-directory-list">
+          {loading ? (
+            <div>Loading students...</div>
+          ) : (
+            <div className="list student-directory-list-grid">
+              {filtered.map((student, index) => {
+                const frame = resolveAvatarFrame({
+                  badges: student.badges || [],
+                  totalXp: student.totalXp || 0,
+                  level: student.level?.level || 1,
+                  rank: index + 1
+                });
 
-              <div className="student-profile-pills">
-                <span className="pill">Roll: {selected.rollNumber || "-"}</span>
-                <span className="pill">Grade: {selected.grade || "-"}</span>
-                <span className="pill">Badges: {sortedSelectedBadges.length}</span>
-                <span className="pill">Likes: {selected.likesCount || 0}</span>
-                {canLikeSelected ? (
+                return (
                   <button
                     type="button"
-                    className={`btn ${selected.likedByMe ? "btn-ghost" : ""}`}
-                    onClick={toggleLike}
-                    disabled={liking}
+                    key={student.userId}
+                    className={`student-directory-item ${index === 0 ? "student-directory-item-rank-1" : ""} ${
+                      index === 1 ? "student-directory-item-rank-2" : ""
+                    } ${index === 2 ? "student-directory-item-rank-3" : ""}`}
+                    onClick={() => navigate(`/student/students/${student.userId}`)}
                   >
-                    {selected.likedByMe ? (liking ? "Updating..." : "Unlike") : liking ? "Liking..." : "Like"}
-                  </button>
-                ) : null}
-              </div>
-              <p className="student-profile-bio">{selected.bio || "No bio yet."}</p>
-              <div className="student-profile-badges-grid">
-                {sortedSelectedBadges.slice(0, 12).map((badge) => (
-                  <div
-                    key={badge.key}
-                    className={`profile-showcase-badge student-directory-badge-card ${
-                      badge.category === "fun_event" ? "profile-showcase-badge-event" : ""
-                    } ${getBadgeVisualClass(badge)}`}
-                  >
-                    {badge.imageUrl ? (
-                      <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />
-                    ) : null}
-                    <div className="profile-showcase-title">{badge.title}</div>
-                    <div className="profile-showcase-meta">
-                      {getBadgeMetaText(badge)}
+                    <div className="student-directory-rank">#{index + 1}</div>
+                    <div className={`avatar-frame avatar-frame-sm ${frame.frameClass}`} title={frame.frameLabel}>
+                      {student.avatarUrl ? (
+                        <img src={student.avatarUrl} alt={student.name} className="student-directory-avatar" />
+                      ) : (
+                        <div className="student-directory-avatar student-directory-avatar-fallback">
+                          {String(student.name || "S").slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-                {!sortedSelectedBadges.length ? (
-                  <div className="student-directory-meta">No badges unlocked yet.</div>
-                ) : null}
-              </div>
+                    <div className="student-directory-item-body">
+                      <div className="student-directory-name">{student.name}</div>
+                      <div className="student-directory-meta">
+                        <span className={`level-pill ${getLevelTierClass(student.level?.level)}`}>
+                          Lv {student.level?.level || 1}
+                        </span>{" "}
+                        • {student.totalXp || 0} XP
+                      </div>
+                      <div className="student-directory-meta">
+                        Badges {student.badges?.length || 0} • Likes {student.likesCount || 0}
+                      </div>
+                      <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
+                    </div>
+                  </button>
+                );
+              })}
+              {!filtered.length ? <div>No students found.</div> : null}
             </div>
-          ) : (
-            <div>Select a student to view profile.</div>
           )}
         </div>
       </div>
     </div>
   );
 }
+
