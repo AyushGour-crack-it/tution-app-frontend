@@ -9,6 +9,7 @@ body {
   background: var(--bg-main);
   min-height: 100vh;
   line-height: 1.45;
+  overflow-x: hidden;
 }
 
 .app-shell {
@@ -197,6 +198,11 @@ html[data-theme="dark"] {
   padding: 36px clamp(16px, 3vw, 42px);
   width: min(1220px, 100%);
   margin: 0 auto;
+  min-width: 0;
+}
+
+.page {
+  min-width: 0;
 }
 
 .page-header {
@@ -241,6 +247,7 @@ html[data-theme="dark"] {
   border-radius: 18px;
   padding: 22px;
   box-shadow: 0 20px 40px rgba(15, 24, 26, 0.12);
+  min-width: 0;
 }
 
 .card-title {
@@ -1066,6 +1073,31 @@ html[data-theme="dark"] {
   letter-spacing: 0.1px;
 }
 
+.student-portal-profile-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.student-portal-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.student-portal-profile-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.student-portal-profile-bio {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .student-profile-level-banner.xp-tier-20 {
   background: linear-gradient(135deg, #6f7780, #8f97a0);
   color: #f9fbfd;
@@ -1645,6 +1677,93 @@ html[data-theme="dark"] {
   opacity: 0.85;
 }
 
+.badge-unlock-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  background: rgba(4, 10, 18, 0.68);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.badge-unlock-popup-card {
+  width: min(560px, 94vw);
+  border-radius: 22px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(127, 211, 255, 0.42);
+  background:
+    radial-gradient(circle at 10% 16%, rgba(95, 225, 255, 0.18), transparent 42%),
+    radial-gradient(circle at 86% 24%, rgba(149, 94, 255, 0.18), transparent 45%),
+    linear-gradient(135deg, #0a1022, #101c3a 58%, #1e1436);
+  color: #f5f8ff;
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.42), 0 0 28px rgba(112, 184, 255, 0.24);
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-unlock-popup-card::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto -25%;
+  width: 68%;
+  height: 220%;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.16),
+    transparent
+  );
+  transform: rotate(16deg);
+  animation: frameSweep 3.2s linear infinite;
+}
+
+.badge-unlock-popup-pill {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: #2e1a02;
+  background: linear-gradient(135deg, #ffd68b, #ffb74d);
+}
+
+.badge-unlock-popup-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(22px, 3.5vw, 31px);
+  line-height: 1.15;
+}
+
+.badge-unlock-popup-title span {
+  color: transparent;
+  background: linear-gradient(135deg, #86fffe, #9fbcff 50%, #d4b0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.badge-unlock-popup-text {
+  margin: 0;
+  color: rgba(240, 246, 255, 0.84);
+}
+
+.badge-unlock-popup-xp {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #072234;
+  background: linear-gradient(135deg, #9be9ff, #7ac8ff);
+  box-shadow: 0 8px 18px rgba(77, 192, 255, 0.35);
+}
+
 @media (max-width: 1024px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1685,6 +1804,64 @@ html[data-theme="dark"] {
 }
 
 @media (max-width: 700px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header .btn,
+  .page-header .btn-ghost {
+    width: 100%;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .profile-summary-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .profile-summary-meta {
+    width: 100%;
+  }
+
+  .profile-summary-avatar-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+  }
+
+  .profile-showcase-grid {
+    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+    gap: 8px;
+  }
+
+  .student-portal-profile-row {
+    align-items: flex-start;
+  }
+
+  .profile-showcase-badge {
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .dashboard-ann-actions {
+    width: 100%;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .dashboard-ann-actions .btn,
+  .dashboard-ann-actions .btn-ghost {
+    width: auto;
+    min-width: 96px;
+  }
+
   .brand-subtitle {
     display: none;
   }
@@ -1826,6 +2003,17 @@ html[data-theme="dark"] {
     height: 42px;
   }
 
+  .student-portal-profile-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .student-portal-profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+  }
+
   .student-profile-avatar {
     width: 80px;
     height: 80px;
@@ -1856,5 +2044,39 @@ html[data-theme="dark"] {
     height: 54px;
     flex-basis: 136px;
     padding: 5px 7px;
+  }
+}
+
+@media (max-width: 700px), (prefers-reduced-motion: reduce) {
+  .btn,
+  .nav-link,
+  .nav-link-active,
+  .profile-showcase-badge,
+  .student-profile-level-banner,
+  .avatar-frame,
+  .frame-premium-electric,
+  .frame-premium-royal,
+  .frame-premium-flame,
+  .frame-premium-emerald,
+  .frame-legendary-gold,
+  .frame-legendary-dual,
+  .frame-legendary-cosmic,
+  .xp-tier-30.badge-card-unlocked,
+  .profile-showcase-badge.xp-tier-30,
+  .xp-tier-50.badge-card-unlocked,
+  .profile-showcase-badge.xp-tier-50,
+  .xp-tier-450.badge-card-unlocked::after,
+  .profile-showcase-badge.xp-tier-450::after,
+  .xp-tier-1000.badge-card-unlocked::after,
+  .profile-showcase-badge.xp-tier-1000::after,
+  .badge-unlock-popup-card::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .btn:hover,
+  .nav-link:hover {
+    transform: none;
   }
 }

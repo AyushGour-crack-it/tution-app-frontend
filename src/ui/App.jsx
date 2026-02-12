@@ -67,10 +67,16 @@ export default function App() {
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
+  const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
     [user?.id]
   );
+  const badgePopupSeenKey = React.useMemo(
+    () => (user?.id ? `badge_unlock_popup_seen_${user.id}` : ""),
+    [user?.id]
+  );
+  const activeBadgeUnlock = badgeUnlockQueue.length ? badgeUnlockQueue[0] : null;
   const closeMobileNavOnNavigate = React.useCallback(() => {
     if (window.matchMedia("(max-width: 1024px)").matches) {
       setNavOpen(false);
@@ -192,6 +198,44 @@ export default function App() {
           return createdAt > seenTime;
         }).length;
         setUnreadNotificationCount(freshCount);
+
+        if (badgePopupSeenKey) {
+          let seenIds = [];
+          try {
+            const raw = localStorage.getItem(badgePopupSeenKey);
+            seenIds = raw ? JSON.parse(raw) : [];
+          } catch {
+            seenIds = [];
+          }
+          const seenSet = new Set(Array.isArray(seenIds) ? seenIds : []);
+          const unlockEvents = items
+            .filter(
+              (item) =>
+                item?.title === "Badge Approved" &&
+                item?._id &&
+                !seenSet.has(item._id)
+            )
+            .map((item) => {
+              const rawMessage = String(item?.message || "");
+              const match = rawMessage.match(/You unlocked "(.+)" \(\+(\d+)\s*XP\)\./i);
+              return {
+                id: item._id,
+                badgeName: match?.[1] || "New Badge",
+                xpValue: Number(match?.[2]) || 0,
+                message: rawMessage
+              };
+            });
+
+          if (unlockEvents.length) {
+            setBadgeUnlockQueue((prev) => {
+              const existingIds = new Set(prev.map((entry) => entry.id));
+              const freshEntries = unlockEvents.filter((entry) => !existingIds.has(entry.id));
+              return freshEntries.length ? [...prev, ...freshEntries] : prev;
+            });
+            const merged = [...seenSet, ...unlockEvents.map((entry) => entry.id)];
+            localStorage.setItem(badgePopupSeenKey, JSON.stringify(merged.slice(-200)));
+          }
+        }
       } catch {
         if (!cancelled) setUnreadNotificationCount(0);
       }
@@ -203,7 +247,7 @@ export default function App() {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [user?.id, location.pathname, notificationSeenKey]);
+  }, [user?.id, location.pathname, notificationSeenKey, badgePopupSeenKey]);
 
   React.useEffect(() => {
     if (location.pathname === "/notifications") {
@@ -253,6 +297,33 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {activeBadgeUnlock ? (
+        <div
+          className="badge-unlock-popup-overlay"
+          onClick={() => setBadgeUnlockQueue((prev) => prev.slice(1))}
+        >
+          <div
+            className="badge-unlock-popup-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="badge-unlock-popup-pill">Badge Unlocked</div>
+            <h2 className="badge-unlock-popup-title">
+              You Unlocked <span>{activeBadgeUnlock.badgeName}</span>
+            </h2>
+            <p className="badge-unlock-popup-text">
+              Massive progress. Keep this streak alive.
+            </p>
+            <div className="badge-unlock-popup-xp">+{activeBadgeUnlock.xpValue} XP</div>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setBadgeUnlockQueue((prev) => prev.slice(1))}
+            >
+              Awesome
+            </button>
+          </div>
+        </div>
+      ) : null}
       {showWelcomePopup ? (
         <div className="welcome-popup-overlay" onClick={() => setShowWelcomePopup(false)}>
           <div className="welcome-popup-card" onClick={(event) => event.stopPropagation()}>

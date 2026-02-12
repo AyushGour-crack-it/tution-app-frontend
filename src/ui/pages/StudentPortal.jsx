@@ -246,17 +246,17 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
           {section === "dashboard" && user && (
             <div className="card" style={{ marginTop: "24px" }}>
               <h2 className="card-title">Profile</h2>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              <div className="student-portal-profile-row">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.name}
-                    style={{ width: "72px", height: "72px", borderRadius: "18px", objectFit: "cover" }}
+                    className="student-portal-profile-avatar"
                   />
                 ) : null}
                 <div>
-                  <div style={{ fontWeight: 600 }}>{user.name}</div>
-                  {user.bio ? <div style={{ color: "var(--muted)" }}>{user.bio}</div> : null}
+                  <div className="student-portal-profile-name">{user.name}</div>
+                  {user.bio ? <div className="student-portal-profile-bio">{user.bio}</div> : null}
                 </div>
               </div>
             </div>
