@@ -71,7 +71,8 @@ export default function Dashboard() {
   const stats = [
     { label: "Active Students", value: overview.stats.students },
     { label: "Homework Due", value: overview.stats.homeworkDue },
-    { label: "Fees Pending", value: `₹${overview.stats.feesPendingTotal}` }
+    { label: "Fees Pending", value: `₹${overview.stats.feesPendingTotal}` },
+    { label: "Fees Collected", value: `₹${overview.stats.feesCollectedTotal || 0}` }
   ];
 
   return (
@@ -95,6 +96,43 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="card" style={{ marginTop: "24px" }}>
+        <h2 className="card-title">Fees Collection Overview</h2>
+        <div className="grid grid-3" style={{ marginTop: "8px" }}>
+          <div className="mini-card">
+            <div className="mini-title">Collected This Month</div>
+            <div className="mini-value">₹{overview.feesOverview?.collectedThisMonth || 0}</div>
+          </div>
+          <div className="mini-card">
+            <div className="mini-title">Collection Rate</div>
+            <div className="mini-value">{overview.feesOverview?.collectionRate || 0}%</div>
+          </div>
+          <div className="mini-card">
+            <div className="mini-title">Students With Pending</div>
+            <div className="mini-value">{overview.feesOverview?.studentsWithPending || 0}</div>
+          </div>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <h3 className="card-title" style={{ marginBottom: "8px" }}>Recent Payments</h3>
+          <div className="list">
+            {(overview.feesOverview?.recentPayments || []).map((item) => (
+              <div className="list-item" key={item.id}>
+                <div>
+                  <div className="dashboard-item-title">{item.studentName}</div>
+                  <div className="dashboard-item-subtitle">
+                    {item.method} • {item.paidOn ? new Date(item.paidOn).toLocaleString() : "-"}
+                  </div>
+                </div>
+                <span className="pill">₹{item.amount}</span>
+              </div>
+            ))}
+            {!(overview.feesOverview?.recentPayments || []).length ? (
+              <div>No recent fee payments yet.</div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-2" style={{ marginTop: "24px" }}>

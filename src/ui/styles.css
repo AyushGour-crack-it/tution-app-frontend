@@ -1829,6 +1829,61 @@ html[data-theme="dark"] {
   color: rgba(220, 249, 240, 0.78);
 }
 
+.fee-alert-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  background: rgba(6, 12, 18, 0.62);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.fee-alert-popup-card {
+  width: min(500px, 94vw);
+  border-radius: 20px;
+  padding: 22px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255, 192, 99, 0.44);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255, 169, 87, 0.2), transparent 44%),
+    radial-gradient(circle at 86% 24%, rgba(255, 225, 130, 0.13), transparent 42%),
+    linear-gradient(135deg, #20160d, #2b1f12 58%, #24190e);
+  color: #fff9ef;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.4), 0 0 24px rgba(255, 183, 95, 0.22);
+}
+
+.fee-alert-popup-pill {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  color: #3e2304;
+  background: linear-gradient(135deg, #ffdca8, #ffc06f);
+}
+
+.fee-alert-popup-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(20px, 3vw, 28px);
+  line-height: 1.15;
+}
+
+.fee-alert-popup-text {
+  margin: 0;
+  color: rgba(255, 248, 236, 0.87);
+}
+
+.fee-alert-popup-date {
+  font-size: 12px;
+  color: rgba(255, 235, 208, 0.78);
+}
+
 @media (max-width: 1024px) {
   .app-shell {
     grid-template-columns: 1fr;

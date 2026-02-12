@@ -68,6 +68,7 @@ export default function App() {
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
+  const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
     [user?.id]
@@ -77,6 +78,7 @@ export default function App() {
     [user?.id]
   );
   const activeBadgeUnlock = badgeUnlockQueue.length ? badgeUnlockQueue[0] : null;
+  const activeFeePayment = feePaymentQueue.length ? feePaymentQueue[0] : null;
   const closeMobileNavOnNavigate = React.useCallback(() => {
     if (window.matchMedia("(max-width: 1024px)").matches) {
       setNavOpen(false);
@@ -236,6 +238,41 @@ export default function App() {
             localStorage.setItem(badgePopupSeenKey, JSON.stringify(merged.slice(-200)));
           }
         }
+
+        if (user?.role === "teacher") {
+          const feeSeenKey = `fee_payment_popup_seen_${user.id}`;
+          let seenFeeIds = [];
+          try {
+            const raw = localStorage.getItem(feeSeenKey);
+            seenFeeIds = raw ? JSON.parse(raw) : [];
+          } catch {
+            seenFeeIds = [];
+          }
+          const seenFeeSet = new Set(Array.isArray(seenFeeIds) ? seenFeeIds : []);
+          const feeEvents = items
+            .filter(
+              (item) =>
+                item?.title === "Fee Received" &&
+                item?._id &&
+                !seenFeeSet.has(item._id)
+            )
+            .map((item) => ({
+              id: item._id,
+              title: item.title,
+              message: String(item?.message || ""),
+              createdAt: item?.createdAt || null
+            }));
+
+          if (feeEvents.length) {
+            setFeePaymentQueue((prev) => {
+              const existingIds = new Set(prev.map((entry) => entry.id));
+              const freshEntries = feeEvents.filter((entry) => !existingIds.has(entry.id));
+              return freshEntries.length ? [...prev, ...freshEntries] : prev;
+            });
+            const merged = [...seenFeeSet, ...feeEvents.map((entry) => entry.id)];
+            localStorage.setItem(feeSeenKey, JSON.stringify(merged.slice(-200)));
+          }
+        }
       } catch {
         if (!cancelled) setUnreadNotificationCount(0);
       }
@@ -297,6 +334,33 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {activeFeePayment ? (
+        <div
+          className="fee-alert-popup-overlay"
+          onClick={() => setFeePaymentQueue((prev) => prev.slice(1))}
+        >
+          <div
+            className="fee-alert-popup-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fee-alert-popup-pill">Payment Received</div>
+            <h2 className="fee-alert-popup-title">New Fee Payment</h2>
+            <p className="fee-alert-popup-text">{activeFeePayment.message}</p>
+            <div className="fee-alert-popup-date">
+              {activeFeePayment.createdAt
+                ? new Date(activeFeePayment.createdAt).toLocaleString()
+                : ""}
+            </div>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setFeePaymentQueue((prev) => prev.slice(1))}
+            >
+              Got It
+            </button>
+          </div>
+        </div>
+      ) : null}
       {activeBadgeUnlock ? (
         <div
           className="badge-unlock-popup-overlay"
