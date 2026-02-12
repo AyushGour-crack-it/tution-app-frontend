@@ -11,6 +11,7 @@ export default function Chat() {
   const [recipientStudentId, setRecipientStudentId] = useState("");
   const [menuMessageId, setMenuMessageId] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearingChat, setClearingChat] = useState(false);
   const [localClearAfter, setLocalClearAfter] = useState(0);
@@ -43,6 +44,7 @@ export default function Chat() {
     if (isFirstLoadRef.current) {
       setLoadingMessages(true);
     }
+    setLoadError("");
     try {
       const tasks = [api.get("/chat/messages").then((res) => res.data)];
       if (user?.role === "teacher") {
@@ -52,6 +54,12 @@ export default function Chat() {
       setMessages(chatData);
       if (studentData) {
         setStudents(studentData);
+      }
+    } catch (error) {
+      setLoadError(error?.response?.data?.message || "Failed to load chat.");
+      setMessages([]);
+      if (user?.role === "teacher") {
+        setStudents([]);
       }
     } finally {
       setLoadingMessages(false);
@@ -176,6 +184,11 @@ export default function Chat() {
     setMenuMessageId("");
   };
 
+  const resetLocalClear = () => {
+    localStorage.removeItem(localClearStorageKey);
+    setLocalClearAfter(0);
+  };
+
   const formatTime = (value) => {
     if (!value) return "";
     return new Date(value).toLocaleString([], {
@@ -249,6 +262,11 @@ export default function Chat() {
           <p className="page-subtitle">Message your classroom community.</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {localClearAfter ? (
+            <button className="btn btn-ghost" type="button" onClick={resetLocalClear}>
+              Show Older Messages
+            </button>
+          ) : null}
           {user?.role === "teacher" ? (
             <button
               className="btn btn-ghost"
@@ -286,6 +304,19 @@ export default function Chat() {
           {loadingMessages ? (
             <div className="chat-meta" style={{ padding: "12px 0" }}>
               Loading latest messages...
+            </div>
+          ) : null}
+          {!loadingMessages && loadError ? (
+            <div className="auth-error" style={{ marginBottom: "8px" }}>
+              {loadError}
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={load}
+                style={{ marginLeft: "8px" }}
+              >
+                Retry
+              </button>
             </div>
           ) : null}
           {visibleMessages.map((msg) => (
@@ -384,6 +415,11 @@ export default function Chat() {
               </div>
             </div>
           ))}
+          {!loadingMessages && !loadError && !visibleMessages.length ? (
+            <div className="chat-meta" style={{ padding: "12px 0" }}>
+              No messages to show.
+            </div>
+          ) : null}
         </div>
         <div className="chat-composer">
           {replyTo && (
