@@ -20,7 +20,7 @@ import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import { api } from "./api.js";
 
-const NavItem = ({ to, label, onNavigate }) => (
+const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
@@ -30,7 +30,10 @@ const NavItem = ({ to, label, onNavigate }) => (
       onNavigate?.(event);
     }}
   >
-    {label}
+    <span className="nav-link-label">{label}</span>
+    {badgeCount > 0 ? (
+      <span className="nav-badge">{badgeCount > 99 ? "99+" : badgeCount}</span>
+    ) : null}
   </NavLink>
 );
 
@@ -59,6 +62,7 @@ export default function App() {
     () => localStorage.getItem("preview_student_id") || ""
   );
   const [navOpen, setNavOpen] = React.useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const closeMobileNavOnNavigate = React.useCallback(() => {
     if (window.matchMedia("(max-width: 1024px)").matches) {
       setNavOpen(false);
@@ -155,6 +159,31 @@ export default function App() {
     }
   }, [location.pathname, user]);
 
+  React.useEffect(() => {
+    if (!user?.id) return undefined;
+    let cancelled = false;
+
+    const loadUnreadCount = async () => {
+      try {
+        const items = await api.get("/notifications").then((res) => res.data || []);
+        if (cancelled) return;
+        const unread = items.filter(
+          (item) => !item?.readBy?.some((id) => String(id) === String(user.id))
+        ).length;
+        setUnreadNotificationCount(unread);
+      } catch {
+        if (!cancelled) setUnreadNotificationCount(0);
+      }
+    };
+
+    loadUnreadCount();
+    const intervalId = setInterval(loadUnreadCount, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [user?.id, location.pathname]);
+
   if (!authReady) {
     return (
       <div className="auth-shell">
@@ -218,7 +247,12 @@ export default function App() {
             <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/notifications" label="Notifications" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem
+              to="/notifications"
+              label="Notifications"
+              onNavigate={closeMobileNavOnNavigate}
+              badgeCount={unreadNotificationCount}
+            />
             <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
           </nav>
         ) : (
@@ -227,7 +261,12 @@ export default function App() {
             <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/notifications" label="Notifications" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem
+              to="/notifications"
+              label="Notifications"
+              onNavigate={closeMobileNavOnNavigate}
+              badgeCount={unreadNotificationCount}
+            />
             <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
           </nav>
         )}
