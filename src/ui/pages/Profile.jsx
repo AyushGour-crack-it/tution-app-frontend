@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 
@@ -134,15 +134,11 @@ export default function Profile() {
     level: badgeStats.level?.level || 1,
     rank: null
   });
-  const sortedEarnedBadges = useMemo(
-    () =>
-      [...(badgeStats.earned || [])].sort((a, b) => {
-        const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
-        if (xpDelta !== 0) return xpDelta;
-        return String(a?.title || "").localeCompare(String(b?.title || ""));
-      }),
-    [badgeStats.earned]
-  );
+  const sortedEarnedBadges = [...(badgeStats.earned || [])].sort((a, b) => {
+    const xpDelta = (Number(a?.xpValue) || 0) - (Number(b?.xpValue) || 0);
+    if (xpDelta !== 0) return xpDelta;
+    return String(a?.title || "").localeCompare(String(b?.title || ""));
+  });
 
   return (
     <div className="page">
