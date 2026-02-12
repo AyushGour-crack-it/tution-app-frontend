@@ -591,6 +591,38 @@ html[data-theme="dark"] {
   background: var(--chat-window-bg);
 }
 
+.chat-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.chat-divider::before,
+.chat-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.chat-divider span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--card-bg);
+}
+
+.chat-divider-unread span {
+  border-color: rgba(255, 122, 89, 0.55);
+  color: #a85034;
+  background: rgba(255, 122, 89, 0.12);
+}
+
 .chat-message {
   width: fit-content;
   max-width: min(92%, 760px);
@@ -601,6 +633,13 @@ html[data-theme="dark"] {
   display: grid;
   gap: 8px;
   box-shadow: var(--chat-bubble-shadow);
+}
+
+.chat-message-media {
+  width: min(82vw, 360px);
+  max-width: 100%;
+  padding: 6px;
+  gap: 6px;
 }
 
 .chat-message-mine {
@@ -702,18 +741,19 @@ html[data-theme="dark"] {
 }
 
 .chat-media {
-  width: clamp(170px, 64vw, 320px);
+  width: 100%;
   max-width: 100%;
-  max-height: min(52vh, 320px);
+  max-height: min(52vh, 360px);
   display: block;
   border-radius: 16px;
   border: none;
   background: #000;
   overflow: hidden;
+  object-fit: cover;
 }
 
 .chat-audio {
-  width: clamp(170px, 64vw, 320px);
+  width: 100%;
   max-width: 100%;
   display: block;
 }
@@ -2283,14 +2323,19 @@ html[data-theme="dark"] {
     max-width: 100%;
   }
 
+  .chat-message-media {
+    width: min(86vw, 320px);
+    padding: 5px;
+  }
+
   .chat-media {
-    width: min(70vw, 280px);
+    width: 100%;
     max-height: min(44vh, 260px);
     border-radius: 14px;
   }
 
   .chat-audio {
-    width: min(70vw, 280px);
+    width: 100%;
   }
 
   .chat-composer {
@@ -2355,14 +2400,20 @@ html[data-theme="dark"] {
     border-radius: 16px;
   }
 
+  .chat-message-media {
+    width: min(88vw, 280px);
+    padding: 5px;
+    border-radius: 14px;
+  }
+
   .chat-media {
-    width: min(76vw, 250px);
+    width: 100%;
     max-height: min(38vh, 220px);
     border-radius: 12px;
   }
 
   .chat-audio {
-    width: min(76vw, 250px);
+    width: 100%;
   }
 
   .chat-page > .chat-card {

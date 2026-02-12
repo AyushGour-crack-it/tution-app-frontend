@@ -66,11 +66,16 @@ export default function App() {
   );
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
+  const [unreadChatCount, setUnreadChatCount] = React.useState(0);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
+    [user?.id]
+  );
+  const chatSeenKey = React.useMemo(
+    () => (user?.id ? `chat_last_seen_${user.id}` : ""),
     [user?.id]
   );
   const badgePopupSeenKey = React.useMemo(
@@ -89,6 +94,15 @@ export default function App() {
     localStorage.setItem(notificationSeenKey, new Date().toISOString());
     setUnreadNotificationCount(0);
   }, [notificationSeenKey]);
+  const markChatSeen = React.useCallback(() => {
+    if (!chatSeenKey) return;
+    const prevSeen = localStorage.getItem(chatSeenKey);
+    if (prevSeen) {
+      localStorage.setItem(`chat_prev_seen_${user?.id || "guest"}`, prevSeen);
+    }
+    localStorage.setItem(chatSeenKey, new Date().toISOString());
+    setUnreadChatCount(0);
+  }, [chatSeenKey, user?.id]);
 
   const logout = () => {
     localStorage.removeItem("auth_user");
@@ -293,6 +307,46 @@ export default function App() {
   }, [location.pathname, markNotificationsSeen]);
 
   React.useEffect(() => {
+    if (!user?.id) return undefined;
+    let cancelled = false;
+
+    const loadUnreadChat = async () => {
+      try {
+        const items = await api.get("/chat/messages").then((res) => res.data || []);
+        if (cancelled) return;
+        const existingSeen = localStorage.getItem(chatSeenKey);
+        if (!existingSeen) {
+          localStorage.setItem(chatSeenKey, new Date().toISOString());
+          setUnreadChatCount(0);
+          return;
+        }
+        const seenTime = new Date(existingSeen).getTime();
+        const freshCount = items.filter((item) => {
+          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
+          const senderId = String(item?.senderId || "");
+          return createdAt > seenTime && senderId !== String(user.id || "");
+        }).length;
+        setUnreadChatCount(freshCount);
+      } catch {
+        if (!cancelled) setUnreadChatCount(0);
+      }
+    };
+
+    loadUnreadChat();
+    const intervalId = setInterval(loadUnreadChat, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [user?.id, user?.role, chatSeenKey, location.pathname]);
+
+  React.useEffect(() => {
+    if (location.pathname === "/chat") {
+      markChatSeen();
+    }
+  }, [location.pathname, markChatSeen]);
+
+  React.useEffect(() => {
     if (!user) return;
     const pending = localStorage.getItem("welcome_popup_pending");
     if (pending === "1") {
@@ -435,7 +489,15 @@ export default function App() {
             <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem
+              to="/chat"
+              label="Chat"
+              onNavigate={() => {
+                markChatSeen();
+                closeMobileNavOnNavigate();
+              }}
+              badgeCount={unreadChatCount}
+            />
             <NavItem
               to="/notifications"
               label="Notifications"
@@ -456,7 +518,15 @@ export default function App() {
               <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} />
             ) : null}
             <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem
+              to="/chat"
+              label="Chat"
+              onNavigate={() => {
+                markChatSeen();
+                closeMobileNavOnNavigate();
+              }}
+              badgeCount={unreadChatCount}
+            />
             <NavItem
               to="/notifications"
               label="Notifications"

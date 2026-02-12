@@ -16,6 +16,7 @@ export default function Chat() {
   const [clearingChat, setClearingChat] = useState(false);
   const [localClearAfter, setLocalClearAfter] = useState(0);
   const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
+  const [prevSeenAt, setPrevSeenAt] = useState(0);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -25,6 +26,10 @@ export default function Chat() {
   }, []);
   const localClearStorageKey = useMemo(
     () => (user?.id ? `chat_local_clear_after_${user.id}` : "chat_local_clear_after_guest"),
+    [user?.id]
+  );
+  const chatPrevSeenKey = useMemo(
+    () => (user?.id ? `chat_prev_seen_${user.id}` : "chat_prev_seen_guest"),
     [user?.id]
   );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
@@ -74,6 +79,12 @@ export default function Chat() {
     const saved = Number(localStorage.getItem(localClearStorageKey) || 0);
     setLocalClearAfter(Number.isFinite(saved) ? saved : 0);
   }, [localClearStorageKey]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(chatPrevSeenKey);
+    const parsed = raw ? new Date(raw).getTime() : 0;
+    setPrevSeenAt(Number.isFinite(parsed) ? parsed : 0);
+  }, [chatPrevSeenKey]);
 
   useEffect(() => {
     scrollToLatest();
@@ -209,6 +220,45 @@ export default function Chat() {
     });
   }, [messages, localClearAfter]);
 
+  const chatRenderItems = useMemo(() => {
+    const items = [];
+    let dayKey = "";
+    let insertedUnread = false;
+
+    for (const msg of visibleMessages) {
+      const ts = msg?.createdAt ? new Date(msg.createdAt) : null;
+      const msgDayKey = ts ? `${ts.getFullYear()}-${ts.getMonth()}-${ts.getDate()}` : "unknown";
+      if (msgDayKey !== dayKey) {
+        dayKey = msgDayKey;
+        items.push({
+          type: "date",
+          key: `date-${msgDayKey}`,
+          label: ts
+            ? ts.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" })
+            : "Earlier"
+        });
+      }
+
+      const createdAtMs = ts ? ts.getTime() : 0;
+      if (
+        !insertedUnread &&
+        prevSeenAt &&
+        createdAtMs > prevSeenAt &&
+        String(msg?.senderId || "") !== String(user?.id || "")
+      ) {
+        insertedUnread = true;
+        items.push({
+          type: "unread",
+          key: `unread-${msg._id || createdAtMs}`
+        });
+      }
+
+      items.push({ type: "message", key: msg._id, message: msg });
+    }
+
+    return items;
+  }, [visibleMessages, prevSeenAt, user?.id]);
+
   return (
     <div className="page chat-page">
       {showClearConfirm ? (
@@ -318,17 +368,37 @@ export default function Chat() {
               </button>
             </div>
           ) : null}
-          {visibleMessages.map((msg) => (
-            <div
-              className={[
-                "chat-message",
-                msg.type === "announcement" ? "chat-announcement" : "",
-                msg.senderId === user?.id ? "chat-message-mine" : ""
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              key={msg._id}
-            >
+          {chatRenderItems.map((item) => {
+            if (item.type === "date") {
+              return (
+                <div key={item.key} className="chat-divider">
+                  <span>{item.label}</span>
+                </div>
+              );
+            }
+            if (item.type === "unread") {
+              return (
+                <div key={item.key} className="chat-divider chat-divider-unread">
+                  <span>New messages</span>
+                </div>
+              );
+            }
+
+            const msg = item.message;
+            return (
+              <div
+                className={[
+                  "chat-message",
+                  ["image", "video", "audio", "gif", "meme"].includes(msg.type)
+                    ? "chat-message-media"
+                    : "",
+                  msg.type === "announcement" ? "chat-announcement" : "",
+                  msg.senderId === user?.id ? "chat-message-mine" : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                key={item.key}
+              >
               <div className="chat-meta-row">
                 <div className="chat-meta">
                   <strong>{msg.senderName}</strong>
@@ -425,8 +495,9 @@ export default function Chat() {
                   {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
                 </div>
               ) : null}
-            </div>
-          ))}
+              </div>
+            );
+          })}
           {!loadingMessages && !loadError && !visibleMessages.length ? (
             <div className="chat-meta" style={{ padding: "12px 0" }}>
               No messages to show.
