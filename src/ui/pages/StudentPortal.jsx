@@ -26,6 +26,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [payingFeeId, setPayingFeeId] = useState("");
   const [feeError, setFeeError] = useState("");
   const [upiNotice, setUpiNotice] = useState("");
+  const [paymentSuccessPopup, setPaymentSuccessPopup] = useState(null);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -195,6 +196,10 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
             amount
           });
           await load();
+          setPaymentSuccessPopup({
+            amount,
+            paidOn: new Date().toISOString()
+          });
           setPayingFeeId("");
         },
         modal: {
@@ -232,6 +237,33 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   return (
     <div className="page">
+      {paymentSuccessPopup ? (
+        <div
+          className="fee-success-popup-overlay"
+          onClick={() => setPaymentSuccessPopup(null)}
+        >
+          <div
+            className="fee-success-popup-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fee-success-popup-pill">Payment Successful</div>
+            <h2 className="fee-success-popup-title">Thank You For Paying Fees</h2>
+            <p className="fee-success-popup-text">
+              Your payment has been recorded successfully.
+            </p>
+            <div className="fee-success-popup-amount">
+              ₹{Number(paymentSuccessPopup.amount || 0).toLocaleString("en-IN")}
+            </div>
+            <div className="fee-success-popup-date">
+              Paid on{" "}
+              {new Date(paymentSuccessPopup.paidOn).toLocaleString()}
+            </div>
+            <button className="btn" type="button" onClick={() => setPaymentSuccessPopup(null)}>
+              Continue
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <h1 className="page-title">{pageTitle}</h1>
