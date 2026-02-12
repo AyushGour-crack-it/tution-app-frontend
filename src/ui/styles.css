@@ -1443,6 +1443,78 @@ html[data-theme="dark"] {
   border: 1px solid var(--border);
 }
 
+.badges-layout {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.badges-level-column {
+  min-width: 0;
+}
+
+.badge-level-card-fixed {
+  position: sticky;
+  top: 16px;
+}
+
+.badges-content-column {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.badges-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+}
+
+.badges-filter-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.badges-category-select {
+  min-width: 220px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.badges-scroll-panel {
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding-right: 2px;
+  display: grid;
+  gap: 14px;
+}
+
+.badge-category-section {
+  display: grid;
+  gap: 10px;
+}
+
+.badge-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-category-title {
+  margin: 0;
+  font-size: 17px;
+}
+
+.badge-category-grid {
+  margin-top: 0;
+}
+
 .badge-level-top {
   display: flex;
   align-items: center;
@@ -2237,6 +2309,31 @@ html[data-theme="dark"] {
 }
 
 @media (max-width: 700px) {
+  .badges-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .badge-level-card-fixed {
+    position: static;
+    top: auto;
+  }
+
+  .badges-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .badges-category-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .badges-scroll-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
