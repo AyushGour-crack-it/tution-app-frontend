@@ -837,6 +837,157 @@ html[data-theme="dark"] {
   margin-bottom: 0;
 }
 
+.student-profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.profile-badge-chip {
+  border: 1px solid transparent;
+}
+
+.badge-level-card {
+  border: 1px solid var(--border);
+}
+
+.badge-level-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.badge-level-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px rgba(255, 122, 89, 0.12);
+}
+
+.badge-progress {
+  margin-top: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.badge-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7a59, #ffb66e);
+}
+
+.badge-card {
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-card-title {
+  font-weight: 700;
+}
+
+.badge-card-description {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 40px;
+}
+
+.badge-card-hidden {
+  filter: blur(1.8px);
+}
+
+.badge-card-hidden:hover {
+  filter: blur(1px);
+}
+
+.badge-card-unlocked {
+  border-width: 2px;
+}
+
+.badge-request-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@keyframes rarityShimmer {
+  0% {
+    background-position: -120px 0;
+  }
+  100% {
+    background-position: 220px 0;
+  }
+}
+
+@keyframes rarityGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.22);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+.rarity-common {
+  border-color: #a5b1bc;
+}
+
+.rarity-common.badge-card-unlocked,
+.profile-badge-chip.rarity-common {
+  background: linear-gradient(120deg, #dbe1e7, #b9c3ce, #dbe1e7);
+  background-size: 220px 100%;
+  animation: rarityShimmer 3s linear infinite;
+  color: #1d2a33;
+}
+
+.rarity-rare {
+  border-color: #d9af63;
+}
+
+.rarity-rare.badge-card-unlocked,
+.profile-badge-chip.rarity-rare {
+  background: linear-gradient(120deg, #ffe2a8, #f7bf60, #ffe2a8);
+  background-size: 220px 100%;
+  animation: rarityShimmer 2.7s linear infinite;
+  color: #36230b;
+}
+
+.rarity-epic {
+  border-color: #7dc4df;
+}
+
+.rarity-epic.badge-card-unlocked,
+.profile-badge-chip.rarity-epic {
+  background: linear-gradient(120deg, #cfefff, #9fd7f4, #e2f6ff);
+  background-size: 220px 100%;
+  animation: rarityShimmer 2.4s linear infinite, rarityGlow 2.2s ease-in-out infinite;
+  color: #112833;
+}
+
+.rarity-legendary {
+  border-color: #7bd2ff;
+}
+
+.rarity-legendary.badge-card-unlocked,
+.profile-badge-chip.rarity-legendary {
+  background: linear-gradient(120deg, #ddf6ff, #7bd2ff, #f0fbff);
+  background-size: 220px 100%;
+  animation: rarityShimmer 1.8s linear infinite, rarityGlow 1.6s ease-in-out infinite;
+  color: #0f2430;
+  box-shadow: 0 0 18px rgba(123, 210, 255, 0.55);
+}
+
 .mobile-nav-toggle {
   position: fixed;
   top: 14px;

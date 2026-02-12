@@ -127,6 +127,9 @@ export default function StudentDirectory() {
               <h2 className="card-title" style={{ marginBottom: "6px" }}>
                 {selected.name}
               </h2>
+              <div className="student-directory-meta">
+                Level {selected.level?.level || 1} • {selected.totalXp || 0} XP
+              </div>
               <div className="student-profile-pills">
                 <span className="pill">Roll: {selected.rollNumber || "-"}</span>
                 <span className="pill">Grade: {selected.grade || "-"}</span>
@@ -134,6 +137,16 @@ export default function StudentDirectory() {
               <p className="student-profile-bio">
                 {selected.bio || "No bio yet."}
               </p>
+              <div className="student-profile-badges">
+                {(selected.badges || []).slice(0, 12).map((badge) => (
+                  <span key={badge.key} className={`pill profile-badge-chip rarity-${badge.rarity}`}>
+                    {badge.title}
+                  </span>
+                ))}
+                {!(selected.badges || []).length ? (
+                  <div className="student-directory-meta">No badges unlocked yet.</div>
+                ) : null}
+              </div>
             </div>
           ) : (
             <div>Select a student to view profile.</div>

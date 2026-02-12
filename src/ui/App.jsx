@@ -20,6 +20,8 @@ import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import { api } from "./api.js";
 import StudentDirectory from "./pages/StudentDirectory.jsx";
+import Badges from "./pages/Badges.jsx";
+import BadgeRequests from "./pages/BadgeRequests.jsx";
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -269,6 +271,7 @@ export default function App() {
             <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/invoices" label="Invoices" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
             <NavItem
@@ -287,6 +290,7 @@ export default function App() {
             <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/chat" label="Chat" onNavigate={closeMobileNavOnNavigate} />
             <NavItem
@@ -404,6 +408,10 @@ export default function App() {
             element={user?.role === "teacher" && viewRole === "teacher" ? <Leaderboard /> : <Navigate to="/login" replace />}
           />
           <Route
+            path="/badge-requests"
+            element={user?.role === "teacher" && viewRole === "teacher" ? <BadgeRequests /> : <Navigate to="/login" replace />}
+          />
+          <Route
             path="/holidays"
             element={user?.role === "teacher" && viewRole === "teacher" ? <Holidays /> : <Navigate to="/login" replace />}
           />
@@ -443,6 +451,16 @@ export default function App() {
             element={
               user?.role === "student" || viewRole === "student" ? (
                 <StudentDirectory />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/student/badges"
+            element={
+              user?.role === "student" || viewRole === "student" ? (
+                <Badges />
               ) : (
                 <Navigate to="/login" replace />
               )
