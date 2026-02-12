@@ -48,29 +48,31 @@ export default function StudentDirectory() {
   }, [students, search]);
 
   return (
-    <div className="page">
+    <div className="page student-directory-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Students</h1>
-          <p className="page-subtitle">Discover classmates and view profiles.</p>
+          <p className="page-subtitle">Find classmates and view profile details.</p>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: "24px" }}>
-        <input
-          className="input"
-          placeholder="Search by name, profile ID, or roll number"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
+      <div className="student-directory-shell">
+        <div className="card student-directory-list-card">
+          <div className="student-directory-toolbar">
+            <div className="student-directory-count">{filtered.length} students</div>
+            <input
+              className="input student-directory-search"
+              placeholder="Search by name or roll number"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
 
-      <div className="grid grid-2" style={{ marginTop: "24px" }}>
-        <div className="card student-directory-list">
+          <div className="student-directory-list">
           {loading ? (
             <div>Loading students...</div>
           ) : (
-            <div className="list">
+            <div className="list student-directory-list-grid">
               {filtered.map((student) => (
                 <button
                   type="button"
@@ -91,18 +93,24 @@ export default function StudentDirectory() {
                       {String(student.name || "S").slice(0, 1).toUpperCase()}
                     </div>
                   )}
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{student.name}</div>
-                    <div className="student-directory-meta">Student</div>
+                  <div className="student-directory-item-body">
+                    <div className="student-directory-name">{student.name}</div>
+                    <div className="student-directory-meta">
+                      {student.rollNumber ? `Roll ${student.rollNumber}` : "Student"}
+                    </div>
+                    <div className="student-directory-bio-preview">
+                      {student.bio || "No bio yet."}
+                    </div>
                   </div>
                 </button>
               ))}
               {!filtered.length && <div>No students found.</div>}
             </div>
           )}
+          </div>
         </div>
 
-        <div className="card">
+        <div className="card student-profile-card">
           {selected?.userId ? (
             <div className="student-profile-view">
               {selected.avatarUrl ? (
@@ -119,13 +127,11 @@ export default function StudentDirectory() {
               <h2 className="card-title" style={{ marginBottom: "6px" }}>
                 {selected.name}
               </h2>
-              <div className="student-directory-meta">
-                Roll No: {selected.rollNumber || "-"}
+              <div className="student-profile-pills">
+                <span className="pill">Roll: {selected.rollNumber || "-"}</span>
+                <span className="pill">Grade: {selected.grade || "-"}</span>
               </div>
-              <div className="student-directory-meta">
-                Grade: {selected.grade || "-"}
-              </div>
-              <p style={{ marginTop: "12px", marginBottom: 0 }}>
+              <p className="student-profile-bio">
                 {selected.bio || "No bio yet."}
               </p>
             </div>

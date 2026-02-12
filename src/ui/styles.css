@@ -702,9 +702,46 @@ html[data-theme="dark"] {
   font-size: 16px;
 }
 
+.student-directory-page {
+  margin-top: 24px;
+}
+
+.student-directory-shell {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.student-directory-list-card {
+  padding: 16px;
+}
+
+.student-directory-toolbar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.student-directory-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.student-directory-search {
+  width: 100%;
+}
+
 .student-directory-list {
-  max-height: 68vh;
+  max-height: 66vh;
   overflow-y: auto;
+  padding-right: 2px;
+}
+
+.student-directory-list-grid {
+  gap: 10px;
 }
 
 .student-directory-item {
@@ -714,11 +751,15 @@ html[data-theme="dark"] {
   background: var(--card-bg);
   color: var(--text-primary);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 10px;
   text-align: left;
   cursor: pointer;
+}
+
+.student-directory-item:hover {
+  border-color: var(--input-border);
 }
 
 .student-directory-item-active {
@@ -727,8 +768,8 @@ html[data-theme="dark"] {
 }
 
 .student-directory-avatar {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
@@ -743,9 +784,33 @@ html[data-theme="dark"] {
   font-weight: 700;
 }
 
+.student-directory-item-body {
+  min-width: 0;
+}
+
+.student-directory-name {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .student-directory-meta {
   font-size: 12px;
   color: var(--muted);
+}
+
+.student-directory-bio-preview {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.student-profile-card {
+  min-height: 360px;
 }
 
 .student-profile-view {
@@ -754,11 +819,22 @@ html[data-theme="dark"] {
 }
 
 .student-profile-avatar {
-  width: 92px;
-  height: 92px;
-  border-radius: 22px;
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
   object-fit: cover;
   margin-bottom: 10px;
+}
+
+.student-profile-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-profile-bio {
+  margin-top: 14px;
+  margin-bottom: 0;
 }
 
 .mobile-nav-toggle {
@@ -888,6 +964,15 @@ html[data-theme="dark"] {
     border-top: 1px solid var(--border);
     box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.08);
   }
+
+  .student-directory-shell {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .student-directory-list {
+    max-height: 42vh;
+  }
 }
 
 @media (max-width: 520px) {
@@ -936,6 +1021,16 @@ html[data-theme="dark"] {
   .emoji-btn {
     padding: 6px 7px;
     font-size: 14px;
+  }
+
+  .student-directory-item {
+    padding: 9px;
+    gap: 10px;
+  }
+
+  .student-directory-avatar {
+    width: 42px;
+    height: 42px;
   }
 
   .student-profile-avatar {
