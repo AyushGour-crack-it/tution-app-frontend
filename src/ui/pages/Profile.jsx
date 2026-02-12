@@ -14,6 +14,15 @@ const getXpTierClass = (xpValue) => {
   return "xp-tier-20";
 };
 
+const getLevelTierClass = (levelValue) => {
+  const level = Number(levelValue) || 1;
+  if (level >= 13) return "level-tier-mythic";
+  if (level >= 10) return "level-tier-legend";
+  if (level >= 7) return "level-tier-elite";
+  if (level >= 4) return "level-tier-rising";
+  return "level-tier-starter";
+};
+
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
@@ -172,7 +181,10 @@ export default function Profile() {
             <div className="profile-summary-email">{user.email}</div>
             {badgeStats.level ? (
               <div className="profile-summary-level">
-                Level {badgeStats.level.level} • {badgeStats.level.totalXp} XP
+                <span className={`level-pill ${getLevelTierClass(badgeStats.level.level)}`}>
+                  Level {badgeStats.level.level}
+                </span>{" "}
+                • {badgeStats.level.totalXp} XP
               </div>
             ) : null}
           </div>

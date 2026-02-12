@@ -967,26 +967,28 @@ html[data-theme="dark"] {
 
 .student-directory-badge-card {
   min-height: 0;
-  width: auto;
-  max-width: 100%;
+  width: 150px;
+  height: 56px;
   border-width: 2px;
   padding: 6px 8px;
   border-radius: 10px;
   display: inline-flex;
   flex-direction: column;
   gap: 2px;
-  flex: 0 1 auto;
-  min-width: 110px;
-  max-width: 170px;
+  flex: 0 0 150px;
+  justify-content: center;
 }
 
 .student-directory-badge-card .profile-showcase-title {
   font-size: 11px;
   font-weight: 700;
   line-height: 1.25;
-  white-space: nowrap;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .student-directory-badge-card .profile-showcase-meta {
@@ -1161,6 +1163,53 @@ html[data-theme="dark"] {
   font-weight: 800;
   border: 2px solid var(--accent);
   box-shadow: 0 0 0 4px rgba(255, 122, 89, 0.12);
+}
+
+.level-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.level-tier-starter {
+  background: linear-gradient(135deg, #d6dde5, #c2ccd7);
+  color: #1b232a;
+  border-color: #aeb9c5;
+}
+
+.level-tier-rising {
+  background: linear-gradient(135deg, #d5ecff, #9bc8ff);
+  color: #082035;
+  border-color: #79afe6;
+}
+
+.level-tier-elite {
+  background: linear-gradient(135deg, #efe1ff, #caa7ff);
+  color: #271043;
+  border-color: #ab84e8;
+}
+
+.level-tier-legend {
+  background: linear-gradient(135deg, #fff0c5, #ffc952);
+  color: #352000;
+  border-color: #d49d2f;
+  box-shadow: 0 0 14px rgba(255, 193, 66, 0.35);
+}
+
+.level-tier-mythic {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(146, 95, 255, 0.7), transparent 42%),
+    radial-gradient(circle at 78% 20%, rgba(95, 225, 255, 0.65), transparent 40%),
+    linear-gradient(135deg, #090b1d, #0a1732 58%, #16102b);
+  color: #eff5ff;
+  border-color: rgba(134, 255, 254, 0.6);
+  box-shadow: 0 0 18px rgba(132, 150, 255, 0.42);
 }
 
 .badge-progress {
@@ -1726,8 +1775,9 @@ html[data-theme="dark"] {
   }
 
   .student-directory-badge-card {
+    width: 136px;
+    height: 54px;
+    flex-basis: 136px;
     padding: 5px 7px;
-    min-width: 100px;
-    max-width: 150px;
   }
 }

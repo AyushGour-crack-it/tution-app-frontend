@@ -14,6 +14,15 @@ const getXpTierClass = (xpValue) => {
   return "xp-tier-20";
 };
 
+const getLevelTierClass = (levelValue) => {
+  const level = Number(levelValue) || 1;
+  if (level >= 13) return "level-tier-mythic";
+  if (level >= 10) return "level-tier-legend";
+  if (level >= 7) return "level-tier-elite";
+  if (level >= 4) return "level-tier-rising";
+  return "level-tier-starter";
+};
+
 const emptyProfile = {
   userId: "",
   name: "",
@@ -195,7 +204,10 @@ export default function StudentDirectory() {
                       <div className="student-directory-item-body">
                         <div className="student-directory-name">{student.name}</div>
                         <div className="student-directory-meta">
-                          Lv {student.level?.level || 1} • {student.totalXp || 0} XP
+                          <span className={`level-pill ${getLevelTierClass(student.level?.level)}`}>
+                            Lv {student.level?.level || 1}
+                          </span>{" "}
+                          • {student.totalXp || 0} XP
                         </div>
                         <div className="student-directory-meta">Likes {student.likesCount || 0}</div>
                         <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
@@ -231,7 +243,10 @@ export default function StudentDirectory() {
                       {selected.name}
                     </h2>
                     <div className="student-directory-meta student-profile-level-line">
-                      Level {selected.level?.level || 1} • {selected.totalXp || 0} XP
+                      <span className={`level-pill ${getLevelTierClass(selected.level?.level)}`}>
+                        Level {selected.level?.level || 1}
+                      </span>{" "}
+                      • {selected.totalXp || 0} XP
                     </div>
                   </div>
                 </div>

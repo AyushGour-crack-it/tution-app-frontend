@@ -13,6 +13,15 @@ const getXpTierClass = (xpValue) => {
   return "xp-tier-20";
 };
 
+const getLevelTierClass = (levelValue) => {
+  const level = Number(levelValue) || 1;
+  if (level >= 13) return "level-tier-mythic";
+  if (level >= 10) return "level-tier-legend";
+  if (level >= 7) return "level-tier-elite";
+  if (level >= 4) return "level-tier-rising";
+  return "level-tier-starter";
+};
+
 export default function Badges() {
   const [catalog, setCatalog] = useState([]);
   const [earned, setEarned] = useState([]);
@@ -101,7 +110,7 @@ export default function Badges() {
       {level ? (
         <div className="card badge-level-card" style={{ marginTop: "24px" }}>
           <div className="badge-level-top">
-            <div className="badge-level-ring">Lv {level.level}</div>
+            <div className={`badge-level-ring ${getLevelTierClass(level.level)}`}>Lv {level.level}</div>
             <div>
               <div style={{ fontWeight: 700 }}>Profile Level {level.level}</div>
               <div className="student-directory-meta">
