@@ -13,6 +13,12 @@ export default function Chat() {
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearingChat, setClearingChat] = useState(false);
+  const [localClearAfter, setLocalClearAfter] = useState(0);
+  const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
+  const localClearStorageKey = useMemo(
+    () => (user?.id ? `chat_local_clear_after_${user.id}` : "chat_local_clear_after_guest"),
+    [user?.id]
+  );
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -55,6 +61,11 @@ export default function Chat() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(localClearStorageKey) || 0);
+    setLocalClearAfter(Number.isFinite(saved) ? saved : 0);
+  }, [localClearStorageKey]);
 
   useEffect(() => {
     scrollToLatest();
@@ -156,6 +167,15 @@ export default function Chat() {
     }
   };
 
+  const clearChatOnThisDevice = () => {
+    const cutoff = Date.now();
+    localStorage.setItem(localClearStorageKey, String(cutoff));
+    setLocalClearAfter(cutoff);
+    setShowLocalClearConfirm(false);
+    setReplyTo(null);
+    setMenuMessageId("");
+  };
+
   const formatTime = (value) => {
     if (!value) return "";
     return new Date(value).toLocaleString([], {
@@ -165,6 +185,14 @@ export default function Chat() {
       minute: "2-digit"
     });
   };
+
+  const visibleMessages = useMemo(() => {
+    if (!localClearAfter) return messages;
+    return messages.filter((msg) => {
+      const createdAt = msg?.createdAt ? new Date(msg.createdAt).getTime() : 0;
+      return createdAt > localClearAfter;
+    });
+  }, [messages, localClearAfter]);
 
   return (
     <div className="page">
@@ -193,14 +221,47 @@ export default function Chat() {
           </div>
         </div>
       ) : null}
+      {showLocalClearConfirm ? (
+        <div className="confirm-popup-overlay" onClick={() => setShowLocalClearConfirm(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()}>
+            <h3 className="confirm-popup-title">Are you sure?</h3>
+            <p className="confirm-popup-text">
+              Clear chat only on this device? Other users will still see all messages.
+            </p>
+            <div className="confirm-popup-actions">
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setShowLocalClearConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={clearChatOnThisDevice}>
+                Yes, Clear Here
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <h1 className="page-title">Chat</h1>
           <p className="page-subtitle">Message your classroom community.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
-          {user?.role === "teacher" ? "Clear Chat" : "Clear My Chat"}
-        </button>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {user?.role === "teacher" ? (
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={() => setShowLocalClearConfirm(true)}
+            >
+              Clear On This Device
+            </button>
+          ) : null}
+          <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
+            {user?.role === "teacher" ? "Clear Chat For Everyone" : "Clear My Chat"}
+          </button>
+        </div>
       </div>
 
       <div className="card chat-card" style={{ marginTop: "24px" }}>
@@ -227,7 +288,7 @@ export default function Chat() {
               Loading latest messages...
             </div>
           ) : null}
-          {messages.map((msg) => (
+          {visibleMessages.map((msg) => (
             <div
               className={[
                 "chat-message",
