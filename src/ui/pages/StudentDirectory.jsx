@@ -35,7 +35,6 @@ export default function StudentDirectory() {
         const data = await api.get("/students/directory").then((res) => res.data || []);
         if (cancelled) return;
         setStudents(data);
-        setSelected(data[0] || emptyProfile);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -48,14 +47,42 @@ export default function StudentDirectory() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((student) => {
-      const name = String(student.name || "").toLowerCase();
-      const profileId = String(student.studentProfileId || "").toLowerCase();
-      const roll = String(student.rollNumber || "").toLowerCase();
-      return name.includes(q) || profileId.includes(q) || roll.includes(q);
+    const base = q
+      ? students.filter((student) => {
+          const name = String(student.name || "").toLowerCase();
+          const profileId = String(student.studentProfileId || "").toLowerCase();
+          const roll = String(student.rollNumber || "").toLowerCase();
+          return name.includes(q) || profileId.includes(q) || roll.includes(q);
+        })
+      : students.slice();
+
+    return base.sort((a, b) => {
+      const levelDelta = (b.level?.level || 1) - (a.level?.level || 1);
+      if (levelDelta !== 0) return levelDelta;
+      const xpDelta = (b.totalXp || 0) - (a.totalXp || 0);
+      if (xpDelta !== 0) return xpDelta;
+      return String(a.name || "").localeCompare(String(b.name || ""));
     });
   }, [students, search]);
+
+  useEffect(() => {
+    if (!filtered.length) {
+      setSelected(emptyProfile);
+      return;
+    }
+    const hasSelected = filtered.some((student) => student.userId === selected?.userId);
+    if (!hasSelected) {
+      setSelected(filtered[0]);
+    }
+  }, [filtered, selected?.userId]);
+
+  const selectedRank = useMemo(() => {
+    if (!selected?.userId) return null;
+    const rank = filtered.findIndex((student) => student.userId === selected.userId);
+    return rank >= 0 ? rank + 1 : null;
+  }, [filtered, selected]);
+
+  const selectedLevelTierClass = getXpTierClass(selected?.totalXp || 0);
 
   return (
     <div className="page student-directory-page">
@@ -79,74 +106,83 @@ export default function StudentDirectory() {
           </div>
 
           <div className="student-directory-list">
-          {loading ? (
-            <div>Loading students...</div>
-          ) : (
-            <div className="list student-directory-list-grid">
-              {filtered.map((student) => (
-                <button
-                  type="button"
-                  key={student.userId}
-                  className={`student-directory-item${
-                    selected?.userId === student.userId ? " student-directory-item-active" : ""
-                  }`}
-                  onClick={() => setSelected(student)}
-                >
-                  {student.avatarUrl ? (
-                    <img
-                      src={student.avatarUrl}
-                      alt={student.name}
-                      className="student-directory-avatar"
-                    />
-                  ) : (
-                    <div className="student-directory-avatar student-directory-avatar-fallback">
-                      {String(student.name || "S").slice(0, 1).toUpperCase()}
+            {loading ? (
+              <div>Loading students...</div>
+            ) : (
+              <div className="list student-directory-list-grid">
+                {filtered.map((student, index) => (
+                  <button
+                    type="button"
+                    key={student.userId}
+                    className={`student-directory-item${
+                      selected?.userId === student.userId ? " student-directory-item-active" : ""
+                    }`}
+                    onClick={() => setSelected(student)}
+                  >
+                    <div className="student-directory-rank">#{index + 1}</div>
+                    {student.avatarUrl ? (
+                      <img
+                        src={student.avatarUrl}
+                        alt={student.name}
+                        className="student-directory-avatar"
+                      />
+                    ) : (
+                      <div className="student-directory-avatar student-directory-avatar-fallback">
+                        {String(student.name || "S").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="student-directory-item-body">
+                      <div className="student-directory-name">{student.name}</div>
+                      <div className="student-directory-meta">
+                        Lv {student.level?.level || 1} • {student.totalXp || 0} XP
+                      </div>
+                      <div className="student-directory-bio-preview">
+                        {student.bio || "No bio yet."}
+                      </div>
                     </div>
-                  )}
-                  <div className="student-directory-item-body">
-                    <div className="student-directory-name">{student.name}</div>
-                    <div className="student-directory-meta">
-                      {student.rollNumber ? `Roll ${student.rollNumber}` : "Student"}
-                    </div>
-                    <div className="student-directory-bio-preview">
-                      {student.bio || "No bio yet."}
-                    </div>
-                  </div>
-                </button>
-              ))}
-              {!filtered.length && <div>No students found.</div>}
-            </div>
-          )}
+                  </button>
+                ))}
+                {!filtered.length && <div>No students found.</div>}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="card student-profile-card">
           {selected?.userId ? (
             <div className="student-profile-view">
-              {selected.avatarUrl ? (
-                <img
-                  src={selected.avatarUrl}
-                  alt={selected.name}
-                  className="student-profile-avatar"
-                />
-              ) : (
-                <div className="student-profile-avatar student-directory-avatar-fallback">
-                  {String(selected.name || "S").slice(0, 1).toUpperCase()}
+              <div className={`student-profile-level-banner ${selectedLevelTierClass}`}>
+                <div className="student-profile-level-banner-left">
+                  {selected.avatarUrl ? (
+                    <img
+                      src={selected.avatarUrl}
+                      alt={selected.name}
+                      className="student-profile-avatar"
+                    />
+                  ) : (
+                    <div className="student-profile-avatar student-directory-avatar-fallback">
+                      {String(selected.name || "S").slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="card-title" style={{ marginBottom: "6px" }}>
+                      {selected.name}
+                    </h2>
+                    <div className="student-directory-meta student-profile-level-line">
+                      Level {selected.level?.level || 1} • {selected.totalXp || 0} XP
+                    </div>
+                  </div>
                 </div>
-              )}
-              <h2 className="card-title" style={{ marginBottom: "6px" }}>
-                {selected.name}
-              </h2>
-              <div className="student-directory-meta">
-                Level {selected.level?.level || 1} • {selected.totalXp || 0} XP
+                <div className="student-profile-rank-pill">
+                  Rank {selectedRank ? `#${selectedRank}` : "-"}
+                </div>
               </div>
+
               <div className="student-profile-pills">
                 <span className="pill">Roll: {selected.rollNumber || "-"}</span>
                 <span className="pill">Grade: {selected.grade || "-"}</span>
               </div>
-              <p className="student-profile-bio">
-                {selected.bio || "No bio yet."}
-              </p>
+              <p className="student-profile-bio">{selected.bio || "No bio yet."}</p>
               <div className="student-profile-badges">
                 {(selected.badges || []).slice(0, 12).map((badge) => (
                   <span key={badge.key} className={`pill profile-badge-chip ${getXpTierClass(badge.xpValue)}`}>
