@@ -93,9 +93,7 @@ export default function StudentDirectory() {
                   )}
                   <div>
                     <div style={{ fontWeight: 600 }}>{student.name}</div>
-                    <div className="student-directory-meta">
-                      ID: {student.studentProfileId || "-"}
-                    </div>
+                    <div className="student-directory-meta">Student</div>
                   </div>
                 </button>
               ))}
@@ -121,9 +119,6 @@ export default function StudentDirectory() {
               <h2 className="card-title" style={{ marginBottom: "6px" }}>
                 {selected.name}
               </h2>
-              <div className="student-directory-meta">
-                Profile ID: {selected.studentProfileId || "-"}
-              </div>
               <div className="student-directory-meta">
                 Roll No: {selected.rollNumber || "-"}
               </div>
