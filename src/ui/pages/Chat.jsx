@@ -16,6 +16,7 @@ export default function Chat() {
   const [clearingChat, setClearingChat] = useState(false);
   const [localClearAfter, setLocalClearAfter] = useState(0);
   const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
+  const [composerMenuOpen, setComposerMenuOpen] = useState(false);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -29,6 +30,11 @@ export default function Chat() {
   );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
   const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
+  const composerActions = [
+    { key: "image", icon: "🖼️", label: "Image" },
+    { key: "video", icon: "🎬", label: "Video" },
+    { key: "emoji", icon: "😊", label: "Emoji" }
+  ];
   const messageLookup = useMemo(
     () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
     [messages]
@@ -79,6 +85,8 @@ export default function Chat() {
     scrollToLatest();
     isFirstLoadRef.current = false;
   }, [messages]);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   useEffect(() => {
     const closeMenuOnOutsideClick = (event) => {
@@ -89,6 +97,17 @@ export default function Chat() {
     };
     document.addEventListener("click", closeMenuOnOutsideClick);
     return () => document.removeEventListener("click", closeMenuOnOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    const closeComposerMenuOnOutsideClick = (event) => {
+      const clickedInsideMenu = event.target.closest(".chat-composer-actions-wrap");
+      if (!clickedInsideMenu) {
+        setComposerMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", closeComposerMenuOnOutsideClick);
+    return () => document.removeEventListener("click", closeComposerMenuOnOutsideClick);
   }, []);
 
   const sendText = async () => {
@@ -156,6 +175,11 @@ export default function Chat() {
   const reactTo = async (id, emoji) => {
     await api.post(`/chat/messages/${id}/reactions`, { emoji });
     load();
+  };
+
+  const appendEmoji = (emoji) => {
+    setText((prev) => `${prev}${emoji}`);
+    setComposerMenuOpen(false);
   };
 
   const setReply = (msg) => {
@@ -352,6 +376,21 @@ export default function Chat() {
                         <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
                           Reply
                         </button>
+                        <div className="chat-menu-emojis">
+                          {reactions.map((emoji) => (
+                            <button
+                              key={`${msg._id}-${emoji}`}
+                              className="chat-menu-emoji-btn"
+                              type="button"
+                              onClick={() => {
+                                reactTo(msg._id, emoji);
+                                setMenuMessageId("");
+                              }}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
                         {msg.senderId === user?.id &&
                           (msg.type === "text" || msg.type === "announcement") && (
                             <button
@@ -401,18 +440,11 @@ export default function Chat() {
                 </video>
               )}
               {msg.editedAt && <div className="chat-meta">(edited)</div>}
-              <div className="chat-reactions">
-                {reactions.map((emoji) => (
-                  <button key={emoji} className="emoji-btn" type="button" onClick={() => reactTo(msg._id, emoji)}>
-                    {emoji}
-                  </button>
-                ))}
-                {msg.reactions?.length ? (
-                  <div className="chat-reaction-count">
-                    {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
-                  </div>
-                ) : null}
-              </div>
+              {msg.reactions?.length ? (
+                <div className="chat-reaction-count">
+                  {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
+                </div>
+              ) : null}
             </div>
           ))}
           {!loadingMessages && !loadError && !visibleMessages.length ? (
@@ -430,7 +462,7 @@ export default function Chat() {
               </button>
             </div>
           )}
-          <div className="chat-input-row">
+          <div className="chat-input-row chat-input-pill">
             <input
               className="input chat-input-field"
               placeholder="Type a message"
@@ -443,37 +475,72 @@ export default function Chat() {
                 }
               }}
             />
-            <button className="btn" type="button" onClick={sendText}>
-              Send
+            <div className="chat-composer-actions-wrap">
+              <button
+                className="chat-icon-btn"
+                type="button"
+                aria-label="Open message actions"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setComposerMenuOpen((prev) => !prev);
+                }}
+              >
+                ⋯
+              </button>
+              {composerMenuOpen ? (
+                <div className="chat-composer-menu">
+                  <div className="chat-composer-icons">
+                    {composerActions.map((action) => (
+                      <button
+                        key={action.key}
+                        type="button"
+                        className="chat-icon-btn"
+                        title={action.label}
+                        aria-label={action.label}
+                        onClick={() => {
+                          if (action.key === "image") {
+                            imageInputRef.current?.click();
+                            setComposerMenuOpen(false);
+                            return;
+                          }
+                          if (action.key === "video") {
+                            videoInputRef.current?.click();
+                            setComposerMenuOpen(false);
+                            return;
+                          }
+                          setComposerMenuOpen((prev) => !prev);
+                        }}
+                      >
+                        {action.icon}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="chat-composer-emoji-grid">
+                    {emojis.map((emoji) => (
+                      <button
+                        className="chat-menu-emoji-btn"
+                        type="button"
+                        key={`composer-${emoji}`}
+                        onClick={() => appendEmoji(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <button className="chat-send-btn" type="button" onClick={sendText} aria-label="Send">
+              ➤
             </button>
             {user?.role === "teacher" && (
-              <button className="btn btn-ghost" type="button" onClick={sendAnnouncement}>
-                Announcement
+              <button className="chat-icon-btn" type="button" onClick={sendAnnouncement} title="Announcement" aria-label="Announcement">
+                📢
               </button>
             )}
           </div>
-          <div className="chat-tool-row">
-            <label className="btn btn-ghost">
-              Image
-              <input type="file" accept="image/*" hidden onChange={(e) => sendFile(e, "image")} />
-            </label>
-            <label className="btn btn-ghost">
-              Video
-              <input type="file" accept="video/*" hidden onChange={(e) => sendFile(e, "video")} />
-            </label>
-          </div>
-        </div>
-        <div className="chat-emoji">
-          {emojis.map((emoji) => (
-            <button
-              className="emoji-btn"
-              type="button"
-              key={emoji}
-              onClick={() => setText((prev) => `${prev}${emoji}`)}
-            >
-              {emoji}
-            </button>
-          ))}
+          <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={(e) => sendFile(e, "image")} />
+          <input ref={videoInputRef} type="file" accept="video/*" hidden onChange={(e) => sendFile(e, "video")} />
         </div>
       </div>
     </div>
