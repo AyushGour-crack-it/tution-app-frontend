@@ -523,6 +523,7 @@ html[data-theme="dark"] {
 
 .chat-page > .chat-card {
   margin-top: 0;
+  height: calc(100vh - 112px);
 }
 
 .chat-toolbar {
@@ -566,15 +567,19 @@ html[data-theme="dark"] {
 }
 
 .chat-window {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 14px;
-  max-height: 62vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 18px 14px;
   background: var(--chat-window-bg);
 }
 
 .chat-message {
+  width: fit-content;
   max-width: min(92%, 760px);
   padding: 10px 12px;
   border-radius: 20px;
@@ -586,7 +591,8 @@ html[data-theme="dark"] {
 }
 
 .chat-message-mine {
-  margin-left: auto;
+  align-self: flex-end;
+  margin-left: 0;
   background: linear-gradient(135deg, #ff7a59, #ff9d7a 62%, #ffb182);
   color: #102026;
 }
@@ -701,11 +707,14 @@ html[data-theme="dark"] {
   border-top: 1px solid var(--border);
   padding: 12px 14px 14px;
   background: var(--card-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
 }
 
 .chat-input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -771,6 +780,12 @@ html[data-theme="dark"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.chat-icon-svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .chat-send-btn {
@@ -2112,6 +2127,10 @@ html[data-theme="dark"] {
   .main {
     padding: 68px 18px 22px;
   }
+
+  .chat-page > .chat-card {
+    height: calc(100vh - 96px);
+  }
 }
 
 @media (max-width: 700px) {
@@ -2242,9 +2261,6 @@ html[data-theme="dark"] {
   }
 
   .chat-composer {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
     margin: 0;
     padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
@@ -2293,7 +2309,8 @@ html[data-theme="dark"] {
 
   .chat-window {
     padding: 12px 10px;
-    max-height: 62vh;
+    flex: 1;
+    min-height: 0;
   }
 
   .chat-composer-emoji-grid {
@@ -2303,6 +2320,10 @@ html[data-theme="dark"] {
   .chat-message {
     padding: 10px 11px;
     border-radius: 16px;
+  }
+
+  .chat-page > .chat-card {
+    height: calc(100vh - 82px);
   }
 
   .chat-meta {

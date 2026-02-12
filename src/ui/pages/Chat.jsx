@@ -16,7 +16,6 @@ export default function Chat() {
   const [clearingChat, setClearingChat] = useState(false);
   const [localClearAfter, setLocalClearAfter] = useState(0);
   const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
-  const [composerMenuOpen, setComposerMenuOpen] = useState(false);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -30,11 +29,6 @@ export default function Chat() {
   );
   const emojis = ["😀", "😃", "🤩", "🔥", "✨", "✅", "📚", "🧠", "💡", "🎯", "👏", "🚀"];
   const reactions = ["👍", "❤️", "😂", "🔥", "👏"];
-  const composerActions = [
-    { key: "image", icon: "🖼️", label: "Image" },
-    { key: "video", icon: "🎬", label: "Video" },
-    { key: "emoji", icon: "😊", label: "Emoji" }
-  ];
   const messageLookup = useMemo(
     () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
     [messages]
@@ -97,17 +91,6 @@ export default function Chat() {
     };
     document.addEventListener("click", closeMenuOnOutsideClick);
     return () => document.removeEventListener("click", closeMenuOnOutsideClick);
-  }, []);
-
-  useEffect(() => {
-    const closeComposerMenuOnOutsideClick = (event) => {
-      const clickedInsideMenu = event.target.closest(".chat-composer-actions-wrap");
-      if (!clickedInsideMenu) {
-        setComposerMenuOpen(false);
-      }
-    };
-    document.addEventListener("click", closeComposerMenuOnOutsideClick);
-    return () => document.removeEventListener("click", closeComposerMenuOnOutsideClick);
   }, []);
 
   const sendText = async () => {
@@ -175,11 +158,6 @@ export default function Chat() {
   const reactTo = async (id, emoji) => {
     await api.post(`/chat/messages/${id}/reactions`, { emoji });
     load();
-  };
-
-  const appendEmoji = (emoji) => {
-    setText((prev) => `${prev}${emoji}`);
-    setComposerMenuOpen(false);
   };
 
   const setReply = (msg) => {
@@ -460,6 +438,28 @@ export default function Chat() {
             </div>
           )}
           <div className="chat-input-row chat-input-pill">
+            <button
+              className="chat-icon-btn"
+              type="button"
+              title="Send image"
+              aria-label="Send image"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <svg className="chat-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v9l4-4 3 3 4-4 5 5V6H5zm2 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+              </svg>
+            </button>
+            <button
+              className="chat-icon-btn"
+              type="button"
+              title="Send video"
+              aria-label="Send video"
+              onClick={() => videoInputRef.current?.click()}
+            >
+              <svg className="chat-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2l5-3v14l-5-3v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z" />
+              </svg>
+            </button>
             <input
               className="input chat-input-field"
               placeholder="Type a message"
@@ -472,67 +472,16 @@ export default function Chat() {
                 }
               }}
             />
-            <div className="chat-composer-actions-wrap">
-              <button
-                className="chat-icon-btn"
-                type="button"
-                aria-label="Open message actions"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setComposerMenuOpen((prev) => !prev);
-                }}
-              >
-                ⋯
-              </button>
-              {composerMenuOpen ? (
-                <div className="chat-composer-menu">
-                  <div className="chat-composer-icons">
-                    {composerActions.map((action) => (
-                      <button
-                        key={action.key}
-                        type="button"
-                        className="chat-icon-btn"
-                        title={action.label}
-                        aria-label={action.label}
-                        onClick={() => {
-                          if (action.key === "image") {
-                            imageInputRef.current?.click();
-                            setComposerMenuOpen(false);
-                            return;
-                          }
-                          if (action.key === "video") {
-                            videoInputRef.current?.click();
-                            setComposerMenuOpen(false);
-                            return;
-                          }
-                          setComposerMenuOpen((prev) => !prev);
-                        }}
-                      >
-                        {action.icon}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="chat-composer-emoji-grid">
-                    {emojis.map((emoji) => (
-                      <button
-                        className="chat-menu-emoji-btn"
-                        type="button"
-                        key={`composer-${emoji}`}
-                        onClick={() => appendEmoji(emoji)}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
             <button className="chat-send-btn" type="button" onClick={sendText} aria-label="Send">
-              ➤
+              <svg className="chat-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12 21 3l-5 18-4-7-10-2z" />
+              </svg>
             </button>
             {user?.role === "teacher" && (
               <button className="chat-icon-btn" type="button" onClick={sendAnnouncement} title="Announcement" aria-label="Announcement">
-                📢
+                <svg className="chat-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 10v4h4l6 4V6l-6 4H3zm12-2h2v8h-2V8zm3.5-2.5 1.5-1.5A9.9 9.9 0 0 1 23 12a9.9 9.9 0 0 1-3 7.1l-1.5-1.5A7.9 7.9 0 0 0 21 12a7.9 7.9 0 0 0-2.5-5.5z" />
+                </svg>
               </button>
             )}
           </div>
