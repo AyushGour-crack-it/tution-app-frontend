@@ -464,10 +464,14 @@ html[data-theme="dark"] {
 }
 
 .auth-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 40px 16px;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255, 122, 89, 0.12), transparent 34%),
+    radial-gradient(circle at 84% 12%, rgba(32, 178, 170, 0.1), transparent 32%),
+    var(--bg-main);
 }
 
 .auth-card {
@@ -475,6 +479,11 @@ html[data-theme="dark"] {
   width: 100%;
   display: grid;
   gap: 16px;
+  max-height: calc(100dvh - 42px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .auth-link {
@@ -2143,6 +2152,31 @@ html[data-theme="dark"] .student-stat-pill-likes {
   animation: rarityGlow 1.8s ease-in-out infinite;
 }
 
+.badge-theme-tanjiro {
+  border-color: rgba(226, 67, 46, 0.8) !important;
+  background:
+    radial-gradient(circle at 84% 18%, rgba(255, 183, 74, 0.3), transparent 36%),
+    radial-gradient(circle at 16% 84%, rgba(61, 174, 149, 0.22), transparent 40%),
+    linear-gradient(138deg, #171b21 0%, #20262d 48%, #171b21 100%) !important;
+  color: #fff0df !important;
+  box-shadow: 0 12px 24px rgba(146, 42, 28, 0.32), inset 0 0 0 1px rgba(255, 186, 126, 0.3) !important;
+}
+
+.badge-theme-tanjiro .badge-card-title,
+.badge-theme-tanjiro .profile-showcase-title {
+  color: #ffd9b6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.badge-theme-tanjiro .badge-card-image,
+.badge-theme-tanjiro .profile-badge-art {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 102, 66, 0.36), transparent 34%),
+    rgba(12, 14, 18, 0.72);
+  border: 1px solid rgba(255, 145, 96, 0.54);
+  box-shadow: 0 0 0 1px rgba(255, 206, 153, 0.2), 0 0 18px rgba(231, 76, 45, 0.25);
+}
+
 .mobile-nav-toggle {
   position: fixed;
   top: 14px;
@@ -2537,6 +2571,17 @@ html[data-theme="dark"] .student-stat-pill-likes {
 }
 
 @media (max-width: 700px) {
+  .auth-shell {
+    min-height: 100dvh;
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+    place-items: start center;
+  }
+
+  .auth-card {
+    max-height: calc(100dvh - 24px);
+    width: min(100%, 420px);
+  }
+
   .badges-layout {
     grid-template-columns: 1fr;
     gap: 12px;

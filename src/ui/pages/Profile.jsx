@@ -24,6 +24,7 @@ const getBadgeMetaText = (badge) => {
   if (badge?.category === "fun_event") return `${rarity} • EVENT`;
   return `${rarity} • ${badge?.xpValue || 0} XP`;
 };
+const getBadgeSpecialClass = (badge) => (badge?.key === "tanjiro_3x3" ? "badge-theme-tanjiro" : "");
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -213,7 +214,7 @@ export default function Profile() {
                   key={badge.key}
                   className={`profile-showcase-badge ${
                     badge.category === "fun_event" ? "profile-showcase-badge-event" : ""
-                  } ${getBadgeVisualClass(badge)}`}
+                  } ${getBadgeVisualClass(badge)} ${getBadgeSpecialClass(badge)}`}
                 >
                   {badge.imageUrl ? (
                     <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />

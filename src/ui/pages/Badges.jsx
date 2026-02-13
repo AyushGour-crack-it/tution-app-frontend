@@ -37,6 +37,8 @@ const getBadgeMetaText = (badge) => {
   return `${rarity} • ${badge?.xpValue || 0} XP`;
 };
 
+const getBadgeSpecialClass = (badge) => (badge?.key === "tanjiro_3x3" ? "badge-theme-tanjiro" : "");
+
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
   if (level >= 13) return "level-tier-mythic";
@@ -244,6 +246,7 @@ export default function Badges() {
                             "card",
                             "badge-card",
                             badge.category === "fun_event" ? "badge-card-event" : "",
+                            getBadgeSpecialClass(badge),
                             getBadgeVisualClass(badge),
                             unlocked ? "badge-card-unlocked" : "",
                             isHiddenLocked ? "badge-card-hidden" : ""
