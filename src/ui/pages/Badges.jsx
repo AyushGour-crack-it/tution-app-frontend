@@ -37,7 +37,13 @@ const getBadgeMetaText = (badge) => {
   return `${rarity} • ${badge?.xpValue || 0} XP`;
 };
 
-const getBadgeSpecialClass = (badge) => (badge?.key === "tanjiro_3x3" ? "badge-theme-tanjiro" : "");
+const getBadgeSpecialClass = (badge) => {
+  if (badge?.key === "tanjiro_3x3") return "badge-theme-tanjiro";
+  if (badge?.key === "kira_2h_7d") return "badge-theme-kira";
+  return "";
+};
+
+const isKiraBadge = (badge) => badge?.key === "kira_2h_7d";
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -254,8 +260,15 @@ export default function Badges() {
                             .filter(Boolean)
                             .join(" ")}
                         >
-                          {badge.imageUrl ? (
+                          {badge.imageUrl && !isKiraBadge(badge) ? (
                             <img src={badge.imageUrl} alt={badge.title} className="badge-card-image" />
+                          ) : null}
+                          {badge.imageUrl && isKiraBadge(badge) ? (
+                            <div
+                              className="badge-kira-bg"
+                              style={{ backgroundImage: `url(${badge.imageUrl})` }}
+                              aria-hidden="true"
+                            />
                           ) : null}
                           <div className="badge-card-title">{badge.title}</div>
                           <div className="student-directory-meta">

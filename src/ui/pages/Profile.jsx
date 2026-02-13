@@ -24,7 +24,11 @@ const getBadgeMetaText = (badge) => {
   if (badge?.category === "fun_event") return `${rarity} • EVENT`;
   return `${rarity} • ${badge?.xpValue || 0} XP`;
 };
-const getBadgeSpecialClass = (badge) => (badge?.key === "tanjiro_3x3" ? "badge-theme-tanjiro" : "");
+const getBadgeSpecialClass = (badge) => {
+  if (badge?.key === "tanjiro_3x3") return "badge-theme-tanjiro";
+  if (badge?.key === "kira_2h_7d") return "badge-theme-kira";
+  return "";
+};
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
