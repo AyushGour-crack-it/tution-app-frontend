@@ -40,11 +40,14 @@ const getBadgeMetaText = (badge) => {
 const getBadgeSpecialClass = (badge) => {
   if (badge?.key === "tanjiro_3x3") return "badge-theme-tanjiro";
   if (badge?.key === "kira_2h_7d") return "badge-theme-kira";
+  if (badge?.key === "nico_robin_3sunday") return "badge-theme-robin";
   return "";
 };
 
-const isHeroImageBadge = (badge) => badge?.key === "tanjiro_3x3" || badge?.key === "kira_2h_7d";
+const isHeroImageBadge = (badge) =>
+  badge?.key === "tanjiro_3x3" || badge?.key === "kira_2h_7d" || badge?.key === "nico_robin_3sunday";
 const isKiraBadge = (badge) => badge?.key === "kira_2h_7d";
+const isRobinBadge = (badge) => badge?.key === "nico_robin_3sunday";
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -266,7 +269,13 @@ export default function Badges() {
                           ) : null}
                           {badge.imageUrl && isHeroImageBadge(badge) ? (
                             <div
-                              className={isKiraBadge(badge) ? "badge-kira-bg" : "badge-tanjiro-bg"}
+                              className={
+                                isKiraBadge(badge)
+                                  ? "badge-kira-bg"
+                                  : isRobinBadge(badge)
+                                    ? "badge-robin-bg"
+                                    : "badge-tanjiro-bg"
+                              }
                               style={{ backgroundImage: `url(${badge.imageUrl})` }}
                               aria-hidden="true"
                             />
