@@ -29,6 +29,7 @@ const getBadgeSpecialClass = (badge) => {
   if (badge?.key === "kira_2h_7d") return "badge-theme-kira";
   return "";
 };
+const isHeroImageBadge = (badge) => badge?.key === "tanjiro_3x3" || badge?.key === "kira_2h_7d";
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -219,8 +220,9 @@ export default function Profile() {
                   className={`profile-showcase-badge ${
                     badge.category === "fun_event" ? "profile-showcase-badge-event" : ""
                   } ${getBadgeVisualClass(badge)} ${getBadgeSpecialClass(badge)}`}
+                  style={isHeroImageBadge(badge) ? { "--badge-bg-image": `url(${badge.imageUrl})` } : undefined}
                 >
-                  {badge.imageUrl ? (
+                  {badge.imageUrl && !isHeroImageBadge(badge) ? (
                     <img src={badge.imageUrl} alt={badge.title} className="profile-badge-art" />
                   ) : null}
                   <div className="profile-showcase-title">{badge.title}</div>

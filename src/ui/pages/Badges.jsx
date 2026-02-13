@@ -43,6 +43,7 @@ const getBadgeSpecialClass = (badge) => {
   return "";
 };
 
+const isHeroImageBadge = (badge) => badge?.key === "tanjiro_3x3" || badge?.key === "kira_2h_7d";
 const isKiraBadge = (badge) => badge?.key === "kira_2h_7d";
 
 const getLevelTierClass = (levelValue) => {
@@ -260,12 +261,12 @@ export default function Badges() {
                             .filter(Boolean)
                             .join(" ")}
                         >
-                          {badge.imageUrl && !isKiraBadge(badge) ? (
+                          {badge.imageUrl && !isHeroImageBadge(badge) ? (
                             <img src={badge.imageUrl} alt={badge.title} className="badge-card-image" />
                           ) : null}
-                          {badge.imageUrl && isKiraBadge(badge) ? (
+                          {badge.imageUrl && isHeroImageBadge(badge) ? (
                             <div
-                              className="badge-kira-bg"
+                              className={isKiraBadge(badge) ? "badge-kira-bg" : "badge-tanjiro-bg"}
                               style={{ backgroundImage: `url(${badge.imageUrl})` }}
                               aria-hidden="true"
                             />

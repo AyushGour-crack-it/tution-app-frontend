@@ -2153,13 +2153,56 @@ html[data-theme="dark"] .student-stat-pill-likes {
 }
 
 .badge-theme-tanjiro {
-  border-color: rgba(226, 67, 46, 0.8) !important;
+  border-color: rgba(226, 67, 46, 0.82) !important;
   background:
-    radial-gradient(circle at 84% 18%, rgba(255, 183, 74, 0.3), transparent 36%),
-    radial-gradient(circle at 16% 84%, rgba(61, 174, 149, 0.22), transparent 40%),
-    linear-gradient(138deg, #171b21 0%, #20262d 48%, #171b21 100%) !important;
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 16px
+    ),
+    linear-gradient(138deg, #161a20 0%, #1f252d 48%, #15191f 100%) !important;
   color: #fff0df !important;
   box-shadow: 0 12px 24px rgba(146, 42, 28, 0.32), inset 0 0 0 1px rgba(255, 186, 126, 0.3) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.badge-theme-tanjiro > * {
+  position: relative;
+  z-index: 2;
+}
+
+.badge-tanjiro-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.1);
+  opacity: 0.32;
+  filter: contrast(1.08) saturate(0.96);
+}
+
+.badge-theme-tanjiro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 82% 14%, rgba(255, 141, 71, 0.28), transparent 45%),
+    radial-gradient(circle at 14% 86%, rgba(53, 196, 149, 0.24), transparent 40%);
+}
+
+.badge-theme-tanjiro.profile-showcase-badge::before {
+  background-image:
+    radial-gradient(circle at 82% 14%, rgba(255, 141, 71, 0.28), transparent 45%),
+    radial-gradient(circle at 14% 86%, rgba(53, 196, 149, 0.24), transparent 40%),
+    var(--badge-bg-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.36;
 }
 
 .badge-theme-tanjiro .badge-card-title,
@@ -2221,6 +2264,16 @@ html[data-theme="dark"] .student-stat-pill-likes {
   background:
     radial-gradient(circle at 84% 12%, rgba(215, 22, 48, 0.36), transparent 45%),
     radial-gradient(circle at 12% 86%, rgba(139, 10, 30, 0.32), transparent 40%);
+}
+
+.badge-theme-kira.profile-showcase-badge::before {
+  background-image:
+    radial-gradient(circle at 84% 12%, rgba(215, 22, 48, 0.36), transparent 45%),
+    radial-gradient(circle at 12% 86%, rgba(139, 10, 30, 0.32), transparent 40%),
+    var(--badge-bg-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.36;
 }
 
 .badge-theme-kira::after {
