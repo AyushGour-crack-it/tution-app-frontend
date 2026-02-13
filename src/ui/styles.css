@@ -1776,11 +1776,15 @@ html[data-theme="dark"] .student-stat-pill-likes {
   border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .badge-card-image {
   width: 100%;
-  height: 92px;
+  height: 140px;
   object-fit: contain;
   border-radius: 10px;
   margin-bottom: 8px;
@@ -1793,7 +1797,7 @@ html[data-theme="dark"] .student-stat-pill-likes {
 }
 
 .badge-card-event .badge-card-image {
-  height: 170px;
+  height: 140px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.55);
   padding: 10px;
@@ -1805,19 +1809,32 @@ html[data-theme="dark"] .student-stat-pill-likes {
 }
 
 .badge-card-event .badge-card-description {
-  min-height: 0;
+  min-height: 54px;
   margin-top: 6px;
 }
 
 .badge-card-title {
   font-weight: 700;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .badge-card-description {
   margin: 8px 0 12px;
   font-size: 13px;
   color: var(--muted);
-  min-height: 40px;
+  min-height: 54px;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
 }
 
 .badge-card-hidden {
@@ -2907,6 +2924,10 @@ html[data-theme="dark"] .student-stat-pill-likes {
   .badges-layout {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .badge-card {
+    min-height: auto;
   }
 
   .badge-level-card-fixed {
