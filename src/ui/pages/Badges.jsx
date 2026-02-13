@@ -41,13 +41,18 @@ const getBadgeSpecialClass = (badge) => {
   if (badge?.key === "tanjiro_3x3") return "badge-theme-tanjiro";
   if (badge?.key === "kira_2h_7d") return "badge-theme-kira";
   if (badge?.key === "nico_robin_3sunday") return "badge-theme-robin";
+  if (badge?.key === "goku_5h_sunday") return "badge-theme-goku";
   return "";
 };
 
 const isHeroImageBadge = (badge) =>
-  badge?.key === "tanjiro_3x3" || badge?.key === "kira_2h_7d" || badge?.key === "nico_robin_3sunday";
+  badge?.key === "tanjiro_3x3" ||
+  badge?.key === "kira_2h_7d" ||
+  badge?.key === "nico_robin_3sunday" ||
+  badge?.key === "goku_5h_sunday";
 const isKiraBadge = (badge) => badge?.key === "kira_2h_7d";
 const isRobinBadge = (badge) => badge?.key === "nico_robin_3sunday";
+const isGokuBadge = (badge) => badge?.key === "goku_5h_sunday";
 
 const getLevelTierClass = (levelValue) => {
   const level = Number(levelValue) || 1;
@@ -274,7 +279,9 @@ export default function Badges() {
                                   ? "badge-kira-bg"
                                   : isRobinBadge(badge)
                                     ? "badge-robin-bg"
-                                    : "badge-tanjiro-bg"
+                                    : isGokuBadge(badge)
+                                      ? "badge-goku-bg"
+                                      : "badge-tanjiro-bg"
                               }
                               style={{ backgroundImage: `url(${badge.imageUrl})` }}
                               aria-hidden="true"

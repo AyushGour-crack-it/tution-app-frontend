@@ -2402,6 +2402,103 @@ html[data-theme="dark"] .student-stat-pill-likes {
   padding: 0;
 }
 
+.badge-theme-goku {
+  border-color: rgba(68, 157, 255, 0.85) !important;
+  background:
+    linear-gradient(145deg, #070f2a 0%, #0d1b44 52%, #091333 100%) !important;
+  color: #f3f7ff !important;
+  box-shadow:
+    0 0 0 1px rgba(69, 140, 255, 0.34),
+    0 14px 30px rgba(5, 12, 36, 0.62),
+    0 0 24px rgba(69, 140, 255, 0.38),
+    0 0 18px rgba(255, 152, 51, 0.28) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.badge-theme-goku > * {
+  position: relative;
+  z-index: 2;
+}
+
+.badge-goku-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.16);
+  opacity: 0.33;
+  filter: contrast(1.1) saturate(1.05);
+}
+
+.badge-theme-goku::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(255, 174, 66, 0.32), transparent 40%),
+    radial-gradient(circle at 14% 84%, rgba(77, 167, 255, 0.35), transparent 42%),
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 2px,
+      transparent 2px,
+      transparent 22px
+    );
+}
+
+.badge-theme-goku.profile-showcase-badge::before {
+  background-image:
+    radial-gradient(circle at 85% 10%, rgba(255, 174, 66, 0.32), transparent 40%),
+    radial-gradient(circle at 14% 84%, rgba(77, 167, 255, 0.35), transparent 42%),
+    var(--badge-bg-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.36;
+}
+
+.badge-theme-goku::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 210, 122, 0.78);
+  box-shadow: inset 0 0 16px rgba(255, 203, 108, 0.22), 0 0 14px rgba(72, 171, 255, 0.35);
+}
+
+.badge-theme-goku .badge-card-title,
+.badge-theme-goku .profile-showcase-title {
+  font-family: "Bebas Neue", "Oswald", sans-serif;
+  letter-spacing: 1.4px;
+  font-weight: 800;
+  color: #fff4d5;
+  text-shadow: 0 1px 0 #000, 0 0 12px rgba(69, 140, 255, 0.58);
+}
+
+.badge-theme-goku .badge-card-description {
+  font-family: "Poppins", "Work Sans", sans-serif;
+  color: #edf4ff !important;
+}
+
+.badge-theme-goku .profile-showcase-meta,
+.badge-theme-goku .student-directory-meta {
+  font-family: "Inter", "Work Sans", sans-serif;
+  color: #edf4ff !important;
+}
+
+.badge-theme-goku .profile-badge-art {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+}
+
 .mobile-nav-toggle {
   position: fixed;
   top: 14px;
