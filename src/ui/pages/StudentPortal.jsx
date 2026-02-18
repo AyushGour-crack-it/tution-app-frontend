@@ -531,6 +531,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                     <th>Total</th>
                     <th>Paid</th>
                     <th>Due</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -575,7 +576,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                                     type="button"
                                     onClick={() => submitOfflineRequest(row._id)}
                                   >
-                                    Paying Offline - Send Request
+                                    Pay Offline - Send Request
                                   </button>
                                   {offlineRequestState[row._id] ? (
                                     <div style={{ fontSize: "12px", color: "var(--muted)" }}>

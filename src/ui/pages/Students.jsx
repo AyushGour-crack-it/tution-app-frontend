@@ -6,21 +6,31 @@ const emptyForm = {
   name: "",
   rollNumber: "",
   grade: "",
+  dateOfBirth: "",
+  schoolName: "",
+  address: "",
+  emergencyContact: "",
   subjects: "",
   guardianName: "",
-  guardianPhone: ""
+  guardianPhone: "",
+  guardianRelation: ""
 };
 
 export default function Students() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const data = await api.get("/students").then((res) => res.data);
+    const [data, requests] = await Promise.all([
+      api.get("/students").then((res) => res.data),
+      api.get("/auth/student-requests?status=pending").then((res) => res.data || [])
+    ]);
     setItems(data);
+    setPendingRequests(requests);
     setLoading(false);
   };
 
@@ -48,13 +58,18 @@ export default function Students() {
       name: form.name.trim(),
       rollNumber: form.rollNumber.trim(),
       grade: form.grade.trim(),
+      dateOfBirth: form.dateOfBirth || null,
+      schoolName: form.schoolName.trim(),
+      address: form.address.trim(),
+      emergencyContact: form.emergencyContact.trim(),
       subjects: form.subjects
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
       guardian: {
         name: form.guardianName.trim(),
-        phone: form.guardianPhone.trim()
+        phone: form.guardianPhone.trim(),
+        relation: form.guardianRelation.trim()
       }
     };
     if (editingId) {
@@ -78,10 +93,24 @@ export default function Students() {
       name: student.name || "",
       rollNumber: student.rollNumber || "",
       grade: student.grade || "",
+      dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().slice(0, 10) : "",
+      schoolName: student.schoolName || "",
+      address: student.address || "",
+      emergencyContact: student.emergencyContact || "",
       subjects: (student.subjects || []).join(", "),
       guardianName: student.guardian?.name || "",
-      guardianPhone: student.guardian?.phone || ""
+      guardianPhone: student.guardian?.phone || "",
+      guardianRelation: student.guardian?.relation || ""
     });
+  };
+
+  const reviewRequest = async (userId, action) => {
+    const message = prompt(
+      action === "reject" ? "Why are you rejecting this request?" : "Optional approval message",
+      action === "approve" ? "Approved. Welcome to the class." : ""
+    ) || "";
+    await api.post(`/auth/student-requests/${userId}/review`, { action, message });
+    load();
   };
 
   return (
@@ -91,6 +120,43 @@ export default function Students() {
           <h1 className="page-title">Students</h1>
           <p className="page-subtitle">Maintain profiles, guardians, and academic activity logs.</p>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: "24px" }}>
+        <h2 className="card-title">Pending Registration Requests</h2>
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="list">
+            {pendingRequests.map((req) => (
+              <div className="list-item" key={req._id}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{req.name}</div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    {req.email} • {req.phone || "No phone"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    DOB: {req?.pendingStudentProfile?.dateOfBirth ? new Date(req.pendingStudentProfile.dateOfBirth).toLocaleDateString() : "-"}
+                    {" "}• Class: {req?.pendingStudentProfile?.grade || "-"}
+                    {" "}• School: {req?.pendingStudentProfile?.schoolName || "-"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    Guardian: {req?.pendingStudentProfile?.guardianName || "-"} ({req?.pendingStudentProfile?.guardianPhone || "-"})
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button className="btn btn-ghost" onClick={() => reviewRequest(req._id, "approve")}>
+                    Approve
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => reviewRequest(req._id, "reject")}>
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!pendingRequests.length ? <div>No pending student requests.</div> : null}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
@@ -117,6 +183,31 @@ export default function Students() {
           />
           <input
             className="input"
+            type="date"
+            placeholder="Date of birth"
+            value={form.dateOfBirth}
+            onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="School name"
+            value={form.schoolName}
+            onChange={(event) => setForm({ ...form, schoolName: event.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="Address"
+            value={form.address}
+            onChange={(event) => setForm({ ...form, address: event.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="Emergency contact"
+            value={form.emergencyContact}
+            onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+          />
+          <input
+            className="input"
             placeholder="Subjects (comma separated)"
             value={form.subjects}
             onChange={(event) => setForm({ ...form, subjects: event.target.value })}
@@ -132,6 +223,12 @@ export default function Students() {
             placeholder="Guardian phone"
             value={form.guardianPhone}
             onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="Guardian relation"
+            value={form.guardianRelation}
+            onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })}
           />
           <button className="btn" type="submit">
             {editingId ? "Update Student" : "Save Student"}
@@ -164,6 +261,7 @@ export default function Students() {
                 <th>Grade</th>
                 <th>Subjects</th>
                 <th>Guardian</th>
+                <th>DOB</th>
                 <th />
               </tr>
             </thead>
@@ -175,6 +273,7 @@ export default function Students() {
                   <td>{student.grade}</td>
                   <td>{student.subjects?.join(", ")}</td>
                   <td>{student.guardian?.name || "-"}</td>
+                  <td>{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : "-"}</td>
                   <td>
                     <button className="btn btn-ghost" onClick={() => edit(student)}>
                       Edit
@@ -187,7 +286,7 @@ export default function Students() {
               ))}
               {!items.length && (
                 <tr>
-                  <td colSpan="5">No students yet.</td>
+                  <td colSpan="7">No students yet.</td>
                 </tr>
               )}
             </tbody>

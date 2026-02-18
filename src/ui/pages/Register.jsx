@@ -13,8 +13,15 @@ export default function Register() {
     avatar: null,
     password: "",
     role: "teacher",
-    studentId: "",
-    teacherAccessId: ""
+    teacherAccessId: "",
+    dateOfBirth: "",
+    grade: "",
+    schoolName: "",
+    address: "",
+    guardianName: "",
+    guardianPhone: "",
+    guardianRelation: "",
+    emergencyContact: ""
   });
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -36,9 +43,18 @@ export default function Register() {
       formData.append("phone", form.phone);
       formData.append("password", form.password);
       formData.append("role", form.role);
-      formData.append("studentId", form.role === "student" ? form.studentId || "" : "");
       formData.append("teacherAccessId", form.role === "teacher" ? form.teacherAccessId || "" : "");
       formData.append("bio", form.bio);
+      if (form.role === "student") {
+        formData.append("dateOfBirth", form.dateOfBirth || "");
+        formData.append("grade", form.grade || "");
+        formData.append("schoolName", form.schoolName || "");
+        formData.append("address", form.address || "");
+        formData.append("guardianName", form.guardianName || "");
+        formData.append("guardianPhone", form.guardianPhone || "");
+        formData.append("guardianRelation", form.guardianRelation || "");
+        formData.append("emergencyContact", form.emergencyContact || "");
+      }
       if (form.avatar) {
         formData.append("avatar", form.avatar);
       }
@@ -57,8 +73,8 @@ export default function Register() {
       setError("Teacher ID is required for teacher signup.");
       return;
     }
-    if (form.role === "student" && !form.studentId.trim()) {
-      setError("Student profile ID is required for student signup.");
+    if (form.role === "student" && !form.dateOfBirth) {
+      setError("Date of birth is required for student signup.");
       return;
     }
     setGoogleLoading(true);
@@ -67,11 +83,18 @@ export default function Register() {
         credential,
         mode: "register",
         role: form.role,
-        studentId: form.role === "student" ? form.studentId : "",
         teacherAccessId: form.role === "teacher" ? form.teacherAccessId : "",
         name: form.name,
         phone: form.phone,
-        bio: form.bio
+        bio: form.bio,
+        dateOfBirth: form.dateOfBirth,
+        grade: form.grade,
+        schoolName: form.schoolName,
+        address: form.address,
+        guardianName: form.guardianName,
+        guardianPhone: form.guardianPhone,
+        guardianRelation: form.guardianRelation,
+        emergencyContact: form.emergencyContact
       });
       finishAuth(data);
     } catch (err) {
@@ -145,15 +168,60 @@ export default function Register() {
               required
             />
           )}
-          {form.role === "student" && (
-            <input
-              className="input"
-              placeholder="Student profile ID (provided by teacher)"
-              value={form.studentId}
-              onChange={(event) => setForm({ ...form, studentId: event.target.value })}
-              required
-            />
-          )}
+          {form.role === "student" ? (
+            <>
+              <input
+                className="input"
+                type="date"
+                placeholder="Date of birth"
+                value={form.dateOfBirth}
+                onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+                required
+              />
+              <input
+                className="input"
+                placeholder="Class / Grade"
+                value={form.grade}
+                onChange={(event) => setForm({ ...form, grade: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="School name"
+                value={form.schoolName}
+                onChange={(event) => setForm({ ...form, schoolName: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Address"
+                value={form.address}
+                onChange={(event) => setForm({ ...form, address: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Guardian name"
+                value={form.guardianName}
+                onChange={(event) => setForm({ ...form, guardianName: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Guardian phone"
+                value={form.guardianPhone}
+                onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Guardian relation"
+                value={form.guardianRelation}
+                onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Emergency contact"
+                value={form.emergencyContact}
+                onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+              />
+            </>
+          ) : null}
           <button className="btn" type="submit">
             Create Account
           </button>

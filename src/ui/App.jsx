@@ -23,6 +23,7 @@ import StudentDirectory from "./pages/StudentDirectory.jsx";
 import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
+import StudentAccessPending from "./pages/StudentAccessPending.jsx";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
   connectSocket,
@@ -163,6 +164,27 @@ export default function App() {
     setUser(null);
     navigate("/login");
   };
+
+  const refreshCurrentUser = React.useCallback(async (overrideUser = null) => {
+    if (overrideUser) {
+      localStorage.setItem("auth_user", JSON.stringify(overrideUser));
+      setUser(overrideUser);
+      return;
+    }
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    try {
+      const fresh = await api.get("/auth/me", { showGlobalLoader: false }).then((res) => res?.data?.user || null);
+      if (!fresh) return;
+      localStorage.setItem("auth_user", JSON.stringify(fresh));
+      setUser(fresh);
+    } catch {
+      // no-op
+    }
+  }, []);
 
   React.useEffect(() => {
     locationPathRef.current = location.pathname;
@@ -758,6 +780,10 @@ export default function App() {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === "student" && user.studentApprovalStatus && user.studentApprovalStatus !== "approved") {
+    return <StudentAccessPending user={user} onRefresh={refreshCurrentUser} onLogout={logout} />;
   }
 
   return (
