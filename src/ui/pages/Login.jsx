@@ -9,7 +9,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const finishAuth = (data) => {
+  const finishAuth = async (data) => {
     localStorage.setItem("auth_token", data.token);
     localStorage.setItem("auth_user", JSON.stringify(data.user));
     localStorage.setItem("welcome_popup_pending", "1");
@@ -21,7 +21,7 @@ export default function Login() {
     setError("");
     try {
       const { data } = await api.post("/auth/login", form);
-      finishAuth(data);
+      await finishAuth(data);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
@@ -32,7 +32,7 @@ export default function Login() {
     setGoogleLoading(true);
     try {
       const { data } = await api.post("/auth/google", { credential, mode: "login" });
-      finishAuth(data);
+      await finishAuth(data);
     } catch (err) {
       setError(err.response?.data?.message || "Google sign-in failed");
     } finally {

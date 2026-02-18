@@ -23,12 +23,35 @@ import StudentDirectory from "./pages/StudentDirectory.jsx";
 import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
+import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
   connectSocket,
   disconnectSocket,
   getSocketStatus,
   subscribeSocketStatus
 } from "./socket.js";
+
+const SECTION_EVENT_ROUTE_MAP = {
+  "classes:updated": "/classes",
+  "students:updated": "/students",
+  "homework:updated": "/homework",
+  "syllabus:updated": "/syllabus",
+  "attendance:updated": "/attendance",
+  "marks:updated": "/marks",
+  "fee:updated": "/fees",
+  "holidays:updated": "/holidays",
+  "invoices:updated": "/invoices",
+  "leaderboard:updated": "/leaderboard",
+  "badges:updated": "/student/badges",
+  "badge:request-updated": "/badge-requests"
+};
+
+const normalizeSectionPath = (pathname) => {
+  if (pathname === "/student/homework") return "/homework";
+  if (pathname === "/student/fees") return "/fees";
+  if (pathname === "/student/students") return "/students";
+  return pathname;
+};
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -80,6 +103,7 @@ export default function App() {
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
+  const [sectionUnread, setSectionUnread] = React.useState({});
   const locationPathRef = React.useRef(location.pathname);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
@@ -115,7 +139,18 @@ export default function App() {
     setUnreadChatCount(0);
   }, [chatSeenKey, user?.id]);
 
-  const logout = () => {
+  const bumpSectionIndicator = React.useCallback((path) => {
+    if (!path) return;
+    const currentPath = normalizeSectionPath(locationPathRef.current || "");
+    if (currentPath === path || locationPathRef.current === path) return;
+    setSectionUnread((prev) => ({
+      ...prev,
+      [path]: Math.min(99, Number(prev[path] || 0) + 1)
+    }));
+  }, []);
+
+  const logout = async () => {
+    await teardownPushForSession();
     disconnectSocket();
     localStorage.removeItem("auth_user");
     localStorage.removeItem("auth_token");
@@ -126,6 +161,10 @@ export default function App() {
   React.useEffect(() => {
     locationPathRef.current = location.pathname;
   }, [location.pathname]);
+
+  React.useEffect(() => {
+    setSectionUnread({});
+  }, [user?.id, user?.role, viewRole]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -234,6 +273,17 @@ export default function App() {
       setUser(null);
     }
   }, [location.pathname, user]);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!user?.id || !token) return;
+    setupPushForSession().catch(() => {});
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (user?.id) return;
+    teardownPushForSession().catch(() => {});
+  }, [user?.id]);
 
   React.useEffect(() => {
     if (!user?.id) return undefined;
@@ -348,6 +398,18 @@ export default function App() {
       markNotificationsSeen();
     }
   }, [location.pathname, markNotificationsSeen]);
+
+  React.useEffect(() => {
+    if (!location.pathname) return;
+    const sectionPath = normalizeSectionPath(location.pathname);
+    setSectionUnread((prev) => {
+      if (!prev[sectionPath] && !prev[location.pathname]) return prev;
+      const next = { ...prev };
+      delete next[sectionPath];
+      delete next[location.pathname];
+      return next;
+    });
+  }, [location.pathname]);
 
   React.useEffect(() => {
     if (!user?.id) return undefined;
@@ -504,17 +566,62 @@ export default function App() {
       setUnreadNotificationCount((prev) => prev + 1);
     };
 
+    const onSectionEvent = (eventName) => {
+      const mappedPath = SECTION_EVENT_ROUTE_MAP[eventName];
+      if (!mappedPath) return;
+
+      if (eventName === "badge:request-updated") {
+        const targetPath =
+          user?.role === "teacher" && viewRole === "teacher"
+            ? "/badge-requests"
+            : "/student/badges";
+        bumpSectionIndicator(targetPath);
+        return;
+      }
+
+      if (eventName === "badges:updated") {
+        const targetPath =
+          user?.role === "teacher" && viewRole === "teacher"
+            ? "/badge-requests"
+            : "/student/badges";
+        bumpSectionIndicator(targetPath);
+        return;
+      }
+
+      bumpSectionIndicator(mappedPath);
+    };
+
+    const sectionEvents = Object.keys(SECTION_EVENT_ROUTE_MAP);
+    const sectionHandlers = new Map();
+    sectionEvents.forEach((eventName) => {
+      const handler = () => onSectionEvent(eventName);
+      sectionHandlers.set(eventName, handler);
+      socket.on(eventName, handler);
+    });
+
     socket.on("chat:new", onChatNew);
     socket.on("notification:new", onNotificationNew);
     socket.on("connect", syncUnreadCounters);
     syncUnreadCounters();
 
     return () => {
+      sectionEvents.forEach((eventName) => {
+        const handler = sectionHandlers.get(eventName);
+        if (handler) socket.off(eventName, handler);
+      });
       socket.off("chat:new", onChatNew);
       socket.off("notification:new", onNotificationNew);
       socket.off("connect", syncUnreadCounters);
     };
-  }, [user?.id, user?.role, badgePopupSeenKey, notificationSeenKey, chatSeenKey]);
+  }, [
+    user?.id,
+    user?.role,
+    badgePopupSeenKey,
+    notificationSeenKey,
+    chatSeenKey,
+    viewRole,
+    bumpSectionIndicator
+  ]);
 
   React.useEffect(() => {
     if (!user) return;
@@ -667,17 +774,17 @@ export default function App() {
         {user?.role === "teacher" && viewRole === "teacher" ? (
           <nav className="nav">
             <NavItem to="/" label="Overview" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/classes" label="Classes" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/homework" label="Homework" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/syllabus" label="Syllabus" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/attendance" label="Attendance" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/marks" label="Marks" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/invoices" label="Invoices" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/classes" label="Classes" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/classes"] || 0} />
+            <NavItem to="/students" label="Students" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/students"] || 0} />
+            <NavItem to="/homework" label="Homework" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/homework"] || 0} />
+            <NavItem to="/syllabus" label="Syllabus" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/syllabus"] || 0} />
+            <NavItem to="/attendance" label="Attendance" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/attendance"] || 0} />
+            <NavItem to="/marks" label="Marks" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/marks"] || 0} />
+            <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
+            <NavItem to="/invoices" label="Invoices" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/invoices"] || 0} />
+            <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/leaderboard"] || 0} />
+            <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/badge-requests"] || 0} />
+            <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/holidays"] || 0} />
             <NavItem
               to="/chat"
               label="Chat"
@@ -701,12 +808,12 @@ export default function App() {
         ) : (
           <nav className="nav">
             <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/homework"] || 0} />
+            <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
             {user?.role === "student" ? (
-              <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} />
+              <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/student/badges"] || 0} />
             ) : null}
-            <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} />
+            <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/students"] || 0} />
             <NavItem
               to="/chat"
               label="Chat"
