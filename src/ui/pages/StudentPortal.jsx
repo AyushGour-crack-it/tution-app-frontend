@@ -27,6 +27,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [upiNotice, setUpiNotice] = useState("");
   const [paymentSuccessPopup, setPaymentSuccessPopup] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [offlineRequestDraft, setOfflineRequestDraft] = useState({
     monthInput: "",
     amount: "",
@@ -49,14 +50,16 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   const load = async () => {
     setLoading(true);
-    const [homeworkData, feeData, announcementData] = await Promise.all([
+    const [homeworkData, feeData, announcementData, holidayData] = await Promise.all([
       api.get("/homeworks").then((res) => res.data),
       api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
-      api.get("/announcements").then((res) => res.data || [])
+      api.get("/announcements").then((res) => res.data || []),
+      api.get("/holidays").then((res) => res.data || [])
     ]);
     setHomework(homeworkData);
     setFees(feeData);
     setAnnouncements((announcementData || []).slice(0, 4));
+    setHolidays((holidayData || []).slice(0, 4));
     setOfflineRequestDraft((prev) => {
       if (prev.monthInput) return prev;
       const target = feeData.find((item) => {
@@ -105,10 +108,12 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     const refresh = () => load();
     socket.on("homework:updated", refresh);
     socket.on("marks:updated", refresh);
+    socket.on("holidays:updated", refresh);
     socket.on("connect", refresh);
     return () => {
       socket.off("homework:updated", refresh);
       socket.off("marks:updated", refresh);
+      socket.off("holidays:updated", refresh);
       socket.off("connect", refresh);
     };
   }, [section, previewStudentId]);
@@ -405,6 +410,43 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   </div>
                 ))}
                 {!announcements.length ? <div>No announcements yet.</div> : null}
+              </div>
+            </div>
+          )}
+
+          {section === "dashboard" && (
+            <div
+              className="card"
+              style={{
+                marginTop: "24px",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                background:
+                  "linear-gradient(140deg, rgba(16, 185, 129, 0.14), rgba(45, 212, 191, 0.06) 48%, var(--card-bg) 82%)"
+              }}
+            >
+              <h2 className="card-title">Upcoming Holidays</h2>
+              <div className="list">
+                {holidays.map((item) => (
+                  <div className="list-item" key={item._id}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{item.title}</div>
+                      {item.note ? (
+                        <div style={{ color: "var(--muted)", fontSize: "12px" }}>{item.note}</div>
+                      ) : null}
+                    </div>
+                    <span
+                      className="pill"
+                      style={{
+                        background: "rgba(16, 185, 129, 0.18)",
+                        border: "1px solid rgba(16, 185, 129, 0.35)",
+                        color: "#0f5132"
+                      }}
+                    >
+                      {item.date ? new Date(item.date).toLocaleDateString() : "-"}
+                    </span>
+                  </div>
+                ))}
+                {!holidays.length ? <div>No holidays announced yet.</div> : null}
               </div>
             </div>
           )}
