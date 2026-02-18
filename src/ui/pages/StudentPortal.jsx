@@ -29,8 +29,12 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [upiNotice, setUpiNotice] = useState("");
   const [paymentSuccessPopup, setPaymentSuccessPopup] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
-  const [offlineRequestDrafts, setOfflineRequestDrafts] = useState({});
-  const [offlineRequestState, setOfflineRequestState] = useState({});
+  const [offlineRequestDraft, setOfflineRequestDraft] = useState({
+    feeId: "",
+    amount: "",
+    message: ""
+  });
+  const [offlineRequestState, setOfflineRequestState] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -59,6 +63,14 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     setInvoices(invoiceData);
     setReceipts(receiptData);
     setAnnouncements((announcementData || []).slice(0, 4));
+    setOfflineRequestDraft((prev) => {
+      if (prev.feeId && feeData.some((item) => item._id === prev.feeId)) return prev;
+      const target = feeData.find((item) => {
+        const paid = item.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
+        return Math.max(Number(item.total || 0) - paid, 0) > 0;
+      }) || feeData[0];
+      return { ...prev, feeId: target?._id || "" };
+    });
     const markData = await api
       .get(previewStudentId ? `/marks?studentId=${previewStudentId}` : "/marks")
       .then((res) => res.data);
@@ -267,42 +279,26 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     }
   };
 
-  const updateOfflineDraft = (feeId, key, value) => {
-    setOfflineRequestDrafts((prev) => ({
-      ...prev,
-      [feeId]: {
-        amount: prev?.[feeId]?.amount || "",
-        message: prev?.[feeId]?.message || "",
-        [key]: value
-      }
-    }));
-  };
-
-  const submitOfflineRequest = async (feeId) => {
-    const draft = offlineRequestDrafts[feeId] || { amount: "", message: "" };
-    const amount = Number(draft.amount || 0);
+  const submitOfflineRequest = async () => {
+    const feeId = offlineRequestDraft.feeId;
+    const amount = Number(offlineRequestDraft.amount || 0);
+    if (!feeId) {
+      setOfflineRequestState("Select a fee month first.");
+      return;
+    }
     if (!amount || amount <= 0) {
-      setOfflineRequestState((prev) => ({ ...prev, [feeId]: "Enter valid amount." }));
+      setOfflineRequestState("Enter valid amount.");
       return;
     }
     try {
       await api.post(`/fees/${feeId}/offline-request`, {
         amount,
-        message: draft.message || ""
+        message: offlineRequestDraft.message || ""
       });
-      setOfflineRequestState((prev) => ({
-        ...prev,
-        [feeId]: "Offline payment request sent to teacher for approval."
-      }));
-      setOfflineRequestDrafts((prev) => ({
-        ...prev,
-        [feeId]: { amount: "", message: "" }
-      }));
+      setOfflineRequestState("Offline payment request sent to teacher for approval.");
+      setOfflineRequestDraft((prev) => ({ ...prev, amount: "", message: "" }));
     } catch (error) {
-      setOfflineRequestState((prev) => ({
-        ...prev,
-        [feeId]: error?.response?.data?.message || "Failed to submit offline request."
-      }));
+      setOfflineRequestState(error?.response?.data?.message || "Failed to submit offline request.");
     }
   };
 
@@ -524,13 +520,65 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   <img src={qrUrl("")} alt="UPI QR" />
                 </div>
               </div>
+              {!previewStudentId ? (
+                <div className="card" style={{ marginBottom: "16px", padding: "16px" }}>
+                  <h3 style={{ margin: 0, marginBottom: "10px" }}>Offline Payment Request</h3>
+                  <div className="form">
+                    <select
+                      className="select"
+                      value={offlineRequestDraft.feeId}
+                      onChange={(event) =>
+                        setOfflineRequestDraft((prev) => ({ ...prev, feeId: event.target.value }))
+                      }
+                    >
+                      <option value="">Select fee month</option>
+                      {fees.map((row) => {
+                        const paid = row.payments?.reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0;
+                        const due = Math.max(Number(row.total || 0) - paid, 0);
+                        return (
+                          <option key={row._id} value={row._id}>
+                            {row.month} {due > 0 ? `- Due ₹${due}` : "- Fully paid"}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <input
+                      className="input"
+                      type="number"
+                      placeholder="Amount paid offline"
+                      value={offlineRequestDraft.amount}
+                      onChange={(event) =>
+                        setOfflineRequestDraft((prev) => ({ ...prev, amount: event.target.value }))
+                      }
+                    />
+                    <input
+                      className="input"
+                      placeholder="Message for teacher (optional)"
+                      value={offlineRequestDraft.message}
+                      onChange={(event) =>
+                        setOfflineRequestDraft((prev) => ({ ...prev, message: event.target.value }))
+                      }
+                    />
+                    <button className="btn btn-ghost" type="button" onClick={submitOfflineRequest}>
+                      Send Offline Request
+                    </button>
+                  </div>
+                  {offlineRequestState ? (
+                    <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>
+                      {offlineRequestState}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <table className="table">
                 <thead>
                   <tr>
                     <th>Month</th>
+                    <th>Due Date</th>
                     <th>Total</th>
                     <th>Paid</th>
                     <th>Due</th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -538,13 +586,21 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   {fees.map((row) => {
                     const paid = row.payments?.reduce((sum, item) => sum + item.amount, 0) || 0;
                     const due = Math.max(row.total - paid, 0);
-                    const draft = offlineRequestDrafts[row._id] || { amount: "", message: "" };
+                    const lastPayment = row.payments?.length ? row.payments[row.payments.length - 1] : null;
                     return (
                       <tr key={row._id}>
                         <td>{row.month}</td>
+                        <td>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "-"}</td>
                         <td>{row.total}</td>
                         <td>{paid}</td>
                         <td>{due}</td>
+                        <td>
+                          {lastPayment
+                            ? (lastPayment.lateDays > 0
+                              ? `${lastPayment.lateDays} day(s) late`
+                              : "Paid on time")
+                            : "Not paid yet"}
+                        </td>
                         <td>
                           <div style={{ display: "grid", gap: "8px" }}>
                             {due > 0 ? (
@@ -559,35 +615,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                             ) : (
                               <span className="badge">Paid</span>
                             )}
-                            {!previewStudentId ? (
-                              <>
-                                <input
-                                  className="input"
-                                  type="number"
-                                  placeholder={due > 0 ? `Offline amount (suggested ₹${due})` : "Offline amount"}
-                                  value={draft.amount}
-                                  onChange={(event) => updateOfflineDraft(row._id, "amount", event.target.value)}
-                                />
-                                <input
-                                  className="input"
-                                  placeholder="Message for teacher (optional)"
-                                  value={draft.message}
-                                  onChange={(event) => updateOfflineDraft(row._id, "message", event.target.value)}
-                                />
-                                <button
-                                  className="btn btn-ghost"
-                                  type="button"
-                                  onClick={() => submitOfflineRequest(row._id)}
-                                >
-                                  Pay Offline - Send Request
-                                </button>
-                                {offlineRequestState[row._id] ? (
-                                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
-                                    {offlineRequestState[row._id]}
-                                  </div>
-                                ) : null}
-                              </>
-                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -642,6 +669,9 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   <tr>
                     <th>Amount</th>
                     <th>Method</th>
+                    <th>Due Date</th>
+                    <th>Late</th>
+                    <th>XP</th>
                     <th>Date</th>
                   </tr>
                 </thead>
@@ -650,12 +680,15 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                     <tr key={rec._id}>
                       <td>{rec.amount}</td>
                       <td>{rec.method}</td>
+                      <td>{rec.dueDate ? new Date(rec.dueDate).toLocaleDateString() : "-"}</td>
+                      <td>{Number(rec.lateDays || 0)}</td>
+                      <td>{Number(rec.xpAwarded || 0)}</td>
                       <td>{rec.paidOn ? new Date(rec.paidOn).toLocaleDateString() : "-"}</td>
                     </tr>
                   ))}
                   {!receipts.length && (
                     <tr>
-                      <td colSpan="3">No receipts yet.</td>
+                      <td colSpan="6">No receipts yet.</td>
                     </tr>
                   )}
                 </tbody>

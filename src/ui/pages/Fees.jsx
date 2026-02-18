@@ -221,6 +221,9 @@ export default function Fees() {
                 <th>Mobile</th>
                 <th>Amount</th>
                 <th>Method</th>
+                <th>Due Date</th>
+                <th>Late By</th>
+                <th>XP</th>
                 <th>Time</th>
                 <th>Days Since Prev</th>
               </tr>
@@ -232,13 +235,16 @@ export default function Fees() {
                   <td>{row.studentPhone || "-"}</td>
                   <td>₹{Number(row.amount || 0).toLocaleString("en-IN")}</td>
                   <td>{row.method}</td>
+                  <td>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "-"}</td>
+                  <td>{Number(row.lateDays || 0)} day(s)</td>
+                  <td>+{Number(row.xpAwarded || 0)}</td>
                   <td>{row.paidOn ? new Date(row.paidOn).toLocaleString() : "-"}</td>
                   <td>{row.daysSincePrevious === null ? "-" : `${row.daysSincePrevious} day(s)`}</td>
                 </tr>
               ))}
               {!transactions.length ? (
                 <tr>
-                  <td colSpan="6">No transactions yet.</td>
+                  <td colSpan="9">No transactions yet.</td>
                 </tr>
               ) : null}
             </tbody>
