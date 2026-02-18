@@ -125,6 +125,8 @@ export default function App() {
   const [rewardPopupQueue, setRewardPopupQueue] = React.useState([]);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const [sectionUnread, setSectionUnread] = React.useState({});
+  const isTeacherPreviewMode = user?.role === "teacher" && viewRole === "student";
+  const effectivePreviewStudentId = isTeacherPreviewMode ? previewStudentId : "";
   const locationPathRef = React.useRef(location.pathname);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
@@ -280,6 +282,13 @@ export default function App() {
   React.useEffect(() => {
     localStorage.setItem("preview_student_id", previewStudentId);
   }, [previewStudentId]);
+
+  React.useEffect(() => {
+    if (user?.role !== "teacher" && previewStudentId) {
+      setPreviewStudentId("");
+      localStorage.removeItem("preview_student_id");
+    }
+  }, [user?.role, previewStudentId]);
 
   React.useEffect(() => {
     setNavOpen(false);
@@ -1127,7 +1136,7 @@ export default function App() {
             path="/student"
             element={
               user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal previewStudentId={previewStudentId} />
+                <StudentPortal previewStudentId={effectivePreviewStudentId} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -1137,7 +1146,7 @@ export default function App() {
             path="/student/homework"
             element={
               user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal section="homework" previewStudentId={previewStudentId} />
+                <StudentPortal section="homework" previewStudentId={effectivePreviewStudentId} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -1147,7 +1156,7 @@ export default function App() {
             path="/student/fees"
             element={
               user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal section="fees" previewStudentId={previewStudentId} />
+                <StudentPortal section="fees" previewStudentId={effectivePreviewStudentId} />
               ) : (
                 <Navigate to="/login" replace />
               )
