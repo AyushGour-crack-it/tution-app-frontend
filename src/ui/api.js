@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getActiveAccountKey, removeAuthAccount } from "./authAccounts.js";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -57,8 +58,13 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const hasToken = Boolean(localStorage.getItem("auth_token"));
     if (status === 401 && hasToken) {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("auth_user");
+      const activeKey = getActiveAccountKey();
+      if (activeKey) {
+        removeAuthAccount(activeKey);
+      } else {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+      }
     }
     return Promise.reject(error);
   }

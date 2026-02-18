@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
+import { setActiveAuthSession } from "../authAccounts.js";
 
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
@@ -111,7 +112,12 @@ export default function Profile() {
         headers: { "Content-Type": "multipart/form-data" }
       });
       const updated = res.data.user;
-      localStorage.setItem("auth_user", JSON.stringify(updated));
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        setActiveAuthSession({ token, user: updated });
+      } else {
+        localStorage.setItem("auth_user", JSON.stringify(updated));
+      }
       setUser(updated);
       setForm((prev) => ({ ...prev, avatar: null }));
       setMessage("Profile updated.");

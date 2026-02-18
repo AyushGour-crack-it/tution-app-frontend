@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { api } from "../api.js";
 import { Link, useNavigate } from "react-router-dom";
 import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
+import { setActiveAuthSession } from "../authAccounts.js";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -27,8 +28,7 @@ export default function Register() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const finishAuth = (data) => {
-    localStorage.setItem("auth_token", data.token);
-    localStorage.setItem("auth_user", JSON.stringify(data.user));
+    setActiveAuthSession({ token: data.token, user: data.user });
     localStorage.setItem("welcome_popup_pending", "1");
     navigate(data.user.role === "teacher" ? "/" : "/student");
   };

@@ -27,6 +27,14 @@ import StudentAccessPending from "./pages/StudentAccessPending.jsx";
 import QuizDashboard from "../features/quiz/Dashboard.jsx";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
+  clearActiveSessionOnly,
+  getActiveAccountKey,
+  getAuthAccounts,
+  removeAuthAccount,
+  setActiveAuthSession,
+  switchActiveAuthAccount
+} from "./authAccounts.js";
+import {
   connectSocket,
   disconnectSocket,
   getSocketStatus,
@@ -108,12 +116,7 @@ export default function App() {
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("ui_theme") || "light"
   );
-  const [viewRole, setViewRole] = React.useState(
-    () => localStorage.getItem("view_role") || "teacher"
-  );
-  const [previewStudentId, setPreviewStudentId] = React.useState(
-    () => localStorage.getItem("preview_student_id") || ""
-  );
+  const [accounts, setAccounts] = React.useState(() => getAuthAccounts());
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
@@ -125,8 +128,6 @@ export default function App() {
   const [rewardPopupQueue, setRewardPopupQueue] = React.useState([]);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const [sectionUnread, setSectionUnread] = React.useState({});
-  const isTeacherPreviewMode = user?.role === "teacher" && viewRole === "student";
-  const effectivePreviewStudentId = isTeacherPreviewMode ? previewStudentId : "";
   const locationPathRef = React.useRef(location.pathname);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
@@ -177,18 +178,57 @@ export default function App() {
     }));
   }, []);
 
+  const switchAccount = React.useCallback(
+    async (accountKey) => {
+      if (!accountKey) return;
+      const currentKey = getActiveAccountKey();
+      if (currentKey === accountKey) return;
+      await teardownPushForSession();
+      disconnectSocket();
+      const nextUser = switchActiveAuthAccount(accountKey);
+      setAccounts(getAuthAccounts());
+      if (!nextUser) {
+        setUser(null);
+        navigate("/login");
+        return;
+      }
+      setUser(nextUser);
+      navigate(nextUser.role === "teacher" ? "/" : "/student");
+    },
+    [navigate]
+  );
+
+  const addAnotherAccount = React.useCallback(async () => {
+    await teardownPushForSession();
+    disconnectSocket();
+    clearActiveSessionOnly();
+    setUser(null);
+    navigate("/login");
+  }, [navigate]);
+
   const logout = async () => {
     await teardownPushForSession();
     disconnectSocket();
-    localStorage.removeItem("auth_user");
-    localStorage.removeItem("auth_token");
+    const activeKey = getActiveAccountKey();
+    if (activeKey) {
+      removeAuthAccount(activeKey);
+    } else {
+      clearActiveSessionOnly();
+    }
+    setAccounts(getAuthAccounts());
     setUser(null);
     navigate("/login");
   };
 
   const refreshCurrentUser = React.useCallback(async (overrideUser = null) => {
     if (overrideUser) {
-      localStorage.setItem("auth_user", JSON.stringify(overrideUser));
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        setActiveAuthSession({ token, user: overrideUser });
+      } else {
+        localStorage.setItem("auth_user", JSON.stringify(overrideUser));
+      }
+      setAccounts(getAuthAccounts());
       setUser(overrideUser);
       return;
     }
@@ -200,7 +240,13 @@ export default function App() {
     try {
       const fresh = await api.get("/auth/me", { showGlobalLoader: false }).then((res) => res?.data?.user || null);
       if (!fresh) return;
-      localStorage.setItem("auth_user", JSON.stringify(fresh));
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        setActiveAuthSession({ token, user: fresh });
+      } else {
+        localStorage.setItem("auth_user", JSON.stringify(fresh));
+      }
+      setAccounts(getAuthAccounts());
       setUser(fresh);
     } catch {
       // no-op
@@ -213,7 +259,11 @@ export default function App() {
 
   React.useEffect(() => {
     setSectionUnread({});
-  }, [user?.id, user?.role, viewRole]);
+  }, [user?.id, user?.role]);
+
+  React.useEffect(() => {
+    setAccounts(getAuthAccounts());
+  }, [user?.id]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -234,11 +284,16 @@ export default function App() {
         if (cancelled) return;
         const freshUser = res?.data?.user || null;
         if (freshUser) {
-          localStorage.setItem("auth_user", JSON.stringify(freshUser));
+          const currentToken = localStorage.getItem("auth_token");
+          if (currentToken) {
+            setActiveAuthSession({ token: currentToken, user: freshUser });
+            setAccounts(getAuthAccounts());
+          } else {
+            localStorage.setItem("auth_user", JSON.stringify(freshUser));
+          }
           setUser(freshUser);
         } else {
-          localStorage.removeItem("auth_user");
-          localStorage.removeItem("auth_token");
+          clearActiveSessionOnly();
           setUser(null);
         }
       })
@@ -246,8 +301,7 @@ export default function App() {
         if (cancelled) return;
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
-          localStorage.removeItem("auth_user");
-          localStorage.removeItem("auth_token");
+          clearActiveSessionOnly();
           setUser(null);
           return;
         }
@@ -274,21 +328,6 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("ui_theme", theme);
   }, [theme]);
-
-  React.useEffect(() => {
-    localStorage.setItem("view_role", viewRole);
-  }, [viewRole]);
-
-  React.useEffect(() => {
-    localStorage.setItem("preview_student_id", previewStudentId);
-  }, [previewStudentId]);
-
-  React.useEffect(() => {
-    if (user?.role !== "teacher" && previewStudentId) {
-      setPreviewStudentId("");
-      localStorage.removeItem("preview_student_id");
-    }
-  }, [user?.role, previewStudentId]);
 
   React.useEffect(() => {
     setNavOpen(false);
@@ -322,6 +361,7 @@ export default function App() {
   React.useEffect(() => {
     const sessionUser = getSession();
     if (sessionUser && !user) {
+      setAccounts(getAuthAccounts());
       setUser(sessionUser);
       return;
     }
@@ -710,10 +750,7 @@ export default function App() {
       const inferredPath = inferSectionPathFromNotification(item);
       if (inferredPath) {
         if (inferredPath === "/badge-requests") {
-          const targetPath =
-            user?.role === "teacher" && viewRole === "teacher"
-              ? "/badge-requests"
-              : "/student/badges";
+          const targetPath = user?.role === "teacher" ? "/badge-requests" : "/student/badges";
           bumpSectionIndicator(targetPath);
         } else {
           bumpSectionIndicator(inferredPath);
@@ -729,19 +766,13 @@ export default function App() {
       if (!mappedPath) return;
 
       if (eventName === "badge:request-updated") {
-        const targetPath =
-          user?.role === "teacher" && viewRole === "teacher"
-            ? "/badge-requests"
-            : "/student/badges";
+        const targetPath = user?.role === "teacher" ? "/badge-requests" : "/student/badges";
         bumpSectionIndicator(targetPath);
         return;
       }
 
       if (eventName === "badges:updated") {
-        const targetPath =
-          user?.role === "teacher" && viewRole === "teacher"
-            ? "/badge-requests"
-            : "/student/badges";
+        const targetPath = user?.role === "teacher" ? "/badge-requests" : "/student/badges";
         bumpSectionIndicator(targetPath);
         return;
       }
@@ -778,7 +809,6 @@ export default function App() {
     notificationSeenKey,
     chatSeenKey,
     rewardPopupSeenKey,
-    viewRole,
     bumpSectionIndicator
   ]);
 
@@ -956,7 +986,7 @@ export default function App() {
               ? "Reconnecting..."
               : "Offline"}
         </div>
-        {user?.role === "teacher" && viewRole === "teacher" ? (
+        {user?.role === "teacher" ? (
           <nav className="nav">
             <NavItem to="/" label="Overview" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/classes" label="Classes" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/classes"] || 0} />
@@ -1035,28 +1065,44 @@ export default function App() {
               <div className="mini-value">{user.name}</div>
               <div className="mini-note">{user.role}</div>
               {user.bio ? <div className="mini-note">{user.bio}</div> : null}
-              {user.role === "teacher" && (
-                <>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ marginTop: "10px" }}
-                    onClick={() =>
-                      setViewRole(viewRole === "teacher" ? "student" : "teacher")
+              <div className="mini-note" style={{ marginTop: "10px" }}>Accounts</div>
+              <select
+                className="select"
+                style={{ marginTop: "6px" }}
+                value={getActiveAccountKey() || accounts?.[0]?.accountKey || ""}
+                onChange={(event) => switchAccount(event.target.value)}
+              >
+                {(accounts || []).map((item) => (
+                  <option key={item.accountKey} value={item.accountKey}>
+                    {item.user?.name || "User"} ({item.user?.role || "member"})
+                  </option>
+                ))}
+              </select>
+              <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                <button className="btn btn-ghost" type="button" onClick={addAnotherAccount}>
+                  Add Account
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    const activeKey = getActiveAccountKey();
+                    if (!activeKey) return;
+                    removeAuthAccount(activeKey);
+                    const next = getAuthAccounts();
+                    setAccounts(next);
+                    if (next.length) {
+                      switchAccount(next[0].accountKey);
+                    } else {
+                      clearActiveSessionOnly();
+                      setUser(null);
+                      navigate("/login");
                     }
-                  >
-                    {viewRole === "teacher" ? "Student View" : "Teacher View"}
-                  </button>
-                  {viewRole === "student" && (
-                    <input
-                      className="input"
-                      style={{ marginTop: "10px" }}
-                      placeholder="Preview Student ID"
-                      value={previewStudentId}
-                      onChange={(event) => setPreviewStudentId(event.target.value)}
-                    />
-                  )}
-                </>
-              )}
+                  }}
+                >
+                  Remove Account
+                </button>
+              </div>
               <button
                 className="btn btn-ghost"
                 style={{ marginTop: "10px" }}
@@ -1080,7 +1126,7 @@ export default function App() {
           <Route
             path="/"
             element={
-              user?.role === "teacher" && viewRole === "teacher" ? (
+              user?.role === "teacher" ? (
                 <Dashboard />
               ) : (
                 <Navigate to="/student" replace />
@@ -1089,54 +1135,54 @@ export default function App() {
           />
           <Route
             path="/classes"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Classes /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Classes /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/students"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Students /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Students /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/homework"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Homework /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Homework /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/syllabus"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Syllabus /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Syllabus /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/attendance"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Attendance /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Attendance /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/marks"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Marks /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Marks /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/fees"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Fees /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Fees /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/invoices"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Invoices /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Invoices /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/leaderboard"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Leaderboard /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Leaderboard /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/badge-requests"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <BadgeRequests /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <BadgeRequests /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/holidays"
-            element={user?.role === "teacher" && viewRole === "teacher" ? <Holidays /> : <Navigate to="/login" replace />}
+            element={user?.role === "teacher" ? <Holidays /> : <Navigate to="/login" replace />}
           />
 
           <Route
             path="/student"
             element={
-              user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal previewStudentId={effectivePreviewStudentId} />
+              user?.role === "student" ? (
+                <StudentPortal />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -1145,8 +1191,8 @@ export default function App() {
           <Route
             path="/student/homework"
             element={
-              user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal section="homework" previewStudentId={effectivePreviewStudentId} />
+              user?.role === "student" ? (
+                <StudentPortal section="homework" />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -1155,8 +1201,8 @@ export default function App() {
           <Route
             path="/student/fees"
             element={
-              user?.role === "student" || viewRole === "student" ? (
-                <StudentPortal section="fees" previewStudentId={effectivePreviewStudentId} />
+              user?.role === "student" ? (
+                <StudentPortal section="fees" />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -1165,7 +1211,7 @@ export default function App() {
           <Route
             path="/student/quiz"
             element={
-              user?.role === "student" || viewRole === "student" ? (
+              user?.role === "student" ? (
                 <QuizDashboard />
               ) : (
                 <Navigate to="/login" replace />
@@ -1175,7 +1221,7 @@ export default function App() {
           <Route
             path="/student/students"
             element={
-              user?.role === "student" || viewRole === "student" ? (
+              user?.role === "student" ? (
                 <StudentDirectory />
               ) : (
                 <Navigate to="/login" replace />
@@ -1185,7 +1231,7 @@ export default function App() {
           <Route
             path="/student/students/:userId"
             element={
-              user?.role === "student" || viewRole === "student" ? (
+              user?.role === "student" ? (
                 <StudentPublicProfile />
               ) : (
                 <Navigate to="/login" replace />
