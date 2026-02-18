@@ -19,6 +19,18 @@ const formatSubjectName = (value) =>
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 
+const formatLastSeen = (value) => {
+  if (!value) return "Last seen unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Last seen unavailable";
+  return `Last seen ${date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  })}`;
+};
+
 export default function StudentDirectory() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
@@ -145,6 +157,7 @@ export default function StudentDirectory() {
                           {String(student.name || "S").slice(0, 1).toUpperCase()}
                         </div>
                       )}
+                      <span className={`student-online-dot ${student?.isOnline ? "online" : "offline"}`} />
                     </div>
                     <div className="student-directory-item-body">
                       <div className="student-directory-name">{student.name}</div>
@@ -162,6 +175,7 @@ export default function StudentDirectory() {
                           ? topSubjects.map((subject) => `${subject.label} ${subject.xp} XP`).join(" • ")
                           : "No quiz attempts yet"}
                       </div>
+                      <div className="student-directory-meta">{student?.isOnline ? "Online now" : formatLastSeen(student?.lastSeenAt)}</div>
                       <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                     </div>
                   </button>

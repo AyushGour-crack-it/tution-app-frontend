@@ -88,6 +88,7 @@ export default function StudentPublicProfile() {
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [liking, setLiking] = useState(false);
   const viewer = useMemo(() => {
     try {
@@ -99,9 +100,13 @@ export default function StudentPublicProfile() {
 
   const load = async () => {
     setLoading(true);
+    setError("");
     try {
       const data = await api.get(`/students/directory/${userId}`).then((res) => res.data);
       setStudent(data || null);
+    } catch (err) {
+      setStudent(null);
+      setError(err?.response?.data?.message || "Failed to load profile");
     } finally {
       setLoading(false);
     }
@@ -208,6 +213,7 @@ export default function StudentPublicProfile() {
                       {String(student.name || "S").slice(0, 1).toUpperCase()}
                     </div>
                   )}
+                  <span className={`student-online-dot student-online-dot-lg ${student?.isOnline ? "online" : "offline"}`} />
                 </div>
                 <div>
                   <h2 className="card-title" style={{ marginBottom: "6px" }}>
@@ -218,6 +224,9 @@ export default function StudentPublicProfile() {
                       Level {student.level?.level || 1}
                     </span>{" "}
                     • {student.totalXp || 0} XP
+                  </div>
+                  <div className="student-directory-meta student-profile-lastseen">
+                    {student?.isOnline ? "Online now" : formatLastSeen(student?.lastSeenAt)}
                   </div>
                 </div>
               </div>
@@ -235,9 +244,6 @@ export default function StudentPublicProfile() {
               </span>
               <span className="pill student-stat-pill student-stat-pill-likes">
                 Likes <strong>{student.likesCount || 0}</strong>
-              </span>
-              <span className={`pill student-stat-pill student-stat-pill-presence ${student?.isOnline ? "online" : "offline"}`}>
-                {student?.isOnline ? "Online" : formatLastSeen(student?.lastSeenAt)}
               </span>
               <span className="pill student-stat-pill student-stat-pill-quiz-level">
                 Quiz Lv <strong>{quizOverallLevel}</strong>
@@ -313,6 +319,8 @@ export default function StudentPublicProfile() {
               )}
             </div>
           </div>
+        ) : error ? (
+          <div className="auth-error">{error}</div>
         ) : (
           <div className="auth-error">Student not found.</div>
         )}
