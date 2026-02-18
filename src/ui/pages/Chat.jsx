@@ -4,7 +4,7 @@ import { connectSocket } from "../socket.js";
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [chatUsers, setChatUsers] = useState([]);
   const [text, setText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [typingLabel, setTypingLabel] = useState("");
@@ -14,7 +14,7 @@ export default function Chat() {
   const lastTypingEmitRef = useRef(0);
   const isFirstLoadRef = useRef(true);
   const [replyTo, setReplyTo] = useState(null);
-  const [recipientStudentId, setRecipientStudentId] = useState("");
+  const [recipientUserId, setRecipientUserId] = useState("");
   const [menuMessageId, setMenuMessageId] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -79,21 +79,15 @@ export default function Chat() {
     setLoadError("");
     try {
       const tasks = [api.get("/chat/messages").then((res) => res.data)];
-      if (user?.role === "teacher") {
-        tasks.push(api.get("/students").then((res) => res.data));
-      }
-      const [chatData, studentData] = await Promise.all(tasks);
+      tasks.push(api.get("/chat/users").then((res) => res.data || []));
+      const [chatData, usersData] = await Promise.all(tasks);
       setMessages(chatData);
       api.post("/chat/messages/read").catch(() => {});
-      if (studentData) {
-        setStudents(studentData);
-      }
+      setChatUsers(Array.isArray(usersData) ? usersData : []);
     } catch (error) {
       setLoadError(error?.response?.data?.message || "Failed to load chat.");
       setMessages([]);
-      if (user?.role === "teacher") {
-        setStudents([]);
-      }
+      setChatUsers([]);
     } finally {
       setLoadingMessages(false);
     }
@@ -211,7 +205,7 @@ export default function Chat() {
     if (now - lastTypingEmitRef.current < 800) return;
     lastTypingEmitRef.current = now;
     socket.emit("chat:typing", {
-      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+      recipientUserId: recipientUserId || null
     });
   };
 
@@ -223,10 +217,10 @@ export default function Chat() {
       senderId: user?.id || "",
       senderName: user?.name || "You",
       role: user?.role || "student",
-      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null,
+      recipientUserId: recipientUserId || null,
       recipientName:
-        user?.role === "teacher" && recipientStudentId
-          ? students.find((student) => String(student._id) === String(recipientStudentId))?.name || "Student"
+        recipientUserId
+          ? chatUsers.find((item) => String(item._id) === String(recipientUserId))?.name || "User"
           : "",
       type,
       content,
@@ -256,7 +250,7 @@ export default function Chat() {
         content: value,
         clientMessageId: optimistic.clientMessageId,
         replyTo: optimistic.replyTo || null,
-        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+        recipientUserId: recipientUserId || null
       });
       const serverMessage = created?.data;
       if (serverMessage?._id) {
@@ -285,7 +279,7 @@ export default function Chat() {
         content: value,
         clientMessageId: optimistic.clientMessageId,
         replyTo: optimistic.replyTo || null,
-        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+        recipientUserId: recipientUserId || null
       });
       const serverMessage = created?.data;
       if (serverMessage?._id) {
@@ -326,7 +320,7 @@ export default function Chat() {
         mimeType: file.type,
         clientMessageId: optimistic.clientMessageId,
         replyTo: replyTo?._id || null,
-        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+        recipientUserId: recipientUserId || null
       });
       const serverMessage = created?.data;
       if (serverMessage?._id) {
@@ -537,23 +531,23 @@ export default function Chat() {
       <div className="card chat-card">
         <div className="chat-toolbar">
           <div className="chat-toolbar-left">
-            {user?.role === "teacher" ? (
-              <div className="chat-audience">
-                <span className="chat-audience-label">Send to</span>
-                <select
-                  className="select chat-audience-select"
-                  value={recipientStudentId}
-                  onChange={(event) => setRecipientStudentId(event.target.value)}
-                >
-                  <option value="">All Students</option>
-                  {students.map((student) => (
-                    <option key={student._id} value={student._id}>
-                      {student.name}
+            <div className="chat-audience">
+              <span className="chat-audience-label">Send to</span>
+              <select
+                className="select chat-audience-select"
+                value={recipientUserId}
+                onChange={(event) => setRecipientUserId(event.target.value)}
+              >
+                <option value="">Everyone</option>
+                {chatUsers
+                  .filter((item) => String(item?._id || "") !== String(user?.id || ""))
+                  .map((item) => (
+                    <option key={item._id} value={item._id}>
+                      {item.name} ({item.role})
                     </option>
                   ))}
-                </select>
-              </div>
-            ) : null}
+              </select>
+            </div>
           </div>
           <div className="chat-toolbar-actions">
             {localClearAfter ? (
@@ -631,9 +625,17 @@ export default function Chat() {
               >
                 <div className="chat-meta-row">
                   <div className="chat-meta-sender">
-                    <div className="chat-avatar" aria-hidden="true">
-                      {String(msg?.senderName || "?").slice(0, 1).toUpperCase()}
-                    </div>
+                    {msg?.senderAvatar ? (
+                      <img
+                        className="chat-avatar chat-avatar-img"
+                        src={msg.senderAvatar}
+                        alt={msg.senderName || "User"}
+                      />
+                    ) : (
+                      <div className="chat-avatar" aria-hidden="true">
+                        {String(msg?.senderName || "?").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
                     <div className="chat-meta">
                       <strong className={getSenderColorClass(msg)}>{msg.senderName}</strong>
                     </div>
@@ -708,8 +710,8 @@ export default function Chat() {
                     <div className="chat-reply-snippet">{replyPreview.snippet}</div>
                   </div>
                 )}
-                {msg.recipientStudentId && (
-                  <div className="chat-meta">To: {msg.recipientName || "Student"}</div>
+                {msg.recipientUserId && (
+                  <div className="chat-meta">To: {msg.recipientName || "User"}</div>
                 )}
                 {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
                 {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}

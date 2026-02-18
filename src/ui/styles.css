@@ -778,6 +778,11 @@ html[data-theme="dark"] {
   flex-shrink: 0;
 }
 
+.chat-avatar-img {
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+}
+
 .chat-message-mine .chat-avatar {
   background: linear-gradient(135deg, #ff8a5b, #ffb86e);
   color: #2b1a0a;
