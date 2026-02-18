@@ -16,7 +16,6 @@ import Chat from "./pages/Chat.jsx";
 import Profile from "./pages/Profile.jsx";
 import Marks from "./pages/Marks.jsx";
 import Notifications from "./pages/Notifications.jsx";
-import Invoices from "./pages/Invoices.jsx";
 import Leaderboard from "./pages/Leaderboard.jsx";
 import { api, subscribeApiActivity } from "./api.js";
 import StudentDirectory from "./pages/StudentDirectory.jsx";
@@ -50,7 +49,6 @@ const SECTION_EVENT_ROUTE_MAP = {
   "marks:updated": "/marks",
   "fee:updated": "/fees",
   "holidays:updated": "/holidays",
-  "invoices:updated": "/invoices",
   "leaderboard:updated": "/leaderboard",
   "badges:updated": "/student/badges",
   "badge:request-updated": "/badge-requests"
@@ -69,7 +67,6 @@ const inferSectionPathFromNotification = (item) => {
   const text = `${title} ${message}`;
   if (text.includes("badge")) return "/badge-requests";
   if (text.includes("fee") || text.includes("payment")) return "/fees";
-  if (text.includes("invoice")) return "/invoices";
   if (text.includes("homework")) return "/homework";
   if (text.includes("attendance")) return "/attendance";
   if (text.includes("mark")) return "/marks";
@@ -996,7 +993,6 @@ export default function App() {
             <NavItem to="/attendance" label="Attendance" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/attendance"] || 0} />
             <NavItem to="/marks" label="Marks" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/marks"] || 0} />
             <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
-            <NavItem to="/invoices" label="Invoices" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/invoices"] || 0} />
             <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/leaderboard"] || 0} />
             <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/badge-requests"] || 0} />
             <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/holidays"] || 0} />
@@ -1160,10 +1156,6 @@ export default function App() {
           <Route
             path="/fees"
             element={user?.role === "teacher" ? <Fees /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/invoices"
-            element={user?.role === "teacher" ? <Invoices /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/leaderboard"

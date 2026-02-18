@@ -19,8 +19,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [homework, setHomework] = useState([]);
   const [fees, setFees] = useState([]);
   const [marks, setMarks] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [receipts, setReceipts] = useState([]);
   const [todo, setTodo] = useState([]);
   const [todoText, setTodoText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,17 +49,13 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   const load = async () => {
     setLoading(true);
-    const [homeworkData, feeData, invoiceData, receiptData, announcementData] = await Promise.all([
+    const [homeworkData, feeData, announcementData] = await Promise.all([
       api.get("/homeworks").then((res) => res.data),
       api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
-      api.get(previewStudentId ? `/invoices?studentId=${previewStudentId}` : "/invoices").then((res) => res.data),
-      api.get(previewStudentId ? `/receipts?studentId=${previewStudentId}` : "/receipts").then((res) => res.data),
       api.get("/announcements").then((res) => res.data || [])
     ]);
     setHomework(homeworkData);
     setFees(feeData);
-    setInvoices(invoiceData);
-    setReceipts(receiptData);
     setAnnouncements((announcementData || []).slice(0, 4));
     setOfflineRequestDraft((prev) => {
       if (prev.monthInput) return prev;
@@ -330,7 +324,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     section === "homework"
       ? "View assignments and due dates."
       : section === "fees"
-        ? "Track dues, invoices, and receipts."
+        ? "Track dues and payment status."
         : "Your homework, fees, and updates.";
 
   return (
@@ -546,24 +540,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                 <div className="card" style={{ marginBottom: "16px", padding: "16px" }}>
                   <h3 style={{ margin: 0, marginBottom: "10px" }}>Offline Payment Request</h3>
                   <div className="form">
-                    <select
-                      className="select"
-                      value={offlineRequestDraft.feeId}
-                      onChange={(event) =>
-                        setOfflineRequestDraft((prev) => ({ ...prev, feeId: event.target.value }))
-                      }
-                    >
-                      <option value="">Select fee month</option>
-                      {fees.map((row) => {
-                        const paid = row.payments?.reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0;
-                        const due = Math.max(Number(row.total || 0) - paid, 0);
-                        return (
-                          <option key={row._id} value={row._id}>
-                            {row.month} {due > 0 ? `- Due ₹${due}` : "- Fully paid"}
-                          </option>
-                        );
-                      })}
-                    </select>
                     <input
                       className="input"
                       type="month"
@@ -654,72 +630,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   {!fees.length && (
                     <tr>
                       <td colSpan="5">No fee records yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {(section === "dashboard" || section === "fees") && (
-            <div className="card" style={{ marginTop: "24px" }}>
-              <h2 className="card-title">My Invoices</h2>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr key={inv._id}>
-                      <td>{inv.number}</td>
-                      <td>{inv.status}</td>
-                      <td>{inv.total}</td>
-                      <td>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                  {!invoices.length && (
-                    <tr>
-                      <td colSpan="4">No invoices yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {(section === "dashboard" || section === "fees") && (
-            <div className="card" style={{ marginTop: "24px" }}>
-              <h2 className="card-title">My Receipts</h2>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Due Date</th>
-                    <th>Late</th>
-                    <th>XP</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receipts.map((rec) => (
-                    <tr key={rec._id}>
-                      <td>{rec.amount}</td>
-                      <td>{rec.method}</td>
-                      <td>{rec.dueDate ? new Date(rec.dueDate).toLocaleDateString() : "-"}</td>
-                      <td>{Number(rec.lateDays || 0)}</td>
-                      <td>{Number(rec.xpAwarded || 0)}</td>
-                      <td>{rec.paidOn ? new Date(rec.paidOn).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                  {!receipts.length && (
-                    <tr>
-                      <td colSpan="6">No receipts yet.</td>
                     </tr>
                   )}
                 </tbody>
