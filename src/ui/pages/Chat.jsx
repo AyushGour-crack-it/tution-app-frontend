@@ -54,6 +54,10 @@ export default function Chat() {
     () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
     [messages]
   );
+  const chatUserLookup = useMemo(
+    () => Object.fromEntries((chatUsers || []).map((item) => [String(item._id), item])),
+    [chatUsers]
+  );
   const groupedReactions = (message) => {
     const groups = (Array.isArray(message?.reactions) ? message.reactions : []).reduce((acc, item) => {
       const emoji = String(item?.emoji || "").trim();
@@ -605,6 +609,9 @@ export default function Chat() {
             }
 
             const msg = item.message;
+            const senderMeta = chatUserLookup[String(msg?.senderId || "")] || null;
+            const senderAvatar = msg?.senderAvatar || senderMeta?.avatarUrl || "";
+            const senderName = msg?.senderName || senderMeta?.name || "User";
             const readReceipt = getReadReceipt(msg);
             const replyPreview = getReplyPreview(msg);
             const reactionGroups = groupedReactions(msg);
@@ -625,19 +632,19 @@ export default function Chat() {
               >
                 <div className="chat-meta-row">
                   <div className="chat-meta-sender">
-                    {msg?.senderAvatar ? (
+                    {senderAvatar ? (
                       <img
                         className="chat-avatar chat-avatar-img"
-                        src={msg.senderAvatar}
-                        alt={msg.senderName || "User"}
+                        src={senderAvatar}
+                        alt={senderName}
                       />
                     ) : (
                       <div className="chat-avatar" aria-hidden="true">
-                        {String(msg?.senderName || "?").slice(0, 1).toUpperCase()}
+                        {String(senderName || "?").slice(0, 1).toUpperCase()}
                       </div>
                     )}
                     <div className="chat-meta">
-                      <strong className={getSenderColorClass(msg)}>{msg.senderName}</strong>
+                      <strong className={getSenderColorClass(msg)}>{senderName}</strong>
                     </div>
                   </div>
                   <div className="chat-meta-actions">
