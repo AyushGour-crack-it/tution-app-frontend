@@ -442,7 +442,10 @@ export default function App() {
               (item) =>
                 item?._id &&
                 !seenRewardSet.has(item._id) &&
-                (item?.title === "Payment Received" || item?.title === "Daily XP Bonus" || item?.title === "Offline Payment Approved")
+                (item?.title === "Payment Received" ||
+                  item?.title === "Daily XP Bonus" ||
+                  item?.title === "Birthday XP Gift" ||
+                  item?.title === "Offline Payment Approved")
             )
             .map((item) => ({
               id: item._id,
@@ -648,7 +651,10 @@ export default function App() {
         item?._id &&
         rewardPopupSeenKey &&
         user?.role === "student" &&
-        (item?.title === "Payment Received" || item?.title === "Daily XP Bonus" || item?.title === "Offline Payment Approved")
+        (item?.title === "Payment Received" ||
+          item?.title === "Daily XP Bonus" ||
+          item?.title === "Birthday XP Gift" ||
+          item?.title === "Offline Payment Approved")
       ) {
         let seenRewardIds = [];
         try {
