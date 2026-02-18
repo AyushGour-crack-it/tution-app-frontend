@@ -69,6 +69,17 @@ export default function Chat() {
       .map(([emoji, count]) => ({ emoji, count }))
       .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
   };
+  const formatLastSeen = (value) => {
+    if (!value) return "Last seen unavailable";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Last seen unavailable";
+    return `Last seen ${date.toLocaleString([], {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    })}`;
+  };
 
   const scrollToLatest = () => {
     const node = chatWindowRef.current;
@@ -158,16 +169,34 @@ export default function Chat() {
       typingResetTimeoutRef.current = setTimeout(() => setTypingLabel(""), 1500);
     };
 
+    const onPresenceUpdated = (payload) => {
+      const targetId = String(payload?.userId || "");
+      if (!targetId) return;
+      setChatUsers((prev) =>
+        prev.map((item) =>
+          String(item._id) === targetId
+            ? {
+                ...item,
+                isOnline: Boolean(payload?.isOnline),
+                lastSeenAt: payload?.lastSeenAt || item.lastSeenAt || null
+              }
+            : item
+        )
+      );
+    };
+
     socket.on("chat:new", onChatNew);
     socket.on("chat:updated", onChatUpdated);
     socket.on("chat:deleted", onChatDeleted);
     socket.on("chat:typing", onChatTyping);
+    socket.on("presence:updated", onPresenceUpdated);
     socket.on("connect", load);
     return () => {
       socket.off("chat:new", onChatNew);
       socket.off("chat:updated", onChatUpdated);
       socket.off("chat:deleted", onChatDeleted);
       socket.off("chat:typing", onChatTyping);
+      socket.off("presence:updated", onPresenceUpdated);
       socket.off("connect", load);
       socketRef.current = null;
     };
@@ -482,6 +511,10 @@ export default function Chat() {
 
     return items;
   }, [visibleMessages, prevSeenAt, user?.id]);
+  const selectedRecipient = useMemo(
+    () => chatUsers.find((item) => String(item._id) === String(recipientUserId || "")) || null,
+    [chatUsers, recipientUserId]
+  );
 
   return (
     <div className="page chat-page">
@@ -547,11 +580,17 @@ export default function Chat() {
                   .filter((item) => String(item?._id || "") !== String(user?.id || ""))
                   .map((item) => (
                     <option key={item._id} value={item._id}>
-                      {item.name} ({item.role})
+                      {item.isOnline ? "🟢 " : ""}{item.name} ({item.role})
                     </option>
                   ))}
               </select>
             </div>
+            {selectedRecipient ? (
+              <div className="chat-presence-line">
+                <span className={`chat-presence-dot ${selectedRecipient.isOnline ? "online" : "offline"}`} />
+                {selectedRecipient.isOnline ? "Online now" : formatLastSeen(selectedRecipient.lastSeenAt)}
+              </div>
+            ) : null}
           </div>
           <div className="chat-toolbar-actions">
             {localClearAfter ? (
@@ -612,6 +651,7 @@ export default function Chat() {
             const senderMeta = chatUserLookup[String(msg?.senderId || "")] || null;
             const senderAvatar = msg?.senderAvatar || senderMeta?.avatarUrl || "";
             const senderName = msg?.senderName || senderMeta?.name || "User";
+            const senderIsOnline = Boolean(senderMeta?.isOnline);
             const readReceipt = getReadReceipt(msg);
             const replyPreview = getReplyPreview(msg);
             const reactionGroups = groupedReactions(msg);
@@ -634,12 +674,12 @@ export default function Chat() {
                   <div className="chat-meta-sender">
                     {senderAvatar ? (
                       <img
-                        className="chat-avatar chat-avatar-img"
+                        className={`chat-avatar chat-avatar-img ${senderIsOnline ? "chat-avatar-online" : ""}`}
                         src={senderAvatar}
                         alt={senderName}
                       />
                     ) : (
-                      <div className="chat-avatar" aria-hidden="true">
+                      <div className={`chat-avatar ${senderIsOnline ? "chat-avatar-online" : ""}`} aria-hidden="true">
                         {String(senderName || "?").slice(0, 1).toUpperCase()}
                       </div>
                     )}

@@ -71,6 +71,18 @@ const getQuizMotivation = ({ totalXP, streakCount, overallLevel }) => {
   return "Steady progress. One more quiz can move this profile up.";
 };
 
+const formatLastSeen = (value) => {
+  if (!value) return "Last seen unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Last seen unavailable";
+  return `Last seen ${date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  })}`;
+};
+
 export default function StudentPublicProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -223,6 +235,9 @@ export default function StudentPublicProfile() {
               </span>
               <span className="pill student-stat-pill student-stat-pill-likes">
                 Likes <strong>{student.likesCount || 0}</strong>
+              </span>
+              <span className={`pill student-stat-pill student-stat-pill-presence ${student?.isOnline ? "online" : "offline"}`}>
+                {student?.isOnline ? "Online" : formatLastSeen(student?.lastSeenAt)}
               </span>
               <span className="pill student-stat-pill student-stat-pill-quiz-level">
                 Quiz Lv <strong>{quizOverallLevel}</strong>

@@ -55,6 +55,24 @@ const normalizeSectionPath = (pathname) => {
   return pathname;
 };
 
+const inferSectionPathFromNotification = (item) => {
+  const title = String(item?.title || "").toLowerCase();
+  const message = String(item?.message || "").toLowerCase();
+  const text = `${title} ${message}`;
+  if (text.includes("badge")) return "/badge-requests";
+  if (text.includes("fee") || text.includes("payment")) return "/fees";
+  if (text.includes("invoice")) return "/invoices";
+  if (text.includes("homework")) return "/homework";
+  if (text.includes("attendance")) return "/attendance";
+  if (text.includes("mark")) return "/marks";
+  if (text.includes("syllabus")) return "/syllabus";
+  if (text.includes("holiday")) return "/holidays";
+  if (text.includes("class")) return "/classes";
+  if (text.includes("leaderboard")) return "/leaderboard";
+  if (text.includes("student")) return "/students";
+  return "";
+};
+
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
     to={to}
@@ -677,6 +695,19 @@ export default function App() {
             rewardPopupSeenKey,
             JSON.stringify([...seenRewardIds, item._id].slice(-300))
           );
+        }
+      }
+
+      const inferredPath = inferSectionPathFromNotification(item);
+      if (inferredPath) {
+        if (inferredPath === "/badge-requests") {
+          const targetPath =
+            user?.role === "teacher" && viewRole === "teacher"
+              ? "/badge-requests"
+              : "/student/badges";
+          bumpSectionIndicator(targetPath);
+        } else {
+          bumpSectionIndicator(inferredPath);
         }
       }
 
