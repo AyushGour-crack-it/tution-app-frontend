@@ -19,18 +19,6 @@ const formatSubjectName = (value) =>
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 
-const formatLastSeen = (value) => {
-  if (!value) return "Last seen unavailable";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Last seen unavailable";
-  return `Last seen ${date.toLocaleString([], {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  })}`;
-};
-
 export default function StudentDirectory() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
@@ -119,6 +107,7 @@ export default function StudentDirectory() {
           ) : (
             <div className="list student-directory-list-grid">
               {filtered.map((student, index) => {
+                const targetUserId = String(student?.userId || "").trim();
                 const frame = resolveAvatarFrame({
                   badges: student.badges || [],
                   totalXp: student.totalXp || 0,
@@ -137,11 +126,15 @@ export default function StudentDirectory() {
                 return (
                   <button
                     type="button"
-                    key={student.userId}
+                    key={student.userId || `${student.name}-${index}`}
                     className={`student-directory-item ${index === 0 ? "student-directory-item-rank-1" : ""} ${
                       index === 1 ? "student-directory-item-rank-2" : ""
                     } ${index === 2 ? "student-directory-item-rank-3" : ""}`}
-                    onClick={() => navigate(`/student/students/${student.userId}`)}
+                    onClick={() => {
+                      if (!targetUserId) return;
+                      navigate(`/student/students/${targetUserId}`);
+                    }}
+                    disabled={!targetUserId}
                   >
                     <div className="student-directory-quiz-strip">
                       <span className="student-directory-quiz-pill">Quiz Lv {quizLevel}</span>
@@ -180,7 +173,7 @@ export default function StudentDirectory() {
                           ? topSubjects.map((subject) => `${subject.label} ${subject.xp} XP`).join(" • ")
                           : "No quiz attempts yet"}
                       </div>
-                      <div className="student-directory-meta">{student?.isOnline ? "Online now" : formatLastSeen(student?.lastSeenAt)}</div>
+                      {student?.isOnline ? <div className="student-directory-meta">Online now</div> : null}
                       <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                     </div>
                   </button>

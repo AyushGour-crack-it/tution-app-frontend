@@ -62,6 +62,26 @@ export default function Profile() {
   });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const quizSubjectProgress = useMemo(() => {
+    const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
+      ? quizStats.subjectXP
+      : {};
+    return Object.entries(source)
+      .map(([subject, rawXp]) => {
+        const xp = Number(rawXp || 0);
+        const level = Number(quizStats?.subjectLevel?.[subject] || 0);
+        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
+        return {
+          key: subject,
+          subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
+          xp,
+          level,
+          progress
+        };
+      })
+      .sort((a, b) => b.xp - a.xp)
+      .slice(0, 6);
+  }, [quizStats]);
 
   const load = async () => {
     setError("");
@@ -199,26 +219,6 @@ export default function Profile() {
     return String(a?.title || "").localeCompare(String(b?.title || ""));
   });
   const totalBadges = sortedEarnedBadges.length;
-  const quizSubjectProgress = useMemo(() => {
-    const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
-      ? quizStats.subjectXP
-      : {};
-    return Object.entries(source)
-      .map(([subject, rawXp]) => {
-        const xp = Number(rawXp || 0);
-        const level = Number(quizStats?.subjectLevel?.[subject] || 0);
-        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
-        return {
-          key: subject,
-          subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
-          xp,
-          level,
-          progress
-        };
-      })
-      .sort((a, b) => b.xp - a.xp)
-      .slice(0, 6);
-  }, [quizStats]);
 
   return (
     <div className="page">

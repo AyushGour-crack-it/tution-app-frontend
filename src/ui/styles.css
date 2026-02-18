@@ -1281,6 +1281,13 @@ html[data-theme="dark"] {
   box-shadow: 0 12px 24px rgba(6, 12, 20, 0.12);
 }
 
+.student-directory-item:disabled {
+  opacity: 0.74;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .student-directory-item-rank-1 {
   background:
     radial-gradient(circle at 10% 16%, rgba(255, 224, 122, 0.3), transparent 40%),
@@ -1379,6 +1386,7 @@ html[data-theme="dark"] {
   width: 100%;
   display: grid;
   gap: 4px;
+  grid-area: body;
 }
 
 .student-directory-headline {
@@ -1393,11 +1401,13 @@ html[data-theme="dark"] {
 
 .student-directory-avatar-wrap {
   margin-top: 2px;
+  grid-area: avatar;
 }
 
 .student-directory-quiz-strip {
   width: calc(100% - 24px);
   grid-column: 1 / -1;
+  grid-area: quiz;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -3515,19 +3525,45 @@ html[data-theme="dark"] .student-profile-quiz-total {
   }
 
   .student-directory-item {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 10px;
-    padding: 11px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-areas:
+      "quiz quiz"
+      "avatar body";
+    align-items: start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
   }
 
   .student-directory-rank {
-    grid-row: 2;
+    position: absolute;
+    top: 10px;
+    right: 10px;
     margin-top: 0;
+    min-width: 34px;
+    height: 22px;
+    z-index: 2;
   }
 
   .student-directory-quiz-strip {
     width: 100%;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
+    padding-right: 40px;
+  }
+
+  .student-directory-avatar-wrap {
+    margin-top: 0;
+  }
+
+  .student-directory-name {
+    font-size: 15px;
+  }
+
+  .student-directory-mini,
+  .student-directory-meta,
+  .student-directory-bio-preview {
+    font-size: 11px;
+    line-height: 1.35;
   }
 
   .table td:last-child .btn,
@@ -3718,19 +3754,26 @@ html[data-theme="dark"] .student-profile-quiz-total {
   }
 
   .student-directory-item {
-    padding: 9px;
+    grid-template-columns: 46px minmax(0, 1fr);
+    padding: 10px;
     gap: 10px;
   }
 
   .student-directory-rank {
-    min-width: 32px;
-    height: 22px;
-    margin-top: 8px;
+    top: 8px;
+    right: 8px;
   }
 
   .student-directory-avatar {
     width: 42px;
     height: 42px;
+  }
+
+  .student-online-dot {
+    width: 10px;
+    height: 10px;
+    right: 2px;
+    bottom: 2px;
   }
 
   .student-portal-profile-row {
