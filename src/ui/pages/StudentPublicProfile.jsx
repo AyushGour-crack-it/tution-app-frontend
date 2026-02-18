@@ -213,7 +213,6 @@ export default function StudentPublicProfile() {
                     </span>{" "}
                     • {student.totalXp || 0} XP
                   </div>
-                  {student?.isOnline ? <div className="student-directory-meta">Online now</div> : null}
                 </div>
               </div>
             </div>

@@ -173,7 +173,6 @@ export default function StudentDirectory() {
                           ? topSubjects.map((subject) => `${subject.label} ${subject.xp} XP`).join(" • ")
                           : "No quiz attempts yet"}
                       </div>
-                      {student?.isOnline ? <div className="student-directory-meta">Online now</div> : null}
                       <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                     </div>
                   </button>
