@@ -24,6 +24,7 @@ import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
 import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
 import StudentAccessPending from "./pages/StudentAccessPending.jsx";
+import QuizDashboard from "../features/quiz/Dashboard.jsx";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
   connectSocket,
@@ -948,6 +949,7 @@ export default function App() {
             <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/homework"] || 0} />
             <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
+            <NavItem to="/student/quiz" label="Skill Quiz" onNavigate={closeMobileNavOnNavigate} />
             {user?.role === "student" ? (
               <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/student/badges"] || 0} />
             ) : null}
@@ -1109,6 +1111,16 @@ export default function App() {
             element={
               user?.role === "student" || viewRole === "student" ? (
                 <StudentPortal section="fees" previewStudentId={previewStudentId} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/student/quiz"
+            element={
+              user?.role === "student" || viewRole === "student" ? (
+                <QuizDashboard />
               ) : (
                 <Navigate to="/login" replace />
               )

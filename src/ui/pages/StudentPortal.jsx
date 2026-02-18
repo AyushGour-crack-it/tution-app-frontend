@@ -546,8 +546,8 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                         <td>{paid}</td>
                         <td>{due}</td>
                         <td>
-                          {due > 0 ? (
-                            <div style={{ display: "grid", gap: "8px" }}>
+                          <div style={{ display: "grid", gap: "8px" }}>
+                            {due > 0 ? (
                               <button
                                 className="btn btn-ghost"
                                 type="button"
@@ -556,39 +556,39 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                               >
                                 {payingFeeId === row._id ? "Opening..." : `Pay ₹${due}`}
                               </button>
-                              {!previewStudentId ? (
-                                <>
-                                  <input
-                                    className="input"
-                                    type="number"
-                                    placeholder="Offline amount"
-                                    value={draft.amount}
-                                    onChange={(event) => updateOfflineDraft(row._id, "amount", event.target.value)}
-                                  />
-                                  <input
-                                    className="input"
-                                    placeholder="Message for teacher (optional)"
-                                    value={draft.message}
-                                    onChange={(event) => updateOfflineDraft(row._id, "message", event.target.value)}
-                                  />
-                                  <button
-                                    className="btn btn-ghost"
-                                    type="button"
-                                    onClick={() => submitOfflineRequest(row._id)}
-                                  >
-                                    Pay Offline - Send Request
-                                  </button>
-                                  {offlineRequestState[row._id] ? (
-                                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>
-                                      {offlineRequestState[row._id]}
-                                    </div>
-                                  ) : null}
-                                </>
-                              ) : null}
-                            </div>
-                          ) : (
-                            <span className="badge">Paid</span>
-                          )}
+                            ) : (
+                              <span className="badge">Paid</span>
+                            )}
+                            {!previewStudentId ? (
+                              <>
+                                <input
+                                  className="input"
+                                  type="number"
+                                  placeholder={due > 0 ? `Offline amount (suggested ₹${due})` : "Offline amount"}
+                                  value={draft.amount}
+                                  onChange={(event) => updateOfflineDraft(row._id, "amount", event.target.value)}
+                                />
+                                <input
+                                  className="input"
+                                  placeholder="Message for teacher (optional)"
+                                  value={draft.message}
+                                  onChange={(event) => updateOfflineDraft(row._id, "message", event.target.value)}
+                                />
+                                <button
+                                  className="btn btn-ghost"
+                                  type="button"
+                                  onClick={() => submitOfflineRequest(row._id)}
+                                >
+                                  Pay Offline - Send Request
+                                </button>
+                                {offlineRequestState[row._id] ? (
+                                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                                    {offlineRequestState[row._id]}
+                                  </div>
+                                ) : null}
+                              </>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     );
