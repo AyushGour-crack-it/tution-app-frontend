@@ -19,8 +19,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [homework, setHomework] = useState([]);
   const [fees, setFees] = useState([]);
   const [marks, setMarks] = useState([]);
-  const [todo, setTodo] = useState([]);
-  const [todoText, setTodoText] = useState("");
   const [loading, setLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState("");
   const [feeError, setFeeError] = useState("");
@@ -41,7 +39,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
       return null;
     }
   }, []);
-  const effectiveStudentId = previewStudentId || user?.studentId || user?.id || "";
 
   const upiId = "ayushgour2526@oksbi";
   const upiName = "Ayush Gour";
@@ -118,35 +115,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     };
   }, [section, previewStudentId]);
 
-  useEffect(() => {
-    if (!effectiveStudentId) return;
-    const key = `todo_${effectiveStudentId}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      setTodo(JSON.parse(stored));
-    }
-  }, [effectiveStudentId]);
-
-  useEffect(() => {
-    if (!effectiveStudentId) return;
-    const key = `todo_${effectiveStudentId}`;
-    localStorage.setItem(key, JSON.stringify(todo));
-  }, [todo, effectiveStudentId]);
-
-  const addTodo = () => {
-    if (!todoText.trim()) return;
-    setTodo((prev) => [...prev, { id: Date.now(), text: todoText.trim(), done: false }]);
-    setTodoText("");
-  };
-
-  const toggleTodo = (id) => {
-    setTodo((prev) => prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
-  };
-
-  const removeTodo = (id) => {
-    setTodo((prev) => prev.filter((item) => item.id !== id));
-  };
-
   const messageList = [
     "Small steps every day become big results.",
     "Focus is your superpower. Use it well.",
@@ -155,24 +123,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     "You are capable of more than you feel right now."
   ];
   const dailyMessage = messageList[new Date().getDate() % messageList.length];
-
-  const getCalendarDays = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < firstDay; i += 1) {
-      cells.push(null);
-    }
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      cells.push(day);
-    }
-    return { cells, today: now.getDate(), monthLabel: now.toLocaleString("default", { month: "long", year: "numeric" }) };
-  };
-
-  const calendar = getCalendarDays();
 
   const upiLink = (amount) => {
     const params = new URLSearchParams({
@@ -457,62 +407,6 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
               <p style={{ margin: 0 }}>{dailyMessage}</p>
               <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--muted)" }}>
                 — Ayush Gour
-              </div>
-            </div>
-          )}
-
-          {section === "dashboard" && (
-            <div className="grid grid-2" style={{ marginTop: "24px" }}>
-              <div className="card">
-                <h2 className="card-title">{calendar.monthLabel}</h2>
-                <div className="calendar">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                    <div key={day} className="day header">
-                      {day}
-                    </div>
-                  ))}
-                  {calendar.cells.map((day, idx) => (
-                    <div
-                      key={`${day}-${idx}`}
-                      className={`day${day === calendar.today ? " today" : ""}`}
-                    >
-                      {day || ""}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="card">
-                <h2 className="card-title">My Todo List</h2>
-                <div className="form">
-                  <input
-                    className="input"
-                    placeholder="Add a task"
-                    value={todoText}
-                    onChange={(event) => setTodoText(event.target.value)}
-                  />
-                  <button className="btn" type="button" onClick={addTodo}>
-                    Add Task
-                  </button>
-                </div>
-                <div className="todo-list" style={{ marginTop: "12px" }}>
-                  {todo.map((item) => (
-                    <div className="todo-item" key={item.id}>
-                      <input
-                        type="checkbox"
-                        checked={item.done}
-                        onChange={() => toggleTodo(item.id)}
-                      />
-                      <div style={{ textDecoration: item.done ? "line-through" : "none" }}>
-                        {item.text}
-                      </div>
-                      <button className="btn btn-ghost" onClick={() => removeTodo(item.id)}>
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  {!todo.length && <div>No tasks yet.</div>}
-                </div>
               </div>
             </div>
           )}
