@@ -5,6 +5,7 @@ import { getFirebaseMessaging, isPushConfigured } from "../firebase.js";
 let activeUnsubscribe = null;
 let registeredToken = "";
 let lastPushSetup = { enabled: false, reason: "not_started" };
+const cleanEnv = (value) => String(value || "").trim().replace(/^['"]|['"]$/g, "");
 
 const reportSetup = (result) => {
   lastPushSetup = result;
@@ -18,11 +19,11 @@ const reportSetup = (result) => {
 
 const toSwUrlWithConfig = () => {
   const params = new URLSearchParams({
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+    apiKey: cleanEnv(import.meta.env.VITE_FIREBASE_API_KEY),
+    authDomain: cleanEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+    projectId: cleanEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+    messagingSenderId: cleanEnv(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    appId: cleanEnv(import.meta.env.VITE_FIREBASE_APP_ID)
   });
   return `/firebase-messaging-sw.js?${params.toString()}`;
 };
@@ -64,7 +65,7 @@ export const setupPushForSession = async () => {
       : await Notification.requestPermission();
   if (permission !== "granted") return reportSetup({ enabled: false, reason: "permission_not_granted" });
 
-  const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "";
+  const vapidKey = cleanEnv(import.meta.env.VITE_FIREBASE_VAPID_KEY);
   if (!vapidKey) return reportSetup({ enabled: false, reason: "missing_vapid_key" });
 
   const messaging = await getFirebaseMessaging();
