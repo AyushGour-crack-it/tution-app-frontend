@@ -4,6 +4,17 @@ import { getFirebaseMessaging, isPushConfigured } from "../firebase.js";
 
 let activeUnsubscribe = null;
 let registeredToken = "";
+let lastPushSetup = { enabled: false, reason: "not_started" };
+
+const reportSetup = (result) => {
+  lastPushSetup = result;
+  try {
+    window.__pushDebug = result;
+  } catch {
+    // no-op
+  }
+  return result;
+};
 
 const toSwUrlWithConfig = () => {
   const params = new URLSearchParams({
@@ -43,30 +54,34 @@ const showForegroundNotification = (payload) => {
 };
 
 export const setupPushForSession = async () => {
-  if (!isPushConfigured()) return { enabled: false, reason: "missing_config" };
-  if (!("Notification" in window)) return { enabled: false, reason: "no_notification_api" };
-  if (Notification.permission === "denied") return { enabled: false, reason: "permission_denied" };
+  if (!isPushConfigured()) return reportSetup({ enabled: false, reason: "missing_config" });
+  if (!("Notification" in window)) return reportSetup({ enabled: false, reason: "no_notification_api" });
+  if (Notification.permission === "denied") return reportSetup({ enabled: false, reason: "permission_denied" });
 
   const permission =
     Notification.permission === "granted"
       ? "granted"
       : await Notification.requestPermission();
-  if (permission !== "granted") return { enabled: false, reason: "permission_not_granted" };
+  if (permission !== "granted") return reportSetup({ enabled: false, reason: "permission_not_granted" });
 
   const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "";
-  if (!vapidKey) return { enabled: false, reason: "missing_vapid_key" };
+  if (!vapidKey) return reportSetup({ enabled: false, reason: "missing_vapid_key" });
 
   const messaging = await getFirebaseMessaging();
-  if (!messaging) return { enabled: false, reason: "messaging_not_supported" };
+  if (!messaging) return reportSetup({ enabled: false, reason: "messaging_not_supported" });
 
   const serviceWorkerRegistration = await ensureServiceWorker();
-  if (!serviceWorkerRegistration) return { enabled: false, reason: "service_worker_failed" };
+  if (!serviceWorkerRegistration) return reportSetup({ enabled: false, reason: "service_worker_failed" });
 
   const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration }).catch(() => "");
-  if (!token) return { enabled: false, reason: "token_unavailable" };
+  if (!token) return reportSetup({ enabled: false, reason: "token_unavailable" });
 
   if (token !== registeredToken) {
-    await api.post("/auth/push-token", { token }, { showGlobalLoader: false }).catch(() => {});
+    const registered = await api
+      .post("/auth/push-token", { token }, { showGlobalLoader: false })
+      .then(() => true)
+      .catch(() => false);
+    if (!registered) return reportSetup({ enabled: false, reason: "token_registration_failed" });
     registeredToken = token;
   }
 
@@ -76,7 +91,7 @@ export const setupPushForSession = async () => {
   }
   activeUnsubscribe = onMessage(messaging, (payload) => showForegroundNotification(payload));
 
-  return { enabled: true, token };
+  return reportSetup({ enabled: true, token });
 };
 
 export const teardownPushForSession = async () => {
@@ -94,3 +109,5 @@ export const teardownPushForSession = async () => {
     })
     .catch(() => {});
 };
+
+export const getPushDebugState = () => lastPushSetup;

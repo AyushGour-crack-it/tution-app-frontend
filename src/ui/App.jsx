@@ -277,7 +277,17 @@ export default function App() {
   React.useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!user?.id || !token) return;
-    setupPushForSession().catch(() => {});
+    setupPushForSession()
+      .then((result) => {
+        if (!result?.enabled) {
+          // eslint-disable-next-line no-console
+          console.warn("Push notifications disabled:", result?.reason || "unknown");
+        }
+      })
+      .catch(() => {
+        // eslint-disable-next-line no-console
+        console.warn("Push notifications setup failed");
+      });
   }, [user?.id]);
 
   React.useEffect(() => {
