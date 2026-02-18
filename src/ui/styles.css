@@ -3148,6 +3148,150 @@ html[data-theme="dark"] .student-profile-quiz-total {
   gap: 8px;
 }
 
+.announcement-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 74;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.announcement-popup-card {
+  width: min(420px, 92vw);
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+  animation: popupIn 0.25s ease;
+  border-left: 5px solid #3b82f6;
+  display: grid;
+  gap: 12px;
+}
+
+.announcement-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.announcement-popup-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.announcement-popup-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.announcement-popup-text {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.announcement-popup-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.announcement-tone-urgent {
+  border-left-color: #ef4444;
+}
+
+.announcement-tone-reminder {
+  border-left-color: #f59e0b;
+}
+
+.announcement-tone-info {
+  border-left-color: #3b82f6;
+}
+
+.announcement-tone-success {
+  border-left-color: #10b981;
+}
+
+.holiday-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 74;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.holiday-popup-card {
+  width: min(430px, 92vw);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 20px 36px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  display: grid;
+  gap: 10px;
+}
+
+.holiday-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.holiday-popup-title-main {
+  font-size: 24px;
+  font-weight: 700;
+  color: #713f12;
+}
+
+.holiday-popup-text {
+  margin: 0;
+  color: #78350f;
+}
+
+.holiday-popup-date {
+  font-size: 12px;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.holiday-popup-icons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+.floating-emoji {
+  animation: float 2s infinite ease-in-out;
+}
+
 @media (max-width: 1024px) {
   .app-shell {
     grid-template-columns: 1fr;

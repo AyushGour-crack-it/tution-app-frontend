@@ -26,6 +26,9 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [paymentSuccessPopup, setPaymentSuccessPopup] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [holidays, setHolidays] = useState([]);
+  const [popupSeen, setPopupSeen] = useState({ announcementId: "", holidayId: "" });
+  const [announcementPopup, setAnnouncementPopup] = useState(null);
+  const [holidayPopup, setHolidayPopup] = useState(null);
   const [offlineRequestDraft, setOfflineRequestDraft] = useState({
     monthInput: "",
     amount: "",
@@ -47,16 +50,21 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   const load = async () => {
     setLoading(true);
-    const [homeworkData, feeData, announcementData, holidayData] = await Promise.all([
+    const [homeworkData, feeData, announcementData, holidayData, popupState] = await Promise.all([
       api.get("/homeworks").then((res) => res.data),
       api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
       api.get("/announcements").then((res) => res.data || []),
-      api.get("/holidays").then((res) => res.data || [])
+      api.get("/holidays").then((res) => res.data || []),
+      api.get("/notifications/popup-state").then((res) => res.data || {}).catch(() => ({}))
     ]);
     setHomework(homeworkData);
     setFees(feeData);
     setAnnouncements((announcementData || []).slice(0, 4));
     setHolidays((holidayData || []).slice(0, 4));
+    setPopupSeen({
+      announcementId: String(popupState?.announcementId || ""),
+      holidayId: String(popupState?.holidayId || "")
+    });
     setOfflineRequestDraft((prev) => {
       if (prev.monthInput) return prev;
       const target = feeData.find((item) => {
@@ -282,8 +290,122 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
         ? "Track dues and payment status."
         : "Your homework, fees, and updates.";
 
+  const getAnnouncementTone = (item) => {
+    const text = `${String(item?.title || "").toLowerCase()} ${String(item?.note || "").toLowerCase()}`;
+    if (text.includes("urgent") || text.includes("important") || text.includes("asap")) return "urgent";
+    if (text.includes("reminder") || text.includes("tomorrow") || text.includes("due")) return "reminder";
+    if (text.includes("success") || text.includes("congrat")) return "success";
+    return "info";
+  };
+
+  useEffect(() => {
+    if (section !== "dashboard" || !announcements.length) return;
+    const latest = announcements[0];
+    if (!latest?._id) return;
+    const seenRaw = popupSeen.announcementId || "";
+    if (seenRaw === latest._id) return;
+    setAnnouncementPopup({
+      ...latest,
+      tone: getAnnouncementTone(latest)
+    });
+  }, [section, announcements, popupSeen.announcementId]);
+
+  useEffect(() => {
+    if (section !== "dashboard" || !holidays.length) return;
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+    const withDates = holidays
+      .map((item) => ({ ...item, parsedDate: item?.date ? new Date(item.date) : null }))
+      .filter((item) => item.parsedDate && !Number.isNaN(item.parsedDate.getTime()));
+    if (!withDates.length) return;
+
+    const todayHoliday = withDates.find(
+      (item) => item.parsedDate.toISOString().slice(0, 10) === todayKey
+    );
+    const upcomingHoliday = withDates
+      .filter((item) => item.parsedDate >= now)
+      .sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime())[0];
+    const target = todayHoliday || upcomingHoliday;
+    if (!target?._id) return;
+    const seenRaw = popupSeen.holidayId || "";
+    if (seenRaw === target._id) return;
+    setHolidayPopup(target);
+  }, [section, holidays, popupSeen.holidayId]);
+
+  const closeAnnouncementPopup = async () => {
+    if (announcementPopup?._id) {
+      setPopupSeen((prev) => ({ ...prev, announcementId: announcementPopup._id }));
+      try {
+        await api.post("/notifications/popup-state", { announcementId: announcementPopup._id });
+      } catch {
+        // no-op
+      }
+    }
+    setAnnouncementPopup(null);
+  };
+
+  const closeHolidayPopup = async () => {
+    if (holidayPopup?._id) {
+      setPopupSeen((prev) => ({ ...prev, holidayId: holidayPopup._id }));
+      try {
+        await api.post("/notifications/popup-state", { holidayId: holidayPopup._id });
+      } catch {
+        // no-op
+      }
+    }
+    setHolidayPopup(null);
+  };
+
   return (
     <div className="page">
+      {announcementPopup ? (
+        <div className="announcement-popup-overlay" onClick={closeAnnouncementPopup}>
+          <div
+            className={`announcement-popup-card announcement-tone-${announcementPopup.tone || "info"}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="announcement-popup-head">
+              <div className="announcement-popup-label">Announcement</div>
+              <button className="btn btn-ghost" type="button" onClick={closeAnnouncementPopup}>
+                X
+              </button>
+            </div>
+            <h2 className="announcement-popup-title">{announcementPopup.title || "Announcement"}</h2>
+            <p className="announcement-popup-text">{announcementPopup.note || "New update available."}</p>
+            <div className="announcement-popup-meta">
+              Posted by Teacher |{" "}
+              {announcementPopup.date ? new Date(announcementPopup.date).toLocaleDateString() : "Today"}
+            </div>
+            <button className="btn" type="button" onClick={closeAnnouncementPopup}>
+              Got It
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {holidayPopup ? (
+        <div className="holiday-popup-overlay" onClick={closeHolidayPopup}>
+          <div className="holiday-popup-card" onClick={(event) => event.stopPropagation()}>
+            <div className="holiday-popup-head">
+              <div className="holiday-popup-title-main">{holidayPopup.title || "Holiday"}</div>
+              <div className="floating-emoji">✨</div>
+            </div>
+            <p className="holiday-popup-text">
+              {holidayPopup.note || "Wishing you a happy holiday and quality family time."}
+            </p>
+            <div className="holiday-popup-date">
+              {holidayPopup.date ? new Date(holidayPopup.date).toLocaleDateString() : ""}
+            </div>
+            <div className="holiday-popup-icons">
+              <span className="floating-emoji">🎉</span>
+              <span className="floating-emoji">🎊</span>
+              <span className="floating-emoji">🎉</span>
+            </div>
+            <button className="btn" type="button" onClick={closeHolidayPopup}>
+              Celebrate
+            </button>
+          </div>
+        </div>
+      ) : null}
       {paymentSuccessPopup ? (
         <div
           className="fee-success-popup-overlay"
