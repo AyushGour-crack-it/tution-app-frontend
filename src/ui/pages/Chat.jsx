@@ -6,7 +6,12 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [students, setStudents] = useState([]);
   const [text, setText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [typingLabel, setTypingLabel] = useState("");
   const chatWindowRef = useRef(null);
+  const socketRef = useRef(null);
+  const typingResetTimeoutRef = useRef(null);
+  const lastTypingEmitRef = useRef(0);
   const isFirstLoadRef = useRef(true);
   const [replyTo, setReplyTo] = useState(null);
   const [recipientStudentId, setRecipientStudentId] = useState("");
@@ -49,6 +54,17 @@ export default function Chat() {
     () => Object.fromEntries(messages.map((msg) => [msg._id, msg])),
     [messages]
   );
+  const groupedReactions = (message) => {
+    const groups = (Array.isArray(message?.reactions) ? message.reactions : []).reduce((acc, item) => {
+      const emoji = String(item?.emoji || "").trim();
+      if (!emoji) return acc;
+      acc[emoji] = (acc[emoji] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(groups)
+      .map(([emoji, count]) => ({ emoji, count }))
+      .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
+  };
 
   const scrollToLatest = () => {
     const node = chatWindowRef.current;
@@ -87,15 +103,35 @@ export default function Chat() {
     load();
   }, []);
 
+  useEffect(
+    () => () => {
+      if (typingResetTimeoutRef.current) {
+        clearTimeout(typingResetTimeoutRef.current);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!user?.id || !token) return undefined;
     const socket = connectSocket(token);
     if (!socket) return undefined;
+    socketRef.current = socket;
 
     const onChatNew = (incoming) => {
       setMessages((prev) => {
-        if (!incoming?._id || prev.some((item) => item._id === incoming._id)) return prev;
+        if (!incoming?._id) return prev;
+        const hasServerMessage = prev.some((item) => item._id === incoming._id);
+        if (hasServerMessage) return prev;
+        if (incoming.clientMessageId) {
+          const tempIndex = prev.findIndex((item) => item._id === incoming.clientMessageId);
+          if (tempIndex >= 0) {
+            const next = [...prev];
+            next[tempIndex] = incoming;
+            return next;
+          }
+        }
         return [...prev, incoming];
       });
       if (String(incoming?.senderId || "") !== String(user.id || "")) {
@@ -103,11 +139,39 @@ export default function Chat() {
       }
     };
 
+    const onChatUpdated = (incoming) => {
+      if (!incoming?._id) return;
+      setMessages((prev) => prev.map((item) => (item._id === incoming._id ? incoming : item)));
+    };
+
+    const onChatDeleted = (payload) => {
+      const messageId = String(payload?.messageId || "");
+      if (!messageId) return;
+      setMessages((prev) => prev.filter((item) => item._id !== messageId));
+    };
+
+    const onChatTyping = (payload) => {
+      if (!payload?.senderId || String(payload.senderId) === String(user?.id || "")) return;
+      const sender = String(payload?.senderName || "Someone");
+      setTypingLabel(`${sender} is typing...`);
+      if (typingResetTimeoutRef.current) {
+        clearTimeout(typingResetTimeoutRef.current);
+      }
+      typingResetTimeoutRef.current = setTimeout(() => setTypingLabel(""), 1500);
+    };
+
     socket.on("chat:new", onChatNew);
+    socket.on("chat:updated", onChatUpdated);
+    socket.on("chat:deleted", onChatDeleted);
+    socket.on("chat:typing", onChatTyping);
     socket.on("connect", load);
     return () => {
       socket.off("chat:new", onChatNew);
+      socket.off("chat:updated", onChatUpdated);
+      socket.off("chat:deleted", onChatDeleted);
+      socket.off("chat:typing", onChatTyping);
       socket.off("connect", load);
+      socketRef.current = null;
     };
   }, [user?.id]);
 
@@ -140,71 +204,165 @@ export default function Chat() {
     return () => document.removeEventListener("click", closeMenuOnOutsideClick);
   }, []);
 
-  const sendText = async () => {
-    if (!text.trim()) return;
-    await api.post("/chat/messages", {
-      type: "text",
-      content: text.trim(),
-      replyTo: replyTo?._id || null,
+  const emitTyping = () => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) return;
+    const now = Date.now();
+    if (now - lastTypingEmitRef.current < 800) return;
+    lastTypingEmitRef.current = now;
+    socket.emit("chat:typing", {
       recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
     });
+  };
+
+  const appendOptimisticMessage = ({ type, content, fileName = "", mimeType = "" }) => {
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const optimistic = {
+      _id: tempId,
+      clientMessageId: tempId,
+      senderId: user?.id || "",
+      senderName: user?.name || "You",
+      role: user?.role || "student",
+      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null,
+      recipientName:
+        user?.role === "teacher" && recipientStudentId
+          ? students.find((student) => String(student._id) === String(recipientStudentId))?.name || "Student"
+          : "",
+      type,
+      content,
+      fileName,
+      mimeType,
+      replyTo: replyTo?._id || null,
+      readBy: [user?.id].filter(Boolean),
+      reactions: [],
+      createdAt: new Date().toISOString(),
+      editedAt: null,
+      _localStatus: "sending"
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    return optimistic;
+  };
+
+  const sendText = async () => {
+    const value = text.trim();
+    if (!value || isSending) return;
+    setIsSending(true);
+    const optimistic = appendOptimisticMessage({ type: "text", content: value });
     setText("");
     setReplyTo(null);
-    load();
+    try {
+      const created = await api.post("/chat/messages", {
+        type: "text",
+        content: value,
+        clientMessageId: optimistic.clientMessageId,
+        replyTo: optimistic.replyTo || null,
+        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+      });
+      const serverMessage = created?.data;
+      if (serverMessage?._id) {
+        setMessages((prev) =>
+          prev.map((item) => (item._id === optimistic._id ? serverMessage : item))
+        );
+      }
+    } catch {
+      setMessages((prev) => prev.filter((item) => item._id !== optimistic._id));
+      setText(value);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const sendAnnouncement = async () => {
-    if (!text.trim()) return;
-    await api.post("/chat/messages", {
-      type: "announcement",
-      content: text.trim(),
-      replyTo: replyTo?._id || null,
-      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
-    });
+    const value = text.trim();
+    if (!value || isSending) return;
+    setIsSending(true);
+    const optimistic = appendOptimisticMessage({ type: "announcement", content: value });
     setText("");
     setReplyTo(null);
-    load();
+    try {
+      const created = await api.post("/chat/messages", {
+        type: "announcement",
+        content: value,
+        clientMessageId: optimistic.clientMessageId,
+        replyTo: optimistic.replyTo || null,
+        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+      });
+      const serverMessage = created?.data;
+      if (serverMessage?._id) {
+        setMessages((prev) =>
+          prev.map((item) => (item._id === optimistic._id ? serverMessage : item))
+        );
+      }
+    } catch {
+      setMessages((prev) => prev.filter((item) => item._id !== optimistic._id));
+      setText(value);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const sendFile = async (event, type) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    const upload = await api.post("/chat/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
-    const content = upload.data.url;
-    const resolvedType =
-      type || (file.type.startsWith("image/") ? "image" : "video");
-    await api.post("/chat/messages", {
-      type: resolvedType,
-      content,
-      fileName: file.name,
-      mimeType: file.type,
-      replyTo: replyTo?._id || null,
-      recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
-    });
-    event.target.value = "";
-    setReplyTo(null);
-    load();
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const upload = await api.post("/chat/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      const content = upload.data.url;
+      const resolvedType =
+        type || (file.type.startsWith("image/") ? "image" : "video");
+      const optimistic = appendOptimisticMessage({
+        type: resolvedType,
+        content,
+        fileName: file.name,
+        mimeType: file.type
+      });
+      const created = await api.post("/chat/messages", {
+        type: resolvedType,
+        content,
+        fileName: file.name,
+        mimeType: file.type,
+        clientMessageId: optimistic.clientMessageId,
+        replyTo: replyTo?._id || null,
+        recipientStudentId: user?.role === "teacher" ? recipientStudentId || null : null
+      });
+      const serverMessage = created?.data;
+      if (serverMessage?._id) {
+        setMessages((prev) =>
+          prev.map((item) => (item._id === optimistic._id ? serverMessage : item))
+        );
+      } else {
+        setMessages((prev) => prev.filter((item) => item._id !== optimistic._id));
+      }
+      setReplyTo(null);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const editMessage = async (msg) => {
     const updated = prompt("Edit message", msg.content);
     if (!updated) return;
-    await api.put(`/chat/messages/${msg._id}`, { content: updated });
-    load();
+    const saved = await api.put(`/chat/messages/${msg._id}`, { content: updated });
+    const next = saved?.data;
+    if (next?._id) {
+      setMessages((prev) => prev.map((item) => (item._id === next._id ? next : item)));
+    }
   };
 
   const deleteMessage = async (id) => {
     await api.delete(`/chat/messages/${id}`);
-    load();
+    setMessages((prev) => prev.filter((item) => item._id !== id));
   };
 
   const reactTo = async (id, emoji) => {
-    await api.post(`/chat/messages/${id}/reactions`, { emoji });
-    load();
+    const saved = await api.post(`/chat/messages/${id}/reactions`, { emoji });
+    const next = saved?.data;
+    if (next?._id) {
+      setMessages((prev) => prev.map((item) => (item._id === next._id ? next : item)));
+    }
   };
 
   const setReply = (msg) => {
@@ -249,11 +407,13 @@ export default function Chat() {
   };
 
   const getReadReceipt = (msg) => {
-    if (String(msg?.senderId || "") !== String(user?.id || "")) return "";
+    if (String(msg?.senderId || "") !== String(user?.id || "")) return null;
     const readBy = Array.isArray(msg?.readBy) ? msg.readBy.map((id) => String(id)) : [];
     const seenByCount = readBy.filter((id) => id !== String(user?.id || "")).length;
-    if (seenByCount <= 0) return "Sent";
-    return seenByCount === 1 ? "Seen by 1" : `Seen by ${seenByCount}`;
+    return {
+      state: seenByCount > 0 ? "seen" : "sent",
+      seenByCount
+    };
   };
 
   const getSenderColorClass = (msg) => {
@@ -273,6 +433,18 @@ export default function Chat() {
       return createdAt > localClearAfter;
     });
   }, [messages, localClearAfter]);
+
+  const getReplyPreview = (msg) => {
+    const source = msg?.replyTo ? messageLookup[msg.replyTo] : null;
+    if (!source) return { sender: "message", snippet: "Original message not available" };
+    const sender = String(source?.senderName || "message");
+    const content =
+      source?.type === "text" || source?.type === "announcement"
+        ? String(source?.content || "")
+        : `[${String(source?.type || "media").toUpperCase()}]`;
+    const snippet = content.length > 46 ? `${content.slice(0, 46)}...` : content;
+    return { sender, snippet };
+  };
 
   const chatRenderItems = useMemo(() => {
     const items = [];
@@ -439,6 +611,9 @@ export default function Chat() {
             }
 
             const msg = item.message;
+            const readReceipt = getReadReceipt(msg);
+            const replyPreview = getReplyPreview(msg);
+            const reactionGroups = groupedReactions(msg);
             return (
               <div
                 className={[
@@ -454,106 +629,127 @@ export default function Chat() {
                   .join(" ")}
                 key={item.key}
               >
-              <div className="chat-meta-row">
-                <div className="chat-meta">
-                  <strong className={getSenderColorClass(msg)}>{msg.senderName}</strong>
-                </div>
-                <div className="chat-meta-actions">
-                  <div className="chat-meta">{formatTime(msg.createdAt)}</div>
-                  <div className="chat-menu-wrap">
-                    <button
-                      className="chat-menu-trigger"
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setMenuMessageId((prev) => (prev === msg._id ? "" : msg._id));
-                      }}
-                    >
-                      •••
-                    </button>
-                    {menuMessageId === msg._id && (
-                      <div className="chat-menu">
-                        <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
-                          Reply
-                        </button>
-                        <div className="chat-menu-label">React</div>
-                        <div className="chat-menu-emojis">
-                          {reactions.map((emoji) => (
+                <div className="chat-meta-row">
+                  <div className="chat-meta-sender">
+                    <div className="chat-avatar" aria-hidden="true">
+                      {String(msg?.senderName || "?").slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="chat-meta">
+                      <strong className={getSenderColorClass(msg)}>{msg.senderName}</strong>
+                    </div>
+                  </div>
+                  <div className="chat-meta-actions">
+                    <div className="chat-meta">{formatTime(msg.createdAt)}</div>
+                    <div className="chat-menu-wrap">
+                      <button
+                        className="chat-menu-trigger"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setMenuMessageId((prev) => (prev === msg._id ? "" : msg._id));
+                        }}
+                      >
+                        •••
+                      </button>
+                      {menuMessageId === msg._id && (
+                        <div className="chat-menu">
+                          <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
+                            Reply
+                          </button>
+                          <div className="chat-menu-label">React</div>
+                          <div className="chat-menu-emojis">
+                            {reactions.map((emoji) => (
+                              <button
+                                key={`${msg._id}-${emoji}`}
+                                className="chat-menu-emoji-btn"
+                                type="button"
+                                onClick={() => {
+                                  reactTo(msg._id, emoji);
+                                  setMenuMessageId("");
+                                }}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                          {msg.senderId === user?.id &&
+                            (msg.type === "text" || msg.type === "announcement") && (
+                              <button
+                                className="chat-menu-item"
+                                type="button"
+                                onClick={() => {
+                                  editMessage(msg);
+                                  setMenuMessageId("");
+                                }}
+                              >
+                                Edit
+                              </button>
+                            )}
+                          {msg.senderId === user?.id && (
                             <button
-                              key={`${msg._id}-${emoji}`}
-                              className="chat-menu-emoji-btn"
+                              className="chat-menu-item danger"
                               type="button"
                               onClick={() => {
-                                reactTo(msg._id, emoji);
+                                deleteMessage(msg._id);
                                 setMenuMessageId("");
                               }}
                             >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                        {msg.senderId === user?.id &&
-                          (msg.type === "text" || msg.type === "announcement") && (
-                            <button
-                              className="chat-menu-item"
-                              type="button"
-                              onClick={() => {
-                                editMessage(msg);
-                                setMenuMessageId("");
-                              }}
-                            >
-                              Edit
+                              Delete
                             </button>
                           )}
-                        {msg.senderId === user?.id && (
-                          <button
-                            className="chat-menu-item danger"
-                            type="button"
-                            onClick={() => {
-                              deleteMessage(msg._id);
-                              setMenuMessageId("");
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              {msg.replyTo && (
-                <div className="chat-reply">
-                  Replying to {messageLookup[msg.replyTo]?.senderName || "message"}
-                </div>
-              )}
-              {msg.recipientStudentId && (
-                <div className="chat-meta">To: {msg.recipientName || "Student"}</div>
-              )}
-              {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
-              {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}
-              {(msg.type === "image" || msg.type === "gif" || msg.type === "meme") && (
-                <img className="chat-media" src={msg.content} alt={msg.fileName || msg.type} />
-              )}
-              {msg.type === "video" && (
-                <video controls className="chat-media">
-                  <source src={msg.content} type={msg.mimeType || "video/mp4"} />
-                </video>
-              )}
-              {msg.type === "audio" && (
-                <audio controls className="chat-audio">
-                  <source src={msg.content} type={msg.mimeType || "audio/mpeg"} />
-                </audio>
-              )}
-              {msg.editedAt && <div className="chat-meta">(edited)</div>}
-              {getReadReceipt(msg) ? (
-                <div className="chat-meta chat-read-receipt">{getReadReceipt(msg)}</div>
-              ) : null}
-              {msg.reactions?.length ? (
-                <div className="chat-reaction-count">
-                  {msg.reactions.map((r) => r.emoji).join(" ")} ({msg.reactions.length})
-                </div>
-              ) : null}
+                {msg.replyTo && (
+                  <div className="chat-reply chat-reply-preview">
+                    <strong>{replyPreview.sender}</strong>
+                    <div className="chat-reply-snippet">{replyPreview.snippet}</div>
+                  </div>
+                )}
+                {msg.recipientStudentId && (
+                  <div className="chat-meta">To: {msg.recipientName || "Student"}</div>
+                )}
+                {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
+                {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}
+                {(msg.type === "image" || msg.type === "gif" || msg.type === "meme") && (
+                  <img className="chat-media" src={msg.content} alt={msg.fileName || msg.type} />
+                )}
+                {msg.type === "video" && (
+                  <video controls className="chat-media">
+                    <source src={msg.content} type={msg.mimeType || "video/mp4"} />
+                  </video>
+                )}
+                {msg.type === "audio" && (
+                  <audio controls className="chat-audio">
+                    <source src={msg.content} type={msg.mimeType || "audio/mpeg"} />
+                  </audio>
+                )}
+                {msg.editedAt && <div className="chat-meta">(edited)</div>}
+                {msg._localStatus === "sending" ? (
+                  <div className="chat-meta chat-send-state">Sending...</div>
+                ) : null}
+                {readReceipt ? (
+                  <div
+                    className={`chat-meta chat-read-receipt chat-read-receipt-${readReceipt.state}`}
+                    title={readReceipt.state === "seen" ? `Seen by ${readReceipt.seenByCount}` : "Sent"}
+                  >
+                    <span className="chat-ticks">{readReceipt.state === "seen" ? "✓✓" : "✓"}</span>
+                    {readReceipt.state === "seen" ? (
+                      <span className="chat-read-count">{readReceipt.seenByCount}</span>
+                    ) : null}
+                  </div>
+                ) : null}
+                {reactionGroups.length ? (
+                  <div className="chat-reactions">
+                    {reactionGroups.map((group) => (
+                      <span key={`${msg._id}-${group.emoji}`} className="chat-reaction-pill">
+                        {group.emoji} {group.count}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -564,6 +760,7 @@ export default function Chat() {
           ) : null}
         </div>
         <div className="chat-composer">
+          {typingLabel ? <div className="chat-typing-indicator">{typingLabel}</div> : null}
           {replyTo && (
             <div className="chat-reply-banner">
               Replying to <strong>{replyTo.senderName}</strong>
@@ -599,7 +796,10 @@ export default function Chat() {
               className="input chat-input-field"
               placeholder="Type a message"
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => {
+                setText(event.target.value);
+                emitTyping();
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
@@ -607,7 +807,7 @@ export default function Chat() {
                 }
               }}
             />
-            <button className="chat-send-btn" type="button" onClick={sendText} aria-label="Send">
+            <button className="chat-send-btn" type="button" onClick={sendText} aria-label="Send" disabled={isSending}>
               <svg className="chat-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M2 12 21 3l-5 18-4-7-10-2z" />
               </svg>
