@@ -8,6 +8,7 @@ const toEntries = (value) => Object.entries(value || {});
 
 export default function QuizDashboard() {
   const [stats, setStats] = React.useState(null);
+  const [meta, setMeta] = React.useState({ subjects: [], classLevels: [] });
   const [questions, setQuestions] = React.useState([]);
   const [loadingStats, setLoadingStats] = React.useState(true);
   const [loadingQuiz, setLoadingQuiz] = React.useState(false);
@@ -20,7 +21,9 @@ export default function QuizDashboard() {
     setLoadingStats(true);
     try {
       const data = await api.get("/quiz/stats").then((res) => res.data);
+      const quizMeta = await api.get("/quiz/meta").then((res) => res.data || { subjects: [], classLevels: [] });
       setStats(data);
+      setMeta(quizMeta);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load quiz stats");
     } finally {
@@ -142,7 +145,7 @@ export default function QuizDashboard() {
       </div>
 
       {!questions.length ? (
-        <QuizSetup stats={stats} onStart={startQuiz} loading={loadingQuiz} />
+        <QuizSetup stats={stats} meta={meta} onStart={startQuiz} loading={loadingQuiz} />
       ) : (
         <QuizPage questions={questions} onSubmit={submitQuiz} loading={submitting} />
       )}

@@ -1,7 +1,5 @@
 import React from "react";
 
-const fallbackSubjects = ["Math", "Science", "English", "Social"];
-
 const isDifficultyUnlocked = (difficulty, level) => {
   if (difficulty === "easy") return true;
   if (difficulty === "medium") return Number(level || 0) >= 2;
@@ -9,20 +7,27 @@ const isDifficultyUnlocked = (difficulty, level) => {
   return false;
 };
 
-export default function QuizSetup({ stats, onStart, loading }) {
+export default function QuizSetup({ stats, meta, onStart, loading }) {
   const subjectXP = stats?.subjectXP || {};
   const subjectLevel = stats?.subjectLevel || {};
-  const subjects = [...new Set([...fallbackSubjects, ...Object.keys(subjectXP)])];
+  const subjects = [...new Set([...(meta?.subjects || []), ...Object.keys(subjectXP)])];
+  const classLevels = (meta?.classLevels || []).map((item) => Number(item)).filter((item) => Number.isFinite(item));
 
-  const [subject, setSubject] = React.useState(subjects[0] || "Math");
+  const [subject, setSubject] = React.useState(subjects[0] || "");
   const [difficulty, setDifficulty] = React.useState("easy");
-  const [classLevel, setClassLevel] = React.useState(8);
+  const [classLevel, setClassLevel] = React.useState(classLevels[0] || 6);
 
   React.useEffect(() => {
     if (!subjects.includes(subject)) {
-      setSubject(subjects[0] || "Math");
+      setSubject(subjects[0] || "");
     }
   }, [subjects, subject]);
+
+  React.useEffect(() => {
+    if (!classLevels.includes(Number(classLevel))) {
+      setClassLevel(classLevels[0] || 6);
+    }
+  }, [classLevels, classLevel]);
 
   React.useEffect(() => {
     const lvl = subjectLevel?.[subject] || 0;
@@ -44,15 +49,13 @@ export default function QuizSetup({ stats, onStart, loading }) {
             </option>
           ))}
         </select>
-        <input
-          className="input"
-          type="number"
-          min="1"
-          max="12"
-          value={classLevel}
-          onChange={(event) => setClassLevel(Number(event.target.value || 1))}
-          placeholder="Class Level"
-        />
+        <select className="select" value={classLevel} onChange={(event) => setClassLevel(Number(event.target.value))}>
+          {classLevels.map((level) => (
+            <option key={level} value={level}>
+              Class {level}
+            </option>
+          ))}
+        </select>
         <select className="select" value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
           <option value="easy">Easy</option>
           <option value="medium" disabled={!isDifficultyUnlocked("medium", selectedLevel)}>
@@ -65,7 +68,7 @@ export default function QuizSetup({ stats, onStart, loading }) {
         <button
           className="btn"
           type="button"
-          disabled={loading}
+          disabled={loading || !subject}
           onClick={() => onStart({ subject, classLevel, difficulty })}
         >
           {loading ? "Loading..." : "Start Quiz"}
