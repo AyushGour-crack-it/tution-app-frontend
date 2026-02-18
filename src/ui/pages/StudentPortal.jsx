@@ -30,7 +30,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [paymentSuccessPopup, setPaymentSuccessPopup] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [offlineRequestDraft, setOfflineRequestDraft] = useState({
-    feeId: "",
+    monthInput: "",
     amount: "",
     message: ""
   });
@@ -64,12 +64,15 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     setReceipts(receiptData);
     setAnnouncements((announcementData || []).slice(0, 4));
     setOfflineRequestDraft((prev) => {
-      if (prev.feeId && feeData.some((item) => item._id === prev.feeId)) return prev;
+      if (prev.monthInput) return prev;
       const target = feeData.find((item) => {
         const paid = item.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
         return Math.max(Number(item.total || 0) - paid, 0) > 0;
       }) || feeData[0];
-      return { ...prev, feeId: target?._id || "" };
+      const monthInput = target?.dueDate
+        ? new Date(target.dueDate).toISOString().slice(0, 7)
+        : "";
+      return { ...prev, monthInput };
     });
     const markData = await api
       .get(previewStudentId ? `/marks?studentId=${previewStudentId}` : "/marks")
@@ -279,11 +282,30 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     }
   };
 
+  const resolveFeeIdFromMonthInput = (monthInput) => {
+    const value = String(monthInput || "").trim();
+    if (!value) return "";
+    const [year, month] = value.split("-").map((part) => Number(part || 0));
+    if (!year || !month) return "";
+    const target = fees.find((item) => {
+      if (item?.dueDate) {
+        const due = new Date(item.dueDate);
+        return due.getFullYear() === year && due.getMonth() + 1 === month;
+      }
+      const text = String(item?.month || "").toLowerCase();
+      const targetDate = new Date(year, month - 1, 1);
+      const monthShort = targetDate.toLocaleString("en", { month: "short" }).toLowerCase();
+      const monthLong = targetDate.toLocaleString("en", { month: "long" }).toLowerCase();
+      return text.includes(String(year)) && (text.includes(monthShort) || text.includes(monthLong));
+    });
+    return target?._id || "";
+  };
+
   const submitOfflineRequest = async () => {
-    const feeId = offlineRequestDraft.feeId;
+    const feeId = resolveFeeIdFromMonthInput(offlineRequestDraft.monthInput);
     const amount = Number(offlineRequestDraft.amount || 0);
     if (!feeId) {
-      setOfflineRequestState("Select a fee month first.");
+      setOfflineRequestState("No fee record found for this month. Ask teacher to create it once.");
       return;
     }
     if (!amount || amount <= 0) {
@@ -542,6 +564,15 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                         );
                       })}
                     </select>
+                    <input
+                      className="input"
+                      type="month"
+                      placeholder="Fee month"
+                      value={offlineRequestDraft.monthInput}
+                      onChange={(event) =>
+                        setOfflineRequestDraft((prev) => ({ ...prev, monthInput: event.target.value }))
+                      }
+                    />
                     <input
                       className="input"
                       type="number"

@@ -13,6 +13,12 @@ const getLevelTierClass = (levelValue) => {
   return "level-tier-starter";
 };
 
+const formatSubjectName = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+
 export default function StudentDirectory() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
@@ -107,6 +113,14 @@ export default function StudentDirectory() {
                   level: student.level?.level || 1,
                   rank: index + 1
                 });
+                const quiz = student.quiz || {};
+                const quizLevel = Number(quiz.overallLevel || 0);
+                const quizTotalXp = Number(quiz.totalXP || 0);
+                const quizStreak = Number(quiz.streakCount || 0);
+                const topSubjects = Object.entries(quiz.subjectXP || {})
+                  .map(([key, value]) => ({ key, label: formatSubjectName(key), xp: Number(value || 0) }))
+                  .sort((a, b) => b.xp - a.xp)
+                  .slice(0, 2);
 
                 return (
                   <button
@@ -118,6 +132,11 @@ export default function StudentDirectory() {
                     onClick={() => navigate(`/student/students/${student.userId}`)}
                   >
                     <div className="student-directory-rank">#{index + 1}</div>
+                    <div className="student-directory-quiz-strip">
+                      <span className="student-directory-quiz-pill">Quiz Lv {quizLevel}</span>
+                      <span className="student-directory-quiz-pill">{quizTotalXp} XP</span>
+                      <span className="student-directory-quiz-pill">Streak {quizStreak}d</span>
+                    </div>
                     <div className={`avatar-frame avatar-frame-sm ${frame.frameClass}`} title={frame.frameLabel}>
                       {student.avatarUrl ? (
                         <img src={student.avatarUrl} alt={student.name} className="student-directory-avatar" />
@@ -137,6 +156,11 @@ export default function StudentDirectory() {
                       </div>
                       <div className="student-directory-meta">
                         Badges {student.badges?.length || 0} • Likes {student.likesCount || 0}
+                      </div>
+                      <div className="student-directory-meta student-directory-quiz-subjects">
+                        {topSubjects.length
+                          ? topSubjects.map((subject) => `${subject.label} ${subject.xp} XP`).join(" • ")
+                          : "No quiz attempts yet"}
                       </div>
                       <div className="student-directory-bio-preview">{student.bio || "No bio yet."}</div>
                     </div>

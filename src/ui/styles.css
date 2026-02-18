@@ -1373,6 +1373,32 @@ html[data-theme="dark"] {
   min-width: 0;
 }
 
+.student-directory-quiz-strip {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 2px;
+}
+
+.student-directory-quiz-pill {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.16));
+  color: #163f8f;
+  border: 1px solid rgba(79, 70, 229, 0.25);
+}
+
+.student-directory-quiz-subjects {
+  margin-top: 2px;
+}
+
+html[data-theme="dark"] .student-directory-quiz-pill {
+  color: #b8c8ff;
+}
+
 .student-directory-name {
   font-weight: 600;
   line-height: 1.2;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
@@ -50,6 +50,7 @@ const getLevelTierClass = (levelValue) => {
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
+  const [quizStats, setQuizStats] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "", bio: "", avatar: null });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,16 +76,22 @@ export default function Profile() {
       });
       if (data.role === "student") {
         try {
-          const badgeData = await api.get("/badges/me").then((res) => res.data);
+          const [badgeData, quizData] = await Promise.all([
+            api.get("/badges/me").then((res) => res.data),
+            api.get("/quiz/stats").then((res) => res.data || null)
+          ]);
           setBadgeStats({
             level: badgeData.level || null,
             earned: badgeData.earned || []
           });
+          setQuizStats(quizData || null);
         } catch {
           setBadgeStats({ level: null, earned: [] });
+          setQuizStats(null);
         }
       } else {
         setBadgeStats({ level: null, earned: [] });
+        setQuizStats(null);
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load profile. Please log in again.");
@@ -178,6 +185,26 @@ export default function Profile() {
     return String(a?.title || "").localeCompare(String(b?.title || ""));
   });
   const totalBadges = sortedEarnedBadges.length;
+  const quizSubjectProgress = useMemo(() => {
+    const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
+      ? quizStats.subjectXP
+      : {};
+    return Object.entries(source)
+      .map(([subject, rawXp]) => {
+        const xp = Number(rawXp || 0);
+        const level = Number(quizStats?.subjectLevel?.[subject] || 0);
+        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
+        return {
+          key: subject,
+          subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
+          xp,
+          level,
+          progress
+        };
+      })
+      .sort((a, b) => b.xp - a.xp)
+      .slice(0, 6);
+  }, [quizStats]);
 
   return (
     <div className="page">
@@ -220,6 +247,49 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {user.role === "student" ? (
+        <div className="card student-profile-quiz-card" style={{ marginTop: "24px" }}>
+          <div className="student-profile-quiz-head">
+            <div>
+              <h2 className="student-profile-quiz-title">Quiz Level Snapshot</h2>
+              <p className="student-profile-quiz-motivation">
+                Your level is now visible directly on student cards.
+              </p>
+            </div>
+            <div className="student-profile-quiz-total">
+              Lv {Number(quizStats?.overallLevel || 0)} • {Number(quizStats?.totalXP || 0)} XP
+            </div>
+          </div>
+          <div className="student-profile-pills">
+            <span className="pill student-stat-pill student-stat-pill-quiz-level">
+              Quiz Level <strong>{Number(quizStats?.overallLevel || 0)}</strong>
+            </span>
+            <span className="pill student-stat-pill student-stat-pill-streak">
+              Streak <strong>{Number(quizStats?.streakCount || 0)}d</strong>
+            </span>
+          </div>
+          {quizSubjectProgress.length ? (
+            <div className="student-profile-quiz-progress-list">
+              {quizSubjectProgress.map((item) => (
+                <div key={item.key} className="student-profile-quiz-progress-item">
+                  <div className="student-profile-quiz-progress-meta">
+                    <span>{item.subject}</span>
+                    <span>
+                      Lv {item.level} • {item.xp} XP
+                    </span>
+                  </div>
+                  <div className="student-profile-quiz-progress-track">
+                    <div className="student-profile-quiz-progress-fill" style={{ width: `${item.progress}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="student-directory-meta">No quiz progress yet.</div>
+          )}
+        </div>
+      ) : null}
 
       {user.role === "student" ? (
         <div className="card" style={{ marginTop: "24px" }}>
