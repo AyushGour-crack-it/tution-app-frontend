@@ -122,7 +122,10 @@ export default function Dashboard() {
                 <div>
                   <div className="dashboard-item-title">{item.studentName}</div>
                   <div className="dashboard-item-subtitle">
-                    {item.method} • {item.paidOn ? new Date(item.paidOn).toLocaleString() : "-"}
+                    {item.studentPhone || "No mobile"} • {item.method} • {item.paidOn ? new Date(item.paidOn).toLocaleString() : "-"}
+                  </div>
+                  <div className="dashboard-item-subtitle">
+                    {item.daysSincePrevious === null ? "First payment record" : `${item.daysSincePrevious} day(s) since previous payment`}
                   </div>
                 </div>
                 <span className="pill">₹{item.amount}</span>

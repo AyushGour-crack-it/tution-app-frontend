@@ -102,6 +102,7 @@ export default function App() {
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
+  const [rewardPopupQueue, setRewardPopupQueue] = React.useState([]);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const [sectionUnread, setSectionUnread] = React.useState({});
   const locationPathRef = React.useRef(location.pathname);
@@ -117,8 +118,13 @@ export default function App() {
     () => (user?.id ? `badge_unlock_popup_seen_${user.id}` : ""),
     [user?.id]
   );
+  const rewardPopupSeenKey = React.useMemo(
+    () => (user?.id ? `reward_popup_seen_${user.id}` : ""),
+    [user?.id]
+  );
   const activeBadgeUnlock = badgeUnlockQueue.length ? badgeUnlockQueue[0] : null;
   const activeFeePayment = feePaymentQueue.length ? feePaymentQueue[0] : null;
+  const activeRewardPopup = rewardPopupQueue.length ? rewardPopupQueue[0] : null;
   const closeMobileNavOnNavigate = React.useCallback(() => {
     if (window.matchMedia("(max-width: 1024px)").matches) {
       setNavOpen(false);
@@ -291,6 +297,14 @@ export default function App() {
   }, [user?.id]);
 
   React.useEffect(() => {
+    if (!user?.id || user?.role !== "student") return;
+    api
+      .post("/auth/daily-xp", {}, { showGlobalLoader: false })
+      .then(() => {})
+      .catch(() => {});
+  }, [user?.id, user?.role]);
+
+  React.useEffect(() => {
     if (user?.id) return;
     teardownPushForSession().catch(() => {});
   }, [user?.id]);
@@ -390,6 +404,41 @@ export default function App() {
             localStorage.setItem(feeSeenKey, JSON.stringify(merged.slice(-200)));
           }
         }
+
+        if (rewardPopupSeenKey && user?.role === "student") {
+          let seenRewardIds = [];
+          try {
+            const raw = localStorage.getItem(rewardPopupSeenKey);
+            seenRewardIds = raw ? JSON.parse(raw) : [];
+          } catch {
+            seenRewardIds = [];
+          }
+          const seenRewardSet = new Set(Array.isArray(seenRewardIds) ? seenRewardIds : []);
+          const rewardEvents = items
+            .filter(
+              (item) =>
+                item?._id &&
+                !seenRewardSet.has(item._id) &&
+                (item?.title === "Payment Received" || item?.title === "Daily XP Bonus" || item?.title === "Offline Payment Approved")
+            )
+            .map((item) => ({
+              id: item._id,
+              title: String(item?.title || "XP Update"),
+              message: String(item?.message || "")
+            }));
+
+          if (rewardEvents.length) {
+            setRewardPopupQueue((prev) => {
+              const existingIds = new Set(prev.map((entry) => entry.id));
+              const freshEntries = rewardEvents.filter((entry) => !existingIds.has(entry.id));
+              return freshEntries.length ? [...prev, ...freshEntries] : prev;
+            });
+            localStorage.setItem(
+              rewardPopupSeenKey,
+              JSON.stringify([...seenRewardSet, ...rewardEvents.map((entry) => entry.id)].slice(-300))
+            );
+          }
+        }
       } catch {
         if (!cancelled) setUnreadNotificationCount(0);
       }
@@ -401,7 +450,7 @@ export default function App() {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [user?.id, location.pathname, notificationSeenKey, badgePopupSeenKey]);
+  }, [user?.id, user?.role, location.pathname, notificationSeenKey, badgePopupSeenKey, rewardPopupSeenKey]);
 
   React.useEffect(() => {
     if (location.pathname === "/notifications") {
@@ -572,6 +621,36 @@ export default function App() {
         }
       }
 
+      if (
+        item?._id &&
+        rewardPopupSeenKey &&
+        user?.role === "student" &&
+        (item?.title === "Payment Received" || item?.title === "Daily XP Bonus" || item?.title === "Offline Payment Approved")
+      ) {
+        let seenRewardIds = [];
+        try {
+          const raw = localStorage.getItem(rewardPopupSeenKey);
+          seenRewardIds = raw ? JSON.parse(raw) : [];
+        } catch {
+          seenRewardIds = [];
+        }
+        if (!seenRewardIds.includes(item._id)) {
+          const rewardEvent = {
+            id: item._id,
+            title: String(item?.title || "XP Update"),
+            message: String(item?.message || "")
+          };
+          setRewardPopupQueue((prev) => {
+            if (prev.some((entry) => entry.id === rewardEvent.id)) return prev;
+            return [...prev, rewardEvent];
+          });
+          localStorage.setItem(
+            rewardPopupSeenKey,
+            JSON.stringify([...seenRewardIds, item._id].slice(-300))
+          );
+        }
+      }
+
       if (locationPathRef.current === "/notifications") return;
       setUnreadNotificationCount((prev) => prev + 1);
     };
@@ -629,6 +708,7 @@ export default function App() {
     badgePopupSeenKey,
     notificationSeenKey,
     chatSeenKey,
+    rewardPopupSeenKey,
     viewRole,
     bumpSectionIndicator
   ]);
@@ -737,6 +817,28 @@ export default function App() {
               onClick={() => setBadgeUnlockQueue((prev) => prev.slice(1))}
             >
               Awesome
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {activeRewardPopup ? (
+        <div
+          className="fee-success-popup-overlay"
+          onClick={() => setRewardPopupQueue((prev) => prev.slice(1))}
+        >
+          <div
+            className="fee-success-popup-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fee-success-popup-pill">{activeRewardPopup.title}</div>
+            <h2 className="fee-success-popup-title">Your progress was updated</h2>
+            <p className="fee-success-popup-text">{activeRewardPopup.message}</p>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setRewardPopupQueue((prev) => prev.slice(1))}
+            >
+              Nice
             </button>
           </div>
         </div>

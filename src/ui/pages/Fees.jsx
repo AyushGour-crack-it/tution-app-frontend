@@ -7,18 +7,24 @@ const emptyForm = { studentId: "", month: "", total: "", payment: "" };
 export default function Fees() {
   const [items, setItems] = useState([]);
   const [students, setStudents] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [offlineRequests, setOfflineRequests] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [feeData, studentData] = await Promise.all([
+    const [feeData, studentData, transactionData, offlineData] = await Promise.all([
       api.get("/fees").then((res) => res.data),
-      api.get("/students").then((res) => res.data)
+      api.get("/students").then((res) => res.data),
+      api.get("/fees/transactions").then((res) => res.data || []),
+      api.get("/fees/offline-requests?status=pending").then((res) => res.data || [])
     ]);
     setItems(feeData);
     setStudents(studentData);
+    setTransactions(transactionData);
+    setOfflineRequests(offlineData);
     setLoading(false);
   };
 
@@ -86,6 +92,23 @@ export default function Fees() {
 
   const studentLookup = Object.fromEntries(students.map((item) => [item._id, item.name]));
 
+  const reviewOfflineRequest = async (requestId, action) => {
+    const teacherNote = prompt(
+      action === "reject" ? "Why rejecting this request?" : "Optional note",
+      ""
+    ) || "";
+    const method = action === "approve"
+      ? (prompt("Payment method for this offline receipt (Cash/UPI/Bank)", "Cash") || "Cash")
+      : "";
+
+    await api.post(`/fees/offline-requests/${requestId}/review`, {
+      action,
+      teacherNote,
+      method
+    });
+    load();
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -149,6 +172,78 @@ export default function Fees() {
             </button>
           )}
         </form>
+      </div>
+
+      <div className="card" style={{ marginTop: "24px" }}>
+        <h2 className="card-title">Offline Payment Requests</h2>
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="list">
+            {offlineRequests.map((item) => (
+              <div className="list-item" key={item._id}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>
+                    {item?.studentId?.name || "Student"} • ₹{Number(item.amount || 0)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    {item?.studentId?.phone || item?.studentId?.guardian?.phone || "No phone"} •
+                    {" "}Month: {item?.feeId?.month || "-"}
+                  </div>
+                  {item?.message ? (
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>{item.message}</div>
+                  ) : null}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button className="btn btn-ghost" onClick={() => reviewOfflineRequest(item._id, "approve")}>
+                    Approve
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => reviewOfflineRequest(item._id, "reject")}>
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!offlineRequests.length ? <div>No pending offline requests.</div> : null}
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: "24px" }}>
+        <h2 className="card-title">Payment Transactions</h2>
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Mobile</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Time</th>
+                <th>Days Since Prev</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((row) => (
+                <tr key={row.receiptId}>
+                  <td>{row.studentName}</td>
+                  <td>{row.studentPhone || "-"}</td>
+                  <td>₹{Number(row.amount || 0).toLocaleString("en-IN")}</td>
+                  <td>{row.method}</td>
+                  <td>{row.paidOn ? new Date(row.paidOn).toLocaleString() : "-"}</td>
+                  <td>{row.daysSincePrevious === null ? "-" : `${row.daysSincePrevious} day(s)`}</td>
+                </tr>
+              ))}
+              {!transactions.length ? (
+                <tr>
+                  <td colSpan="6">No transactions yet.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
