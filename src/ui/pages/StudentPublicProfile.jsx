@@ -58,6 +58,19 @@ const getLevelBannerClass = (totalXp) => {
   return "xp-tier-20";
 };
 
+const formatSubjectName = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+
+const getQuizMotivation = ({ totalXP, streakCount, overallLevel }) => {
+  if (Number(totalXP || 0) <= 0) return "First quiz win pending. Start the learning streak.";
+  if (Number(streakCount || 0) >= 7) return "On a weekly streak. Consistency is turning into mastery.";
+  if (Number(overallLevel || 0) >= 5) return "High quiz momentum. Keep sharpening speed and accuracy.";
+  return "Steady progress. One more quiz can move this profile up.";
+};
+
 export default function StudentPublicProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -118,6 +131,32 @@ export default function StudentPublicProfile() {
     rank: null
   });
   const canLike = viewer?.role === "student" && student?.userId && viewer?.id !== student.userId;
+  const quiz = student?.quiz || {};
+  const quizTotalXP = Number(quiz.totalXP || 0);
+  const quizOverallLevel = Number(quiz.overallLevel || 0);
+  const quizStreakCount = Number(quiz.streakCount || 0);
+  const subjectProgress = useMemo(() => {
+    const subjectXpMap = quiz?.subjectXP && typeof quiz.subjectXP === "object" ? quiz.subjectXP : {};
+    const subjectLevelMap = quiz?.subjectLevel && typeof quiz.subjectLevel === "object" ? quiz.subjectLevel : {};
+    return Object.entries(subjectXpMap)
+      .map(([subject, amount]) => {
+        const xp = Number(amount || 0);
+        const level = Number(subjectLevelMap[subject] || 0);
+        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
+        return {
+          key: subject,
+          subject: formatSubjectName(subject),
+          xp,
+          level,
+          progress
+        };
+      })
+      .sort((a, b) => b.xp - a.xp);
+  }, [quiz?.subjectXP, quiz?.subjectLevel]);
+  const quizMotivation = useMemo(
+    () => getQuizMotivation({ totalXP: quizTotalXP, streakCount: quizStreakCount, overallLevel: quizOverallLevel }),
+    [quizOverallLevel, quizStreakCount, quizTotalXP]
+  );
 
   const toggleLike = async () => {
     if (!canLike || liking) return;
@@ -185,6 +224,12 @@ export default function StudentPublicProfile() {
               <span className="pill student-stat-pill student-stat-pill-likes">
                 Likes <strong>{student.likesCount || 0}</strong>
               </span>
+              <span className="pill student-stat-pill student-stat-pill-quiz-level">
+                Quiz Lv <strong>{quizOverallLevel}</strong>
+              </span>
+              <span className="pill student-stat-pill student-stat-pill-streak">
+                Streak <strong>{quizStreakCount}d</strong>
+              </span>
               {canLike ? (
                 <button
                   type="button"
@@ -197,6 +242,40 @@ export default function StudentPublicProfile() {
               ) : null}
             </div>
             <p className="student-profile-bio">{student.bio || "No bio yet."}</p>
+            <div className="student-profile-quiz-card">
+              <div className="student-profile-quiz-head">
+                <div>
+                  <h3 className="student-profile-quiz-title">Quiz Journey</h3>
+                  <p className="student-profile-quiz-motivation">{quizMotivation}</p>
+                </div>
+                <div className="student-profile-quiz-total">{quizTotalXP} Quiz XP</div>
+              </div>
+
+              {subjectProgress.length ? (
+                <div className="student-profile-quiz-progress-list">
+                  {subjectProgress.slice(0, 6).map((item) => (
+                    <div key={item.key} className="student-profile-quiz-progress-item">
+                      <div className="student-profile-quiz-progress-meta">
+                        <span>{item.subject}</span>
+                        <span>
+                          Lv {item.level} • {item.xp} XP
+                        </span>
+                      </div>
+                      <div className="student-profile-quiz-progress-track">
+                        <div
+                          className="student-profile-quiz-progress-fill"
+                          style={{ width: `${item.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="student-directory-meta">
+                  No quiz progress yet. Start one quiz to appear on this leaderboard.
+                </div>
+              )}
+            </div>
             <div className="student-profile-badges-grid">
               {sortedBadges.length ? (
                 sortedBadges.map((badge) => (
