@@ -290,6 +290,15 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
         ? "Track dues and payment status."
         : "Your homework, fees, and updates.";
 
+  const toLocalDateKey = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
   const getAnnouncementTone = (item) => {
     const text = `${String(item?.title || "").toLowerCase()} ${String(item?.note || "").toLowerCase()}`;
     if (text.includes("urgent") || text.includes("important") || text.includes("asap")) return "urgent";
@@ -300,36 +309,29 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   useEffect(() => {
     if (section !== "dashboard" || !announcements.length) return;
-    const latest = announcements[0];
-    if (!latest?._id) return;
+    const todayKey = toLocalDateKey(new Date());
+    const todaysAnnouncement = announcements.find(
+      (item) => item?._id && item?.date && toLocalDateKey(item.date) === todayKey
+    );
+    if (!todaysAnnouncement?._id) return;
     const seenRaw = popupSeen.announcementId || "";
-    if (seenRaw === latest._id) return;
+    if (seenRaw === todaysAnnouncement._id) return;
     setAnnouncementPopup({
-      ...latest,
-      tone: getAnnouncementTone(latest)
+      ...todaysAnnouncement,
+      tone: getAnnouncementTone(todaysAnnouncement)
     });
   }, [section, announcements, popupSeen.announcementId]);
 
   useEffect(() => {
     if (section !== "dashboard" || !holidays.length) return;
-    const now = new Date();
-    const todayKey = now.toISOString().slice(0, 10);
-    const withDates = holidays
-      .map((item) => ({ ...item, parsedDate: item?.date ? new Date(item.date) : null }))
-      .filter((item) => item.parsedDate && !Number.isNaN(item.parsedDate.getTime()));
-    if (!withDates.length) return;
-
-    const todayHoliday = withDates.find(
-      (item) => item.parsedDate.toISOString().slice(0, 10) === todayKey
+    const todayKey = toLocalDateKey(new Date());
+    const todayHoliday = holidays.find(
+      (item) => item?._id && item?.date && toLocalDateKey(item.date) === todayKey
     );
-    const upcomingHoliday = withDates
-      .filter((item) => item.parsedDate >= now)
-      .sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime())[0];
-    const target = todayHoliday || upcomingHoliday;
-    if (!target?._id) return;
+    if (!todayHoliday?._id) return;
     const seenRaw = popupSeen.holidayId || "";
-    if (seenRaw === target._id) return;
-    setHolidayPopup(target);
+    if (seenRaw === todayHoliday._id) return;
+    setHolidayPopup(todayHoliday);
   }, [section, holidays, popupSeen.holidayId]);
 
   const closeAnnouncementPopup = async () => {

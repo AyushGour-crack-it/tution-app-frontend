@@ -94,6 +94,20 @@ export default function Profile() {
         setQuizStats(null);
       }
     } catch (err) {
+      try {
+        const cached = JSON.parse(localStorage.getItem("auth_user") || "null");
+        if (cached) {
+          setUser(cached);
+          setForm({
+            name: cached.name || "",
+            phone: cached.phone || "",
+            bio: cached.bio || "",
+            avatar: null
+          });
+        }
+      } catch {
+        // no-op
+      }
       setError(err.response?.data?.message || "Failed to load profile. Please log in again.");
     }
   };

@@ -143,13 +143,13 @@ export default function StudentDirectory() {
                     } ${index === 2 ? "student-directory-item-rank-3" : ""}`}
                     onClick={() => navigate(`/student/students/${student.userId}`)}
                   >
-                    <div className="student-directory-rank">#{index + 1}</div>
                     <div className="student-directory-quiz-strip">
                       <span className="student-directory-quiz-pill">Quiz Lv {quizLevel}</span>
                       <span className="student-directory-quiz-pill">{quizTotalXp} XP</span>
                       <span className="student-directory-quiz-pill">Streak {quizStreak}d</span>
                     </div>
-                    <div className={`avatar-frame avatar-frame-sm ${frame.frameClass}`} title={frame.frameLabel}>
+                    <div className="student-directory-rank">#{index + 1}</div>
+                    <div className={`avatar-frame avatar-frame-sm student-directory-avatar-wrap ${frame.frameClass}`} title={frame.frameLabel}>
                       {student.avatarUrl ? (
                         <img src={student.avatarUrl} alt={student.name} className="student-directory-avatar" />
                       ) : (
@@ -160,7 +160,12 @@ export default function StudentDirectory() {
                       <span className={`student-online-dot ${student?.isOnline ? "online" : "offline"}`} />
                     </div>
                     <div className="student-directory-item-body">
-                      <div className="student-directory-name">{student.name}</div>
+                      <div className="student-directory-headline">
+                        <div className="student-directory-name">{student.name}</div>
+                        <div className="student-directory-mini">
+                          Roll {student.rollNumber || "-"} • Grade {student.grade || "-"}
+                        </div>
+                      </div>
                       <div className="student-directory-meta">
                         <span className={`level-pill ${getLevelTierClass(student.level?.level)}`}>
                           Lv {student.level?.level || 1}
