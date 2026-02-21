@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import LevelJourney from "../components/LevelJourney.jsx";
+import { playLevelUpAnimation } from "../levelSystem.js";
 
 const CATEGORY_META = {
   all: { label: "All Categories", hint: "Complete badge catalog" },
@@ -54,15 +56,6 @@ const isKiraBadge = (badge) => badge?.key === "kira_2h_7d";
 const isRobinBadge = (badge) => badge?.key === "nico_robin_3sunday";
 const isGokuBadge = (badge) => badge?.key === "goku_5h_sunday";
 
-const getLevelTierClass = (levelValue) => {
-  const level = Number(levelValue) || 1;
-  if (level >= 13) return "level-tier-mythic";
-  if (level >= 10) return "level-tier-legend";
-  if (level >= 7) return "level-tier-elite";
-  if (level >= 4) return "level-tier-rising";
-  return "level-tier-starter";
-};
-
 export default function Badges() {
   const [catalog, setCatalog] = useState([]);
   const [earned, setEarned] = useState([]);
@@ -72,6 +65,9 @@ export default function Badges() {
   const [requestMessage, setRequestMessage] = useState("");
   const [selectedBadgeKey, setSelectedBadgeKey] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const previousLevelRef = useRef(0);
+  const previousTotalXpRef = useRef(0);
+  const previousEarnedRef = useRef([]);
 
   const load = async () => {
     setLoading(true);
@@ -80,10 +76,31 @@ export default function Badges() {
       api.get("/badges/me").then((res) => res.data || {}),
       api.get("/badges/requests/mine").then((res) => res.data || [])
     ]);
+    const nextEarned = meData.earned || [];
+    const nextLevel = meData.level || null;
     setCatalog(catalogData);
-    setEarned(meData.earned || []);
+    setEarned(nextEarned);
     setPending(myRequests.filter((item) => item.status === "pending"));
-    setLevel(meData.level || null);
+    setLevel(nextLevel);
+
+    const oldLevel = Number(previousLevelRef.current || 0);
+    const newLevel = Number(nextLevel?.level || 0);
+    if (oldLevel > 0 && newLevel > oldLevel) {
+      const oldXp = Number(previousTotalXpRef.current || 0);
+      const newXp = Number(nextLevel?.totalXp || 0);
+      const xpGained = Math.max(0, newXp - oldXp);
+      const previousBadgeKeys = new Set((previousEarnedRef.current || []).map((item) => item.key));
+      const newlyUnlocked = nextEarned.find((item) => !previousBadgeKeys.has(item.key));
+      playLevelUpAnimation({
+        oldLevel,
+        newLevel,
+        xpGained,
+        badgeUnlocked: newlyUnlocked?.title || null
+      });
+    }
+    previousLevelRef.current = newLevel;
+    previousTotalXpRef.current = Number(nextLevel?.totalXp || 0);
+    previousEarnedRef.current = nextEarned;
     setLoading(false);
   };
 
@@ -191,25 +208,8 @@ export default function Badges() {
       <div className="badges-layout">
         <div className="badges-level-column">
           {level ? (
-            <div className="card badge-level-card badge-level-card-fixed">
-              <div className="badge-level-top">
-                <div className={`badge-level-ring ${getLevelTierClass(level.level)}`}>Lv {level.level}</div>
-                <div>
-                  <div style={{ fontWeight: 700 }}>Profile Level {level.level}</div>
-                  <div className="student-directory-meta">
-                    {level.totalXp} XP total • Max Level {level.maxLevel}
-                  </div>
-                </div>
-              </div>
-              <div className="badge-progress">
-                <div
-                  className="badge-progress-fill"
-                  style={{ width: `${Math.max(0, Math.min(100, level.progressPercent || 0))}%` }}
-                />
-              </div>
-              <div className="student-directory-meta">
-                Progress: {level.currentLevelXp}/{level.nextLevelXp} XP
-              </div>
+            <div className="badge-level-card-fixed">
+              <LevelJourney levelData={level} />
             </div>
           ) : null}
         </div>

@@ -2090,6 +2090,123 @@ html[data-theme="dark"] .student-profile-quiz-total {
   border: 1px solid var(--border);
 }
 
+.level-journey-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255, 170, 88, 0.25);
+  background:
+    radial-gradient(circle at 12% 20%, rgba(255, 190, 112, 0.16), transparent 44%),
+    radial-gradient(circle at 88% 18%, rgba(98, 170, 255, 0.12), transparent 44%),
+    var(--card-bg);
+}
+
+.level-journey-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.level-journey-main {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.level-journey-rank {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 193, 107, 0.22);
+  border: 1px solid rgba(255, 193, 107, 0.45);
+}
+
+.level-journey-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.level-journey-progress {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 175, 92, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.level-journey-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #f4b047, #ffd36e 58%, #ffe59d);
+  box-shadow: 0 0 12px rgba(255, 197, 95, 0.45);
+}
+
+.level-journey-progress-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.level-timeline-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.level-timeline-row {
+  display: inline-flex;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.level-node {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.level-node-done {
+  color: #3d2607;
+  border-color: rgba(255, 200, 108, 0.65);
+  background: linear-gradient(145deg, #ffd98f, #f5b24d);
+}
+
+.level-node-current {
+  color: #2d1d08;
+  border-color: rgba(255, 207, 127, 0.95);
+  background: linear-gradient(145deg, #ffe5a6, #f9c562);
+}
+
+.level-node-locked {
+  color: #9ba7af;
+  border-color: rgba(122, 134, 145, 0.45);
+  background: rgba(120, 134, 146, 0.16);
+}
+
+.level-node-grand {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.level-node-crown {
+  position: absolute;
+  right: -4px;
+  top: -9px;
+  font-size: 12px;
+}
+
 .badges-layout {
   margin-top: 24px;
   display: grid;
@@ -3082,6 +3199,122 @@ html[data-theme="dark"] .student-profile-quiz-total {
   opacity: 0.85;
 }
 
+.level-up-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  background: rgba(4, 6, 12, 0.84);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.level-up-card {
+  width: min(460px, 92vw);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 210, 126, 0.52);
+  background:
+    radial-gradient(circle at 22% 18%, rgba(255, 207, 115, 0.2), transparent 42%),
+    radial-gradient(circle at 82% 20%, rgba(94, 164, 255, 0.14), transparent 40%),
+    linear-gradient(145deg, #111828, #0b1220 58%, #0a111a);
+  padding: 24px;
+  text-align: center;
+  color: #f8f4eb;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 10px;
+}
+
+.level-up-title {
+  letter-spacing: 2.2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f6d38f;
+}
+
+.level-up-ring {
+  width: 130px;
+  height: 130px;
+  margin: 0 auto;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 211, 130, 0.82);
+  background: radial-gradient(circle, rgba(255, 224, 153, 0.2), rgba(255, 224, 153, 0.04));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 50px;
+  font-weight: 700;
+  color: #ffeec8;
+  position: relative;
+}
+
+.level-up-crown {
+  position: absolute;
+  top: -14px;
+  right: 6px;
+  font-size: 24px;
+}
+
+.level-up-rank {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.level-up-xp {
+  font-size: 14px;
+  color: #ffdc9f;
+}
+
+.level-up-badge {
+  font-size: 12px;
+  color: #c7d5e6;
+}
+
+.level-up-confetti-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.level-up-confetti {
+  position: absolute;
+  width: 7px;
+  height: 12px;
+  top: -16px;
+  border-radius: 2px;
+  animation-name: levelConfettiFall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.level-up-overlay-grand .level-up-card {
+  width: min(520px, 94vw);
+  border-color: rgba(255, 224, 162, 0.9);
+  box-shadow: 0 28px 70px rgba(255, 204, 109, 0.24), 0 24px 46px rgba(0, 0, 0, 0.5);
+}
+
+.level-up-overlay-grand .level-up-ring {
+  width: 150px;
+  height: 150px;
+  font-size: 56px;
+}
+
+@keyframes levelConfettiFall {
+  0% {
+    transform: translateY(-16px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(420deg);
+    opacity: 0;
+  }
+}
+
 .badge-unlock-popup-overlay {
   position: fixed;
   inset: 0;
@@ -3566,6 +3799,22 @@ html[data-theme="dark"] .student-profile-quiz-total {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .level-up-card {
+    padding: 18px;
+  }
+
+  .level-up-ring {
+    width: 104px;
+    height: 104px;
+    font-size: 42px;
+  }
+
+  .level-up-overlay-grand .level-up-ring {
+    width: 120px;
+    height: 120px;
+    font-size: 46px;
   }
 
   .page-header .btn,

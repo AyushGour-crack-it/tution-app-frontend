@@ -25,6 +25,8 @@ import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
 import StudentAccessPending from "./pages/StudentAccessPending.jsx";
 import QuizDashboard from "../features/quiz/Dashboard.jsx";
+import LevelUpOverlay from "./components/LevelUpOverlay.jsx";
+import { LEVEL_UP_EVENT } from "./levelSystem.js";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
   clearActiveSessionOnly,
@@ -124,6 +126,7 @@ export default function App() {
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
   const [rewardPopupQueue, setRewardPopupQueue] = React.useState([]);
+  const [levelUpPayload, setLevelUpPayload] = React.useState(null);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const [sectionUnread, setSectionUnread] = React.useState({});
   const locationPathRef = React.useRef(location.pathname);
@@ -262,6 +265,20 @@ export default function App() {
   React.useEffect(() => {
     setAccounts(getAuthAccounts());
   }, [user?.id]);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      const detail = event?.detail || {};
+      setLevelUpPayload({
+        oldLevel: Number(detail.oldLevel || 1),
+        newLevel: Number(detail.newLevel || 1),
+        xpGained: Number(detail.xpGained || 0),
+        badgeUnlocked: detail.badgeUnlocked || null
+      });
+    };
+    window.addEventListener(LEVEL_UP_EVENT, handler);
+    return () => window.removeEventListener(LEVEL_UP_EVENT, handler);
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -867,6 +884,9 @@ export default function App() {
         <div className="global-loading-overlay">
           <div className="global-loading-spinner" />
         </div>
+      ) : null}
+      {levelUpPayload ? (
+        <LevelUpOverlay data={levelUpPayload} onDone={() => setLevelUpPayload(null)} />
       ) : null}
       {activeFeePayment ? (
         <div
