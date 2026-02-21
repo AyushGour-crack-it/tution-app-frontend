@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { api } from "../api.js";
 import { MAX_LEVEL, getLevelsRemaining, getNextRank, getRank } from "../levelSystem.js";
 
 const JOURNEY_SOUNDTRACK_URL = "/musicthemes/astronaut12-level-up-life_astronaut-265931.mp3";
+gsap.registerPlugin(ScrollTrigger);
 
 export default function LevelJourneyPage() {
   const [loading, setLoading] = useState(true);
@@ -18,12 +20,18 @@ export default function LevelJourneyPage() {
   const orbBRef = useRef(null);
   const mapViewportRef = useRef(null);
   const mapCanvasRef = useRef(null);
+  const mapSectionRef = useRef(null);
+  const heroSectionRef = useRef(null);
+  const zoneBadgeSectionRef = useRef(null);
   const mapPathRef = useRef(null);
+  const mapEnergyRef = useRef(null);
   const rankRef = useRef(null);
   const xpFillRef = useRef(null);
   const nodeRefs = useRef([]);
   const pulseTweenRef = useRef(null);
   const cinematicTlRef = useRef(null);
+  const mapTriggerRef = useRef(null);
+  const hasMapPlayedRef = useRef(false);
   const zoneBadgeRefs = useRef({});
   const soundtrackRef = useRef(null);
 
@@ -163,62 +171,154 @@ export default function LevelJourneyPage() {
   }, [isMuted]);
 
   const runCinematic = useCallback(() => {
-    if (!mapViewportRef.current || !mapCanvasRef.current || !mapPathRef.current || !rankRef.current || !xpFillRef.current) return;
+    if (!mapViewportRef.current || !mapCanvasRef.current || !mapPathRef.current || !rankRef.current || !xpFillRef.current || !mapEnergyRef.current) return;
 
     cinematicTlRef.current?.kill();
     pulseTweenRef.current?.kill();
 
     const nodes = nodeRefs.current.filter(Boolean);
-    const currentNode = nodeRefs.current[currentLevel - 1] || null;
     const viewport = mapViewportRef.current;
     const canvas = mapCanvasRef.current;
     const path = mapPathRef.current;
+    const energy = mapEnergyRef.current;
     const rankEl = rankRef.current;
     const xpFill = xpFillRef.current;
     const pathLength = path.getTotalLength();
+    const completedColor = "linear-gradient(155deg, #ffdba1, #f2b759)";
+    const currentColor = "linear-gradient(150deg, #ffeab4, #f6c971)";
+    const lockedColor = "rgba(95, 112, 128, 0.2)";
+    const currentIndex = Math.max(0, Math.min(MAX_LEVEL - 1, currentLevel - 1));
+    const stepCount = Math.max(1, currentIndex);
+    const perStepDuration = Math.max(0.12, Math.min(0.22, 2.7 / stepCount));
 
-    gsap.set(nodes, { opacity: 0, scale: 0.72, filter: "blur(5px)" });
-    gsap.set(path, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+    gsap.set(nodes, {
+      opacity: 1,
+      scale: 1,
+      filter: "blur(0px)",
+      color: "#8392a1",
+      borderColor: "rgba(116, 129, 144, 0.5)",
+      background: lockedColor,
+      boxShadow: "0 0 0 rgba(0,0,0,0)"
+    });
+    gsap.set(path, {
+      strokeDasharray: pathLength,
+      strokeDashoffset: pathLength
+    });
     gsap.set(rankEl, { opacity: 0, y: 10, filter: "blur(5px)" });
     gsap.set(xpFill, { width: "0%" });
-    gsap.set(canvas, { scale: 1.08, rotate: -1.2, transformOrigin: "50% 50%" });
     viewport.scrollTop = 0;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const points = nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        x: rect.left - canvasRect.left + rect.width / 2,
+        y: rect.top - canvasRect.top + rect.height / 2
+      };
+    });
+    const startPoint = points[0] || { x: 0, y: 0 };
+    gsap.set(energy, {
+      x: startPoint.x,
+      y: startPoint.y,
+      opacity: 1,
+      scale: 0.86
+    });
 
     const viewportHeight = viewport.clientHeight;
     const canvasHeight = canvas.scrollHeight;
-    const currentOffset = currentNode ? currentNode.offsetTop + currentNode.offsetHeight / 2 : 0;
-    const targetScroll = Math.max(
-      0,
-      Math.min(canvasHeight - viewportHeight, currentOffset - viewportHeight / 2)
-    );
+    const getScrollTarget = (index) => {
+      const node = nodes[index];
+      if (!node) return 0;
+      const nodeCenter = node.offsetTop + node.offsetHeight / 2;
+      return Math.max(0, Math.min(canvasHeight - viewportHeight, nodeCenter - viewportHeight / 2));
+    };
+    const activePathRatio = currentIndex / Math.max(1, MAX_LEVEL - 1);
+    const targetDashOffset = pathLength * (1 - Math.max(0.02, activePathRatio));
 
     const tl = gsap.timeline({
       defaults: { ease: "power3.out" },
       onStart: () => setCinematicPlaying(true),
-      onComplete: () => setCinematicPlaying(false)
+      onComplete: () => {
+        setCinematicPlaying(false);
+      }
     });
-    tl.to(canvas, { scale: 1.02, rotate: 0.35, duration: 1.2 }, 0)
-      .to(canvas, { scale: 1, rotate: 0, duration: 1.28, ease: "power2.out" }, 1.1)
-      .to(path, { strokeDashoffset: 0, duration: 0.84 }, 0.18)
-      .to(nodes, { opacity: 1, scale: 1, filter: "blur(0px)", stagger: 0.06, duration: 0.2 }, "-=0.3")
-      .to(viewport, { scrollTop: targetScroll, duration: 1.2, ease: "power2.out" }, "-=0.02")
-      .to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.34 }, "-=0.1")
-      .to(xpFill, { width: `${progressPercent}%`, duration: 0.62 }, "-=0.06");
+    tl.to(path, { strokeDashoffset: targetDashOffset, duration: Math.max(1.2, Math.min(2.4, currentLevel * 0.18)), ease: "none" }, 0)
+      .to(viewport, { scrollTop: getScrollTarget(Math.max(0, currentIndex - 1)), duration: 0.5, ease: "power2.out" }, 0)
+      .to(energy, { scale: 1, duration: 0.15, ease: "power2.out" }, 0.05);
 
-    if (currentNode) {
-      tl.to(currentNode, { scale: 1.12, duration: 0.2 }, "-=0.32")
-        .to(currentNode, { scale: 1.0, duration: 0.23 }, "-=0.12");
+    for (let index = 0; index < currentIndex; index += 1) {
+      const nextPoint = points[index + 1] || points[index];
+      const segmentStart = 0.22 + index * perStepDuration;
+      tl.to(
+        energy,
+        {
+          x: nextPoint.x,
+          y: nextPoint.y,
+          duration: perStepDuration,
+          ease: "power2.out"
+        },
+        segmentStart
+      ).to(
+        viewport,
+        {
+          scrollTop: getScrollTarget(index + 1),
+          duration: perStepDuration,
+          ease: "power2.out"
+        },
+        segmentStart
+      ).to(
+        nodes[index],
+        {
+          background: completedColor,
+          color: "#3f2808",
+          borderColor: "rgba(255, 209, 135, 0.75)",
+          boxShadow: "0 0 14px rgba(255, 199, 106, 0.32)",
+          duration: 0.12
+        },
+        segmentStart + perStepDuration * 0.6
+      ).to(
+        nodes[index],
+        {
+          scale: 1.2,
+          duration: 0.08,
+          yoyo: true,
+          repeat: 1,
+          ease: "power2.out"
+        },
+        segmentStart + perStepDuration * 0.62
+      );
     }
+
+    tl.to(
+      nodes[currentIndex],
+      {
+        background: currentColor,
+        color: "#2c1d06",
+        borderColor: "rgba(255, 216, 138, 0.95)",
+        boxShadow: "0 0 24px rgba(255, 214, 120, 0.62)",
+        scale: 1.1,
+        duration: 0.2
+      },
+      `+=${Math.max(0.05, perStepDuration * 0.22)}`
+    ).to(
+      nodes[currentIndex],
+      {
+        scale: 1,
+        duration: 0.16,
+        ease: "power2.out"
+      }
+    ).to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.32 }, "-=0.02")
+      .to(xpFill, { width: `${progressPercent}%`, duration: 0.64, ease: "power3.out" }, "-=0.08");
 
     if (isGrandmaster && shellRef.current) {
       tl.to(shellRef.current, { scale: 1.01, duration: 0.22 }, "-=0.18")
         .to(shellRef.current, { scale: 1, duration: 0.22 }, "-=0.03");
     }
 
-    pulseTweenRef.current = currentNode
-      ? gsap.to(currentNode, {
+    pulseTweenRef.current = nodes[currentIndex]
+      ? gsap.to(nodes[currentIndex], {
           boxShadow: "0 0 26px rgba(255, 214, 118, 0.7)",
-          duration: 1.2,
+          duration: 1.25,
           repeat: -1,
           yoyo: true,
           ease: "sine.inOut"
@@ -264,8 +364,113 @@ export default function LevelJourneyPage() {
   }, []);
 
   useEffect(() => {
-    if (loading || error || !levelData) return;
-    runCinematic();
+    if (loading || error || !levelData || !shellRef.current) return undefined;
+    const ctx = gsap.context(() => {
+      if (heroSectionRef.current) {
+        gsap.from(".level-journey-page-hero-main > *", {
+          opacity: 0,
+          y: 16,
+          duration: 0.55,
+          stagger: 0.08,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: heroSectionRef.current,
+            start: "top 82%",
+            once: true
+          }
+        });
+        gsap.from(".level-journey-page-stat", {
+          opacity: 0,
+          y: 18,
+          duration: 0.45,
+          stagger: 0.06,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: heroSectionRef.current,
+            start: "top 78%",
+            once: true
+          }
+        });
+      }
+
+      if (zoneBadgeSectionRef.current) {
+        gsap.from(".level-zone-badge", {
+          opacity: 0,
+          y: 20,
+          scale: 0.96,
+          duration: 0.52,
+          stagger: 0.06,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: zoneBadgeSectionRef.current,
+            start: "top 80%",
+            once: true
+          }
+        });
+      }
+
+      if (mapSectionRef.current) {
+        gsap.from(".level-cinematic-head, .level-cinematic-hype-strip, .level-cinematic-xp", {
+          opacity: 0,
+          y: 16,
+          duration: 0.46,
+          stagger: 0.08,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: mapSectionRef.current,
+            start: "top 82%",
+            once: true
+          }
+        });
+
+        gsap.to(".level-map-zone", {
+          yPercent: -5,
+          ease: "none",
+          stagger: 0.03,
+          scrollTrigger: {
+            trigger: mapSectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.1
+          }
+        });
+      }
+    }, shellRef);
+
+    return () => {
+      ctx.revert();
+    };
+  }, [error, levelData, loading]);
+
+  useEffect(() => {
+    if (!mapEnergyRef.current) return undefined;
+    const idle = gsap.to(mapEnergyRef.current, {
+      scale: 1.07,
+      duration: 1.1,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
+    });
+    return () => idle.kill();
+  }, []);
+
+  useEffect(() => {
+    if (loading || error || !levelData || !mapSectionRef.current) return;
+    mapTriggerRef.current?.kill();
+    mapTriggerRef.current = ScrollTrigger.create({
+      trigger: mapSectionRef.current,
+      start: "top 75%",
+      once: true,
+      onEnter: () => {
+        if (hasMapPlayedRef.current) return;
+        hasMapPlayedRef.current = true;
+        runCinematic();
+      }
+    });
+    return () => {
+      mapTriggerRef.current?.kill();
+      mapTriggerRef.current = null;
+    };
   }, [error, levelData, loading, runCinematic]);
 
   useEffect(() => {
@@ -343,6 +548,8 @@ export default function LevelJourneyPage() {
       stopAmbient();
       pulseTweenRef.current?.kill();
       cinematicTlRef.current?.kill();
+      mapTriggerRef.current?.kill();
+      mapTriggerRef.current = null;
       if (soundtrackRef.current) {
         soundtrackRef.current.src = "";
         soundtrackRef.current = null;
@@ -392,7 +599,7 @@ export default function LevelJourneyPage() {
 
       {!loading && !error && levelData ? (
         <>
-          <section className="card level-journey-page-hero" style={{ marginTop: "24px" }}>
+          <section ref={heroSectionRef} className="card level-journey-page-hero" style={{ marginTop: "24px" }}>
             <div className="level-journey-page-hero-main">
               <div className="level-journey-page-kicker">Cinematic Mode</div>
               <h2 className="level-journey-page-title">Level {currentLevel} / {MAX_LEVEL}</h2>
@@ -436,7 +643,7 @@ export default function LevelJourneyPage() {
             </div>
           </section>
 
-          <section className="card level-zone-badges" style={{ marginTop: "16px" }}>
+          <section ref={zoneBadgeSectionRef} className="card level-zone-badges" style={{ marginTop: "16px" }}>
             <div className="level-zone-badges-head">
               <h3 className="card-title">Zone Badges</h3>
               <div className="level-zone-badges-meta">
@@ -480,7 +687,11 @@ export default function LevelJourneyPage() {
             </div>
           </section>
 
-          <section className={`card level-cinematic-stage${cinematicPlaying ? " level-cinematic-stage-playing" : ""}`} style={{ marginTop: "16px" }}>
+          <section
+            ref={mapSectionRef}
+            className={`card level-cinematic-stage${cinematicPlaying ? " level-cinematic-stage-playing" : ""}`}
+            style={{ marginTop: "16px" }}
+          >
             <div className={`level-cinematic-overlay${cinematicPlaying ? " is-active" : ""}`} aria-hidden="true">
               <div className="level-cinematic-bar level-cinematic-bar-top" />
               <div className="level-cinematic-bar level-cinematic-bar-bottom" />
@@ -522,6 +733,7 @@ export default function LevelJourneyPage() {
                   <path className="level-map-path-ghost" d={mapPath} />
                   <path className="level-map-path-live" d={mapPath} ref={mapPathRef} />
                 </svg>
+                <div className="level-map-energy" ref={mapEnergyRef} />
                 {levels.map((item, index) => (
                   <div
                     key={item.value}

@@ -2737,6 +2737,20 @@ html[data-theme="dark"] .student-profile-quiz-total {
   filter: drop-shadow(0 0 8px rgba(255, 206, 125, 0.45));
 }
 
+.level-map-energy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #fff5d6 0%, #ffd27d 45%, rgba(255, 210, 125, 0.1) 72%);
+  box-shadow: 0 0 18px rgba(255, 211, 128, 0.75), 0 0 38px rgba(140, 210, 255, 0.32);
+  z-index: 2;
+  pointer-events: none;
+}
+
 .level-map-start-marker,
 .level-map-end-marker {
   position: absolute;
@@ -2773,7 +2787,7 @@ html[data-theme="dark"] .student-profile-quiz-total {
   font-weight: 700;
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 1;
+  z-index: 3;
 }
 
 .level-cinematic-node-done {
