@@ -189,7 +189,7 @@ export default function LevelJourneyPage() {
     const lockedColor = "rgba(95, 112, 128, 0.2)";
     const currentIndex = Math.max(0, Math.min(MAX_LEVEL - 1, currentLevel - 1));
     const stepCount = Math.max(1, currentIndex);
-    const perStepDuration = Math.max(0.34, Math.min(0.62, 6.2 / stepCount));
+    const perStepDuration = Math.max(0.62, Math.min(1.18, 11.6 / stepCount));
 
     gsap.set(nodes, {
       opacity: 1,
@@ -242,9 +242,9 @@ export default function LevelJourneyPage() {
         setCinematicPlaying(false);
       }
     });
-    tl.to(path, { strokeDashoffset: targetDashOffset, duration: Math.max(3.8, Math.min(6.8, currentLevel * 0.44)), ease: "none" }, 0)
-      .to(viewport, { scrollTop: getScrollTarget(Math.max(0, currentIndex - 1)), duration: 1.8, ease: "power3.out" }, 0)
-      .to(energy, { scale: 1, duration: 0.62, ease: "power2.out" }, 0.14);
+    tl.to(path, { strokeDashoffset: targetDashOffset, duration: Math.max(8.2, Math.min(14, currentLevel * 0.82)), ease: "none" }, 0)
+      .to(viewport, { scrollTop: getScrollTarget(Math.max(0, currentIndex - 1)), duration: 3.6, ease: "power3.out" }, 0)
+      .to(energy, { scale: 1, duration: 1.25, ease: "power2.out" }, 0.24);
 
     for (let index = 0; index < currentIndex; index += 1) {
       const nextPoint = points[index + 1] || points[index];
@@ -273,14 +273,14 @@ export default function LevelJourneyPage() {
           color: "#3f2808",
           borderColor: "rgba(255, 209, 135, 0.75)",
           boxShadow: "0 0 14px rgba(255, 199, 106, 0.32)",
-          duration: 0.34
+          duration: 0.62
         },
         segmentStart + perStepDuration * 0.64
       ).to(
         nodes[index],
         {
           scale: 1.2,
-          duration: 0.34,
+          duration: 0.72,
           yoyo: true,
           repeat: 1,
           ease: "power2.out"
@@ -297,18 +297,18 @@ export default function LevelJourneyPage() {
         borderColor: "rgba(255, 216, 138, 0.95)",
         boxShadow: "0 0 24px rgba(255, 214, 120, 0.62)",
         scale: 1.1,
-        duration: 0.38
+        duration: 0.75
       },
-      `+=${Math.max(0.2, perStepDuration * 0.34)}`
+      `+=${Math.max(0.5, perStepDuration * 0.44)}`
     ).to(
       nodes[currentIndex],
       {
         scale: 1,
-        duration: 0.48,
+        duration: 0.94,
         ease: "power3.out"
       }
-    ).to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.92 }, "-=0.02")
-      .to(xpFill, { width: `${progressPercent}%`, duration: 1.9, ease: "power3.out" }, "-=0.1");
+    ).to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 1.55 }, "-=0.02")
+      .to(xpFill, { width: `${progressPercent}%`, duration: 3.8, ease: "power3.out" }, "-=0.1");
 
     if (isGrandmaster && shellRef.current) {
       tl.to(shellRef.current, { scale: 1.01, duration: 0.22 }, "-=0.18")
@@ -318,7 +318,7 @@ export default function LevelJourneyPage() {
     pulseTweenRef.current = nodes[currentIndex]
       ? gsap.to(nodes[currentIndex], {
           boxShadow: "0 0 26px rgba(255, 214, 118, 0.7)",
-          duration: 1.8,
+          duration: 2.8,
           repeat: -1,
           yoyo: true,
           ease: "sine.inOut"
