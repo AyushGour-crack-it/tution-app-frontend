@@ -9,6 +9,7 @@ export default function LevelJourneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [levelData, setLevelData] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
   const [hypeMode, setHypeMode] = useState(true);
   const [newlyUnlockedZones, setNewlyUnlockedZones] = useState([]);
   const [cinematicPlaying, setCinematicPlaying] = useState(false);
@@ -152,12 +153,14 @@ export default function LevelJourneyPage() {
       audio.preload = "auto";
       audio.loop = true;
       audio.volume = 0.38;
+      audio.muted = isMuted;
       soundtrackRef.current = audio;
     }
+    audio.muted = isMuted;
     audio.play().catch(() => {
       // autoplay can be blocked until user interacts
     });
-  }, []);
+  }, [isMuted]);
 
   const runCinematic = useCallback(() => {
     if (!mapViewportRef.current || !mapCanvasRef.current || !mapPathRef.current || !rankRef.current || !xpFillRef.current) return;
@@ -330,6 +333,11 @@ export default function LevelJourneyPage() {
     };
   }, [startAmbient, stopAmbient]);
 
+  useEffect(() => {
+    if (!soundtrackRef.current) return;
+    soundtrackRef.current.muted = isMuted;
+  }, [isMuted]);
+
   useEffect(
     () => () => {
       stopAmbient();
@@ -408,11 +416,11 @@ export default function LevelJourneyPage() {
               <div className="level-journey-page-stat">
                 <div className="level-journey-page-stat-label">Ambient Audio</div>
                 <button
-                  className="level-journey-sound-btn is-active"
+                  className={`level-journey-sound-btn${isMuted ? "" : " is-active"}`}
                   type="button"
-                  disabled
+                  onClick={() => setIsMuted((prev) => !prev)}
                 >
-                  Always On
+                  {isMuted ? "Muted" : "On"}
                 </button>
               </div>
               <div className="level-journey-page-stat">
