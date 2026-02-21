@@ -3,6 +3,8 @@ import { gsap } from "gsap";
 import { api } from "../api.js";
 import { MAX_LEVEL, getLevelsRemaining, getNextRank, getRank } from "../levelSystem.js";
 
+const JOURNEY_SOUNDTRACK_URL = "/musicthemes/astronaut12-level-up-life_astronaut-265931.mp3";
+
 export default function LevelJourneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,8 +24,7 @@ export default function LevelJourneyPage() {
   const pulseTweenRef = useRef(null);
   const cinematicTlRef = useRef(null);
   const zoneBadgeRefs = useRef({});
-  const audioContextRef = useRef(null);
-  const ambientTimerRef = useRef(null);
+  const soundtrackRef = useRef(null);
 
   const currentLevel = Number(levelData?.level || 1);
   const rank = getRank(currentLevel);
@@ -137,63 +138,26 @@ export default function LevelJourneyPage() {
     [currentLevel, mapZones]
   );
 
-  const playAmbientPulse = useCallback(() => {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return false;
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContextClass();
-    }
-    const context = audioContextRef.current;
-    if (context.state === "suspended") {
-      context.resume().catch(() => {
-        // ignore
-      });
-    }
-    const now = context.currentTime + 0.03;
-    const baseNotes = [130.81, 164.81, 196.0];
-    baseNotes.forEach((freq, index) => {
-      const tone = context.createOscillator();
-      const gain = context.createGain();
-      tone.type = "sine";
-      tone.frequency.setValueAtTime(freq, now + index * 0.04);
-      gain.gain.setValueAtTime(0.0001, now + index * 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.008, now + 0.18 + index * 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8 + index * 0.05);
-      tone.connect(gain);
-      gain.connect(context.destination);
-      tone.start(now + index * 0.04);
-      tone.stop(now + 1.95 + index * 0.05);
-    });
-
-    const shimmer = context.createOscillator();
-    const shimmerGain = context.createGain();
-    shimmer.type = "triangle";
-    shimmer.frequency.setValueAtTime(659.25, now + 1.2);
-    shimmerGain.gain.setValueAtTime(0.0001, now + 1.2);
-    shimmerGain.gain.exponentialRampToValueAtTime(0.004, now + 1.28);
-    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
-    shimmer.connect(shimmerGain);
-    shimmerGain.connect(context.destination);
-    shimmer.start(now + 1.2);
-    shimmer.stop(now + 1.72);
-    return true;
-  }, []);
-
   const stopAmbient = useCallback(() => {
-    if (ambientTimerRef.current) {
-      window.clearInterval(ambientTimerRef.current);
-      ambientTimerRef.current = null;
-    }
+    const audio = soundtrackRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
   }, []);
 
   const startAmbient = useCallback(() => {
-    stopAmbient();
-    const started = playAmbientPulse();
-    if (!started) return;
-    ambientTimerRef.current = window.setInterval(() => {
-      playAmbientPulse();
-    }, 7000);
-  }, [playAmbientPulse, stopAmbient]);
+    let audio = soundtrackRef.current;
+    if (!audio) {
+      audio = new Audio(JOURNEY_SOUNDTRACK_URL);
+      audio.preload = "auto";
+      audio.loop = true;
+      audio.volume = 0.38;
+      soundtrackRef.current = audio;
+    }
+    audio.play().catch(() => {
+      // autoplay can be blocked until user interacts
+    });
+  }, []);
 
   const runCinematic = useCallback(() => {
     if (!mapViewportRef.current || !mapCanvasRef.current || !mapPathRef.current || !rankRef.current || !xpFillRef.current) return;
@@ -371,8 +335,9 @@ export default function LevelJourneyPage() {
       stopAmbient();
       pulseTweenRef.current?.kill();
       cinematicTlRef.current?.kill();
-      if (audioContextRef.current && typeof audioContextRef.current.close === "function") {
-        audioContextRef.current.close();
+      if (soundtrackRef.current) {
+        soundtrackRef.current.src = "";
+        soundtrackRef.current = null;
       }
     },
     [stopAmbient]
