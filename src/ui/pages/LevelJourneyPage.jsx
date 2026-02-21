@@ -189,7 +189,7 @@ export default function LevelJourneyPage() {
     const lockedColor = "rgba(95, 112, 128, 0.2)";
     const currentIndex = Math.max(0, Math.min(MAX_LEVEL - 1, currentLevel - 1));
     const stepCount = Math.max(1, currentIndex);
-    const perStepDuration = Math.max(0.12, Math.min(0.22, 2.7 / stepCount));
+    const perStepDuration = Math.max(0.26, Math.min(0.46, 4.6 / stepCount));
 
     gsap.set(nodes, {
       opacity: 1,
@@ -242,9 +242,9 @@ export default function LevelJourneyPage() {
         setCinematicPlaying(false);
       }
     });
-    tl.to(path, { strokeDashoffset: targetDashOffset, duration: Math.max(1.2, Math.min(2.4, currentLevel * 0.18)), ease: "none" }, 0)
-      .to(viewport, { scrollTop: getScrollTarget(Math.max(0, currentIndex - 1)), duration: 0.5, ease: "power2.out" }, 0)
-      .to(energy, { scale: 1, duration: 0.15, ease: "power2.out" }, 0.05);
+    tl.to(path, { strokeDashoffset: targetDashOffset, duration: Math.max(2.6, Math.min(4.6, currentLevel * 0.34)), ease: "none" }, 0)
+      .to(viewport, { scrollTop: getScrollTarget(Math.max(0, currentIndex - 1)), duration: 1.1, ease: "power3.out" }, 0)
+      .to(energy, { scale: 1, duration: 0.4, ease: "power2.out" }, 0.1);
 
     for (let index = 0; index < currentIndex; index += 1) {
       const nextPoint = points[index + 1] || points[index];
@@ -255,7 +255,7 @@ export default function LevelJourneyPage() {
           x: nextPoint.x,
           y: nextPoint.y,
           duration: perStepDuration,
-          ease: "power2.out"
+          ease: "power3.inOut"
         },
         segmentStart
       ).to(
@@ -263,7 +263,7 @@ export default function LevelJourneyPage() {
         {
           scrollTop: getScrollTarget(index + 1),
           duration: perStepDuration,
-          ease: "power2.out"
+          ease: "power3.inOut"
         },
         segmentStart
       ).to(
@@ -273,19 +273,19 @@ export default function LevelJourneyPage() {
           color: "#3f2808",
           borderColor: "rgba(255, 209, 135, 0.75)",
           boxShadow: "0 0 14px rgba(255, 199, 106, 0.32)",
-          duration: 0.12
+          duration: 0.26
         },
-        segmentStart + perStepDuration * 0.6
+        segmentStart + perStepDuration * 0.64
       ).to(
         nodes[index],
         {
           scale: 1.2,
-          duration: 0.08,
+          duration: 0.24,
           yoyo: true,
           repeat: 1,
           ease: "power2.out"
         },
-        segmentStart + perStepDuration * 0.62
+        segmentStart + perStepDuration * 0.66
       );
     }
 
@@ -297,18 +297,18 @@ export default function LevelJourneyPage() {
         borderColor: "rgba(255, 216, 138, 0.95)",
         boxShadow: "0 0 24px rgba(255, 214, 120, 0.62)",
         scale: 1.1,
-        duration: 0.2
+        duration: 0.28
       },
-      `+=${Math.max(0.05, perStepDuration * 0.22)}`
+      `+=${Math.max(0.12, perStepDuration * 0.3)}`
     ).to(
       nodes[currentIndex],
       {
         scale: 1,
-        duration: 0.16,
-        ease: "power2.out"
+        duration: 0.34,
+        ease: "power3.out"
       }
-    ).to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.32 }, "-=0.02")
-      .to(xpFill, { width: `${progressPercent}%`, duration: 0.64, ease: "power3.out" }, "-=0.08");
+    ).to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.66 }, "-=0.02")
+      .to(xpFill, { width: `${progressPercent}%`, duration: 1.35, ease: "power3.out" }, "-=0.1");
 
     if (isGrandmaster && shellRef.current) {
       tl.to(shellRef.current, { scale: 1.01, duration: 0.22 }, "-=0.18")
@@ -318,7 +318,7 @@ export default function LevelJourneyPage() {
     pulseTweenRef.current = nodes[currentIndex]
       ? gsap.to(nodes[currentIndex], {
           boxShadow: "0 0 26px rgba(255, 214, 118, 0.7)",
-          duration: 1.25,
+          duration: 1.45,
           repeat: -1,
           yoyo: true,
           ease: "sine.inOut"
@@ -369,25 +369,25 @@ export default function LevelJourneyPage() {
       if (heroSectionRef.current) {
         gsap.from(".level-journey-page-hero-main > *", {
           opacity: 0,
-          y: 16,
-          duration: 0.55,
-          stagger: 0.08,
+          y: 20,
+          duration: 0.72,
+          stagger: 0.12,
           ease: "power3.out",
           scrollTrigger: {
             trigger: heroSectionRef.current,
-            start: "top 82%",
+            start: "top 72%",
             once: true
           }
         });
         gsap.from(".level-journey-page-stat", {
           opacity: 0,
-          y: 18,
-          duration: 0.45,
-          stagger: 0.06,
+          y: 20,
+          duration: 0.64,
+          stagger: 0.09,
           ease: "power2.out",
           scrollTrigger: {
             trigger: heroSectionRef.current,
-            start: "top 78%",
+            start: "top 70%",
             once: true
           }
         });
@@ -396,14 +396,14 @@ export default function LevelJourneyPage() {
       if (zoneBadgeSectionRef.current) {
         gsap.from(".level-zone-badge", {
           opacity: 0,
-          y: 20,
+          y: 24,
           scale: 0.96,
-          duration: 0.52,
-          stagger: 0.06,
+          duration: 0.74,
+          stagger: 0.1,
           ease: "power2.out",
           scrollTrigger: {
             trigger: zoneBadgeSectionRef.current,
-            start: "top 80%",
+            start: "top 72%",
             once: true
           }
         });
@@ -412,13 +412,13 @@ export default function LevelJourneyPage() {
       if (mapSectionRef.current) {
         gsap.from(".level-cinematic-head, .level-cinematic-hype-strip, .level-cinematic-xp", {
           opacity: 0,
-          y: 16,
-          duration: 0.46,
-          stagger: 0.08,
+          y: 18,
+          duration: 0.64,
+          stagger: 0.11,
           ease: "power2.out",
           scrollTrigger: {
             trigger: mapSectionRef.current,
-            start: "top 82%",
+            start: "top 66%",
             once: true
           }
         });
@@ -431,7 +431,7 @@ export default function LevelJourneyPage() {
             trigger: mapSectionRef.current,
             start: "top bottom",
             end: "bottom top",
-            scrub: 1.1
+            scrub: 1.8
           }
         });
       }
@@ -459,7 +459,7 @@ export default function LevelJourneyPage() {
     mapTriggerRef.current?.kill();
     mapTriggerRef.current = ScrollTrigger.create({
       trigger: mapSectionRef.current,
-      start: "top 75%",
+      start: "top 58%",
       once: true,
       onEnter: () => {
         if (hasMapPlayedRef.current) return;
