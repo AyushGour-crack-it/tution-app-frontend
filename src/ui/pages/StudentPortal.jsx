@@ -309,12 +309,13 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     fees.forEach((row) => {
       const paid = row.payments?.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || 0;
       const due = Math.max(Number(row.total || 0) - paid, 0);
-      if (due <= 0 || !row?.dueDate) return;
+      const dueAmount = Number(due.toFixed(2));
+      if (dueAmount <= 0 || !row?.dueDate) return;
       const dueDate = new Date(row.dueDate);
       const dayDiff = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
       if (dayDiff <= 0) return;
       if (!mostOverdue || dayDiff > mostOverdue.days) {
-        mostOverdue = { feeId: row._id, month: row.month, due, days: dayDiff };
+        mostOverdue = { feeId: row._id, month: row.month, due: dueAmount, days: dayDiff };
       }
     });
     return mostOverdue;

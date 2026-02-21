@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "reac
 import Dashboard from "./pages/Dashboard.jsx";
 import Classes from "./pages/Classes.jsx";
 import Students from "./pages/Students.jsx";
+import TeacherStudentProfile from "./pages/TeacherStudentProfile.jsx";
 import Homework from "./pages/Homework.jsx";
 import Syllabus from "./pages/Syllabus.jsx";
 import Attendance from "./pages/Attendance.jsx";
@@ -1136,6 +1137,10 @@ export default function App() {
           <Route
             path="/students"
             element={user?.role === "teacher" ? <Students /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/students/:userId"
+            element={user?.role === "teacher" ? <TeacherStudentProfile /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/homework"
