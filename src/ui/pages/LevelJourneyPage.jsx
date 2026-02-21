@@ -1,19 +1,259 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { api } from "../api.js";
-import LevelJourney from "../components/LevelJourney.jsx";
 import { MAX_LEVEL, getLevelsRemaining, getNextRank, getRank } from "../levelSystem.js";
+
+const AMBIENT_PREF_KEY = "ot_level_journey_ambient";
 
 export default function LevelJourneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [levelData, setLevelData] = useState(null);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem(AMBIENT_PREF_KEY) !== "0");
+  const [hypeMode, setHypeMode] = useState(true);
+  const [newlyUnlockedZones, setNewlyUnlockedZones] = useState([]);
   const shellRef = useRef(null);
   const orbARef = useRef(null);
   const orbBRef = useRef(null);
+  const mapViewportRef = useRef(null);
+  const mapCanvasRef = useRef(null);
+  const mapPathRef = useRef(null);
+  const rankRef = useRef(null);
+  const xpFillRef = useRef(null);
+  const nodeRefs = useRef([]);
+  const pulseTweenRef = useRef(null);
+  const cinematicTlRef = useRef(null);
+  const zoneBadgeRefs = useRef({});
   const audioContextRef = useRef(null);
-  const audioLoopTimerRef = useRef(null);
+  const ambientTimerRef = useRef(null);
+
+  const currentLevel = Number(levelData?.level || 1);
+  const rank = getRank(currentLevel);
+  const nextRank = getNextRank(currentLevel);
+  const levelsRemaining = getLevelsRemaining(currentLevel);
+  const progressPercent = Math.max(0, Math.min(100, Number(levelData?.progressPercent || 0)));
+  const isGrandmaster = currentLevel >= MAX_LEVEL;
+  const conqueredCount = Math.max(0, currentLevel - 1);
+  const xpToNext = Math.max(0, Number(levelData?.nextLevelXp || 0) - Number(levelData?.currentLevelXp || 0));
+
+  const levels = useMemo(
+    () =>
+      Array.from({ length: MAX_LEVEL }, (_, index) => {
+        const value = index + 1;
+        const status = value < currentLevel ? "done" : value === currentLevel ? "current" : "locked";
+        return { value, status, isGrand: value === MAX_LEVEL };
+      }),
+    [currentLevel]
+  );
+  const particles = useMemo(() => Array.from({ length: 20 }, (_, index) => index), []);
+  const mapNodes = useMemo(
+    () => [
+      { x: 14, y: 100 },
+      { x: 32, y: 220 },
+      { x: 56, y: 340 },
+      { x: 80, y: 460 },
+      { x: 62, y: 580 },
+      { x: 38, y: 700 },
+      { x: 16, y: 820 },
+      { x: 30, y: 940 },
+      { x: 54, y: 1060 },
+      { x: 78, y: 1180 },
+      { x: 60, y: 1300 },
+      { x: 36, y: 1420 },
+      { x: 14, y: 1540 },
+      { x: 32, y: 1660 },
+      { x: 56, y: 1780 }
+    ],
+    []
+  );
+  const mapZones = useMemo(
+    () => [
+      {
+        id: "foundation",
+        title: "Foundation District",
+        subtitle: "Habits, focus, consistency",
+        fromLevel: 1,
+        toLevel: 3,
+        top: 70,
+        height: 340,
+        focus: "Discipline XP",
+        icon: "⚔"
+      },
+      {
+        id: "scholar",
+        title: "Scholar Lab",
+        subtitle: "Concept clarity and practice depth",
+        fromLevel: 4,
+        toLevel: 6,
+        top: 430,
+        height: 350,
+        focus: "Knowledge XP",
+        icon: "📚"
+      },
+      {
+        id: "problem",
+        title: "Problem Forge",
+        subtitle: "Speed, accuracy, exam pressure",
+        fromLevel: 7,
+        toLevel: 9,
+        top: 800,
+        height: 350,
+        focus: "Challenge XP",
+        icon: "🧠"
+      },
+      {
+        id: "mastery",
+        title: "Mastery Citadel",
+        subtitle: "Retention, revision, leadership",
+        fromLevel: 10,
+        toLevel: 12,
+        top: 1170,
+        height: 350,
+        focus: "Mastery XP",
+        icon: "🏛"
+      },
+      {
+        id: "legend",
+        title: "Grand Summit",
+        subtitle: "Elite consistency and impact",
+        fromLevel: 13,
+        toLevel: 15,
+        top: 1540,
+        height: 300,
+        focus: "Legacy XP",
+        icon: "👑"
+      }
+    ],
+    []
+  );
+  const mapHeight = 1880;
+  const mapPath = useMemo(
+    () =>
+      mapNodes
+        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+        .join(" "),
+    [mapNodes]
+  );
+  const unlockedZoneCount = useMemo(
+    () => mapZones.filter((zone) => currentLevel >= zone.fromLevel).length,
+    [currentLevel, mapZones]
+  );
+
+  const playAmbientPulse = useCallback(() => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return false;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass();
+    }
+    const context = audioContextRef.current;
+    if (context.state === "suspended") {
+      context.resume().catch(() => {
+        // ignore
+      });
+    }
+    const now = context.currentTime + 0.03;
+    const baseNotes = [130.81, 164.81, 196.0];
+    baseNotes.forEach((freq, index) => {
+      const tone = context.createOscillator();
+      const gain = context.createGain();
+      tone.type = "sine";
+      tone.frequency.setValueAtTime(freq, now + index * 0.04);
+      gain.gain.setValueAtTime(0.0001, now + index * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.008, now + 0.18 + index * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8 + index * 0.05);
+      tone.connect(gain);
+      gain.connect(context.destination);
+      tone.start(now + index * 0.04);
+      tone.stop(now + 1.95 + index * 0.05);
+    });
+
+    const shimmer = context.createOscillator();
+    const shimmerGain = context.createGain();
+    shimmer.type = "triangle";
+    shimmer.frequency.setValueAtTime(659.25, now + 1.2);
+    shimmerGain.gain.setValueAtTime(0.0001, now + 1.2);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.004, now + 1.28);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(context.destination);
+    shimmer.start(now + 1.2);
+    shimmer.stop(now + 1.72);
+    return true;
+  }, []);
+
+  const stopAmbient = useCallback(() => {
+    if (ambientTimerRef.current) {
+      window.clearInterval(ambientTimerRef.current);
+      ambientTimerRef.current = null;
+    }
+  }, []);
+
+  const startAmbient = useCallback(() => {
+    stopAmbient();
+    const started = playAmbientPulse();
+    if (!started) return;
+    ambientTimerRef.current = window.setInterval(() => {
+      playAmbientPulse();
+    }, 7000);
+  }, [playAmbientPulse, stopAmbient]);
+
+  const runCinematic = useCallback(() => {
+    if (!mapViewportRef.current || !mapCanvasRef.current || !mapPathRef.current || !rankRef.current || !xpFillRef.current) return;
+
+    cinematicTlRef.current?.kill();
+    pulseTweenRef.current?.kill();
+
+    const nodes = nodeRefs.current.filter(Boolean);
+    const currentNode = nodeRefs.current[currentLevel - 1] || null;
+    const viewport = mapViewportRef.current;
+    const canvas = mapCanvasRef.current;
+    const path = mapPathRef.current;
+    const rankEl = rankRef.current;
+    const xpFill = xpFillRef.current;
+    const pathLength = path.getTotalLength();
+
+    gsap.set(nodes, { opacity: 0, scale: 0.72, filter: "blur(5px)" });
+    gsap.set(path, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+    gsap.set(rankEl, { opacity: 0, y: 10, filter: "blur(5px)" });
+    gsap.set(xpFill, { width: "0%" });
+    viewport.scrollTop = 0;
+
+    const viewportHeight = viewport.clientHeight;
+    const canvasHeight = canvas.scrollHeight;
+    const currentOffset = currentNode ? currentNode.offsetTop + currentNode.offsetHeight / 2 : 0;
+    const targetScroll = Math.max(
+      0,
+      Math.min(canvasHeight - viewportHeight, currentOffset - viewportHeight / 2)
+    );
+
+    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    tl.to(path, { strokeDashoffset: 0, duration: 0.8 })
+      .to(nodes, { opacity: 1, scale: 1, filter: "blur(0px)", stagger: 0.06, duration: 0.2 }, "-=0.3")
+      .to(viewport, { scrollTop: targetScroll, duration: 1.2, ease: "power2.out" }, "-=0.02")
+      .to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.34 }, "-=0.1")
+      .to(xpFill, { width: `${progressPercent}%`, duration: 0.62 }, "-=0.06");
+
+    if (currentNode) {
+      tl.to(currentNode, { scale: 1.12, duration: 0.2 }, "-=0.32")
+        .to(currentNode, { scale: 1.0, duration: 0.23 }, "-=0.12");
+    }
+
+    if (isGrandmaster && shellRef.current) {
+      tl.to(shellRef.current, { scale: 1.01, duration: 0.22 }, "-=0.18")
+        .to(shellRef.current, { scale: 1, duration: 0.22 }, "-=0.03");
+    }
+
+    pulseTweenRef.current = currentNode
+      ? gsap.to(currentNode, {
+          boxShadow: "0 0 26px rgba(255, 214, 118, 0.7)",
+          duration: 1.2,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        })
+      : null;
+    cinematicTlRef.current = tl;
+  }, [currentLevel, isGrandmaster, progressPercent]);
 
   useEffect(() => {
     let mounted = true;
@@ -39,167 +279,164 @@ export default function LevelJourneyPage() {
 
   useEffect(() => {
     if (!shellRef.current) return undefined;
-    const sections = shellRef.current.querySelectorAll("[data-journey-section]");
-    const intro = gsap.fromTo(
-      sections,
-      { opacity: 0, y: 24, filter: "blur(4px)" },
-      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out", stagger: 0.08 }
-    );
     const orbA = orbARef.current
-      ? gsap.to(orbARef.current, { y: -18, x: 8, duration: 4.2, yoyo: true, repeat: -1, ease: "sine.inOut" })
+      ? gsap.to(orbARef.current, { y: -24, x: 12, duration: 5.1, yoyo: true, repeat: -1, ease: "sine.inOut" })
       : null;
     const orbB = orbBRef.current
-      ? gsap.to(orbBRef.current, { y: 16, x: -10, duration: 4.8, yoyo: true, repeat: -1, ease: "sine.inOut" })
+      ? gsap.to(orbBRef.current, { y: 20, x: -14, duration: 5.8, yoyo: true, repeat: -1, ease: "sine.inOut" })
       : null;
     return () => {
-      intro.kill();
       orbA?.kill();
       orbB?.kill();
     };
-  }, [levelData]);
-
-  const playJourneyChime = React.useCallback(() => {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContextClass();
-    }
-    const context = audioContextRef.current;
-    if (context.state === "suspended") {
-      context.resume();
-    }
-    const now = context.currentTime + 0.02;
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((freq, index) => {
-      const t = now + index * 0.115;
-      const lead = context.createOscillator();
-      const leadGain = context.createGain();
-      lead.type = "square";
-      lead.frequency.setValueAtTime(freq, t);
-      leadGain.gain.setValueAtTime(0.0001, t);
-      leadGain.gain.exponentialRampToValueAtTime(0.03, t + 0.012);
-      leadGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-      lead.connect(leadGain);
-      leadGain.connect(context.destination);
-      lead.start(t);
-      lead.stop(t + 0.14);
-
-      const sparkle = context.createOscillator();
-      const sparkleGain = context.createGain();
-      sparkle.type = "triangle";
-      sparkle.frequency.setValueAtTime(freq * 2, t + 0.01);
-      sparkleGain.gain.setValueAtTime(0.0001, t + 0.01);
-      sparkleGain.gain.exponentialRampToValueAtTime(0.01, t + 0.025);
-      sparkleGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      sparkle.connect(sparkleGain);
-      sparkleGain.connect(context.destination);
-      sparkle.start(t + 0.01);
-      sparkle.stop(t + 0.12);
-    });
-
-    const finishAt = now + notes.length * 0.115;
-    const finish = context.createOscillator();
-    const finishGain = context.createGain();
-    finish.type = "sawtooth";
-    finish.frequency.setValueAtTime(1318.51, finishAt);
-    finish.frequency.exponentialRampToValueAtTime(1567.98, finishAt + 0.09);
-    finishGain.gain.setValueAtTime(0.0001, finishAt);
-    finishGain.gain.exponentialRampToValueAtTime(0.018, finishAt + 0.02);
-    finishGain.gain.exponentialRampToValueAtTime(0.0001, finishAt + 0.13);
-    finish.connect(finishGain);
-    finishGain.connect(context.destination);
-    finish.start(finishAt);
-    finish.stop(finishAt + 0.14);
   }, []);
 
   useEffect(() => {
-    if (!soundEnabled) {
-      if (audioLoopTimerRef.current) {
-        window.clearInterval(audioLoopTimerRef.current);
-        audioLoopTimerRef.current = null;
+    if (loading || error || !levelData) return;
+    runCinematic();
+  }, [error, levelData, loading, runCinematic]);
+
+  useEffect(() => {
+    if (!levelData) return;
+    const key = "ot_seen_zone_unlock_count_v1";
+    const seen = Number(localStorage.getItem(key) || 0);
+    if (unlockedZoneCount > seen) {
+      const newlyUnlocked = mapZones.slice(seen, unlockedZoneCount).map((zone) => zone.id);
+      setNewlyUnlockedZones(newlyUnlocked);
+      localStorage.setItem(key, String(unlockedZoneCount));
+    } else {
+      setNewlyUnlockedZones([]);
+    }
+  }, [levelData, mapZones, unlockedZoneCount]);
+
+  useEffect(() => {
+    if (!newlyUnlockedZones.length) return undefined;
+    const targets = newlyUnlockedZones.map((zoneId) => zoneBadgeRefs.current[zoneId]).filter(Boolean);
+    if (!targets.length) return undefined;
+    const tl = gsap.timeline();
+    tl.fromTo(
+      targets,
+      {
+        scale: 0.86,
+        y: 14,
+        opacity: 0.4,
+        boxShadow: "0 0 0 rgba(255, 200, 110, 0)"
+      },
+      {
+        scale: 1,
+        y: 0,
+        opacity: 1,
+        boxShadow: "0 0 34px rgba(255, 206, 124, 0.42)",
+        duration: 0.64,
+        stagger: 0.1,
+        ease: "back.out(1.9)"
       }
+    );
+    tl.to(
+      targets,
+      {
+        boxShadow: "0 0 18px rgba(123, 196, 255, 0.3)",
+        duration: 0.58,
+        stagger: 0.08,
+        ease: "sine.out"
+      },
+      "+=0.12"
+    );
+    const clearTimer = window.setTimeout(() => setNewlyUnlockedZones([]), 2800);
+    return () => {
+      tl.kill();
+      window.clearTimeout(clearTimer);
+    };
+  }, [newlyUnlockedZones]);
+
+  useEffect(() => {
+    localStorage.setItem(AMBIENT_PREF_KEY, soundEnabled ? "1" : "0");
+    if (!soundEnabled) {
+      stopAmbient();
       return;
     }
-    playJourneyChime();
-    audioLoopTimerRef.current = window.setInterval(() => {
-      playJourneyChime();
-    }, 12000);
+    startAmbient();
     return () => {
-      if (audioLoopTimerRef.current) {
-        window.clearInterval(audioLoopTimerRef.current);
-        audioLoopTimerRef.current = null;
-      }
+      stopAmbient();
     };
-  }, [playJourneyChime, soundEnabled]);
+  }, [soundEnabled, startAmbient, stopAmbient]);
 
   useEffect(
     () => () => {
-      if (audioLoopTimerRef.current) {
-        window.clearInterval(audioLoopTimerRef.current);
-        audioLoopTimerRef.current = null;
-      }
+      stopAmbient();
+      pulseTweenRef.current?.kill();
+      cinematicTlRef.current?.kill();
       if (audioContextRef.current && typeof audioContextRef.current.close === "function") {
         audioContextRef.current.close();
       }
     },
-    []
-  );
-
-  const currentLevel = Number(levelData?.level || 1);
-  const conqueredLevels = useMemo(
-    () => Array.from({ length: Math.max(0, Math.min(MAX_LEVEL, currentLevel)) }, (_, index) => index + 1),
-    [currentLevel]
-  );
-  const upcomingLevels = useMemo(
-    () =>
-      Array.from(
-        { length: Math.max(0, MAX_LEVEL - currentLevel) },
-        (_, index) => currentLevel + index + 1
-      ),
-    [currentLevel]
+    [stopAmbient]
   );
 
   return (
-    <div className="page level-journey-page" ref={shellRef}>
+    <div className={`page level-journey-page level-journey-cinematic${hypeMode ? " level-journey-hype" : ""}`} ref={shellRef}>
       <div className="level-journey-page-bg">
+        <span className="level-journey-vignette" />
+        <span className="level-journey-scanline" />
         <span ref={orbARef} className="level-journey-page-orb level-journey-page-orb-a" />
         <span ref={orbBRef} className="level-journey-page-orb level-journey-page-orb-b" />
+        {particles.map((particle) => (
+          <span
+            key={`p-${particle}`}
+            className="level-journey-particle"
+            style={{
+              left: `${4 + ((particle * 7.7) % 92)}%`,
+              animationDelay: `${(particle % 8) * 0.55}s`,
+              animationDuration: `${6 + (particle % 5) * 1.2}s`
+            }}
+          />
+        ))}
       </div>
 
-      <div className="page-header" data-journey-section>
+      <div className="page-header">
         <div>
           <h1 className="page-title">Level Journey</h1>
-          <p className="page-subtitle">Track your conquered levels and your path to Grandmaster.</p>
+          <p className="page-subtitle">Cinematic reveal of your progress path.</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="card" style={{ marginTop: "24px" }} data-journey-section>
-          Loading your level journey...
+        <div className="card" style={{ marginTop: "24px" }}>
+          Loading your journey...
         </div>
       ) : null}
 
       {!loading && error ? (
-        <div className="card" style={{ marginTop: "24px" }} data-journey-section>
+        <div className="card" style={{ marginTop: "24px" }}>
           <div className="auth-error">{error}</div>
         </div>
       ) : null}
 
       {!loading && !error && levelData ? (
         <>
-          <section className="card level-journey-page-hero" style={{ marginTop: "24px" }} data-journey-section>
+          <section className="card level-journey-page-hero" style={{ marginTop: "24px" }}>
             <div className="level-journey-page-hero-main">
-              <div className="level-journey-page-kicker">Profile Progress</div>
-              <h2 className="level-journey-page-title">
-                Level {currentLevel} / {MAX_LEVEL}
-              </h2>
+              <div className="level-journey-page-kicker">Cinematic Mode</div>
+              <h2 className="level-journey-page-title">Level {currentLevel} / {MAX_LEVEL}</h2>
               <p className="level-journey-page-copy">
-                Rank: <strong>{getRank(currentLevel)}</strong>
+                {isGrandmaster ? "Grandmaster Achieved" : `Next Rank: ${nextRank || "Grandmaster"}`}
               </p>
             </div>
             <div className="level-journey-page-stats">
               <div className="level-journey-page-stat">
-                <div className="level-journey-page-stat-label">Theme Audio</div>
+                <div className="level-journey-page-stat-label">Current Rank</div>
+                <div className="level-journey-page-stat-value">{rank}</div>
+              </div>
+              <div className="level-journey-page-stat">
+                <div className="level-journey-page-stat-label">Levels Remaining</div>
+                <div className="level-journey-page-stat-value">{levelsRemaining}</div>
+              </div>
+              <div className="level-journey-page-stat">
+                <div className="level-journey-page-stat-label">Total XP</div>
+                <div className="level-journey-page-stat-value">{Number(levelData.totalXp || 0)}</div>
+              </div>
+              <div className="level-journey-page-stat">
+                <div className="level-journey-page-stat-label">Ambient Audio</div>
                 <button
                   className={`level-journey-sound-btn${soundEnabled ? " is-active" : ""}`}
                   type="button"
@@ -209,47 +446,124 @@ export default function LevelJourneyPage() {
                 </button>
               </div>
               <div className="level-journey-page-stat">
-                <div className="level-journey-page-stat-label">Next Rank</div>
-                <div className="level-journey-page-stat-value">{getNextRank(currentLevel) || "Grandmaster"}</div>
-              </div>
-              <div className="level-journey-page-stat">
-                <div className="level-journey-page-stat-label">Levels Remaining</div>
-                <div className="level-journey-page-stat-value">{getLevelsRemaining(currentLevel)}</div>
-              </div>
-              <div className="level-journey-page-stat">
-                <div className="level-journey-page-stat-label">Total XP</div>
-                <div className="level-journey-page-stat-value">{Number(levelData.totalXp || 0)}</div>
+                <div className="level-journey-page-stat-label">Visual Mode</div>
+                <button
+                  className={`level-journey-sound-btn${hypeMode ? " is-active" : ""}`}
+                  type="button"
+                  onClick={() => setHypeMode((prev) => !prev)}
+                >
+                  {hypeMode ? "Hype On" : "Hype Off"}
+                </button>
               </div>
             </div>
           </section>
 
-          <section data-journey-section>
-            <LevelJourney levelData={levelData} />
+          <section className="card level-zone-badges" style={{ marginTop: "16px" }}>
+            <div className="level-zone-badges-head">
+              <h3 className="card-title">Zone Badges</h3>
+              <div className="level-zone-badges-meta">
+                {unlockedZoneCount} / {mapZones.length} unlocked
+              </div>
+            </div>
+            <div className="level-zone-badges-grid">
+              {mapZones.map((zone) => {
+                const state =
+                  currentLevel < zone.fromLevel
+                    ? "locked"
+                    : currentLevel <= zone.toLevel
+                      ? "active"
+                      : "done";
+                const isNew = newlyUnlockedZones.includes(zone.id);
+                return (
+                  <article
+                    key={zone.id}
+                    ref={(el) => {
+                      zoneBadgeRefs.current[zone.id] = el;
+                    }}
+                    className={`level-zone-badge level-zone-badge-${zone.id} level-zone-badge-${state}${isNew ? " is-new" : ""}`}
+                  >
+                    <div className="level-zone-badge-icon">{zone.icon}</div>
+                    <div className="level-zone-badge-title">{zone.title}</div>
+                    <div className="level-zone-badge-subtitle">{zone.subtitle}</div>
+                    <div className="level-zone-badge-row">
+                      <span>Lv {zone.fromLevel}-{zone.toLevel}</span>
+                      <span>{zone.focus}</span>
+                    </div>
+                    <div className="level-zone-badge-state">
+                      {state === "locked"
+                        ? `Unlocks at Lv ${zone.fromLevel}`
+                        : state === "active"
+                          ? "Current Zone"
+                          : "Badge Claimed"}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </section>
 
-          <section className="grid grid-2" style={{ marginTop: "16px" }} data-journey-section>
-            <div className="card level-journey-page-panel">
-              <h3 className="card-title">Conquered Levels</h3>
-              <div className="level-chip-wrap">
-                {conqueredLevels.map((value) => (
-                  <span key={`done-${value}`} className="level-chip level-chip-done">
-                    {value}
-                  </span>
+          <section className="card level-cinematic-stage" style={{ marginTop: "16px" }}>
+            <div className="level-cinematic-head">
+              <div className="level-cinematic-rank" ref={rankRef}>
+                {rank}
+              </div>
+              <button className="btn btn-ghost level-cinematic-replay" type="button" onClick={runCinematic}>
+                Replay Cinematic
+              </button>
+            </div>
+            <div className="level-cinematic-hype-strip">
+              <div className="level-cinematic-hype-chip">Conquered {conqueredCount} levels</div>
+              <div className="level-cinematic-hype-chip">XP to next: {xpToNext}</div>
+              <div className="level-cinematic-hype-chip">
+                Track: {rank}{nextRank ? ` -> ${nextRank}` : " -> MAX"}
+              </div>
+              <div className="level-cinematic-hype-chip">Student Power Path</div>
+            </div>
+
+            <div className="level-cinematic-viewport" ref={mapViewportRef}>
+              <div className="level-map-canvas" ref={mapCanvasRef}>
+                {mapZones.map((zone) => (
+                  <div
+                    key={zone.id}
+                    className={`level-map-zone level-map-zone-${zone.id}`}
+                    style={{ top: `${zone.top}px`, height: `${zone.height}px` }}
+                  >
+                    <div className="level-map-zone-title">{zone.title}</div>
+                    <div className="level-map-zone-subtitle">{zone.subtitle}</div>
+                    <div className="level-map-zone-meta">
+                      Lv {zone.fromLevel}-{zone.toLevel} • {zone.focus}
+                    </div>
+                  </div>
                 ))}
+                <svg className="level-map-svg" viewBox={`0 0 100 ${mapHeight}`} preserveAspectRatio="none" aria-hidden="true">
+                  <path className="level-map-path-ghost" d={mapPath} />
+                  <path className="level-map-path-live" d={mapPath} ref={mapPathRef} />
+                </svg>
+                {levels.map((item, index) => (
+                  <div
+                    key={item.value}
+                    ref={(el) => {
+                      nodeRefs.current[item.value - 1] = el;
+                    }}
+                    className={`level-cinematic-node level-cinematic-node-${item.status}${item.isGrand ? " level-cinematic-node-grand" : ""}`}
+                    title={`Level ${item.value}`}
+                    style={{ left: `${mapNodes[index].x}%`, top: `${mapNodes[index].y}px` }}
+                  >
+                    <span>{item.value}</span>
+                    {item.isGrand ? <span className="level-cinematic-crown">👑</span> : null}
+                  </div>
+                ))}
+                <div className="level-map-start-marker">START</div>
+                <div className="level-map-end-marker">BOSS</div>
               </div>
             </div>
-            <div className="card level-journey-page-panel">
-              <h3 className="card-title">Upcoming Levels</h3>
-              <div className="level-chip-wrap">
-                {upcomingLevels.length ? (
-                  upcomingLevels.map((value) => (
-                    <span key={`locked-${value}`} className="level-chip level-chip-locked">
-                      {value}
-                    </span>
-                  ))
-                ) : (
-                  <span className="student-directory-meta">All levels conquered. Grandmaster unlocked.</span>
-                )}
+
+            <div className="level-cinematic-xp">
+              <div className="level-cinematic-xp-track">
+                <div className="level-cinematic-xp-fill" ref={xpFillRef} />
+              </div>
+              <div className="level-cinematic-xp-text">
+                {Number(levelData.currentLevelXp || 0)} / {Number(levelData.nextLevelXp || 0)} XP
               </div>
             </div>
           </section>
