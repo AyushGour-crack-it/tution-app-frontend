@@ -18,6 +18,7 @@ const loadRazorpaySdk = () =>
 export default function StudentPortal({ section = "dashboard", previewStudentId = "" }) {
   const [homework, setHomework] = useState([]);
   const [fees, setFees] = useState([]);
+  const [feeTransactions, setFeeTransactions] = useState([]);
   const [marks, setMarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingFeeId, setPayingFeeId] = useState("");
@@ -35,6 +36,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     message: ""
   });
   const [offlineRequestState, setOfflineRequestState] = useState("");
+  const [feeReminderDismissed, setFeeReminderDismissed] = useState(false);
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -50,15 +52,17 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   const load = async () => {
     setLoading(true);
-    const [homeworkData, feeData, announcementData, holidayData, popupState] = await Promise.all([
+    const [homeworkData, feeData, transactionData, announcementData, holidayData, popupState] = await Promise.all([
       api.get("/homeworks").then((res) => res.data),
       api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
+      api.get(previewStudentId ? `/fees/transactions?studentId=${previewStudentId}` : "/fees/transactions").then((res) => res.data || []),
       api.get("/announcements").then((res) => res.data || []),
       api.get("/holidays").then((res) => res.data || []),
       api.get("/notifications/popup-state").then((res) => res.data || {}).catch(() => ({}))
     ]);
     setHomework(homeworkData);
     setFees(feeData);
+    setFeeTransactions(transactionData);
     setAnnouncements((announcementData || []).slice(0, 4));
     setHolidays((holidayData || []).slice(0, 4));
     setPopupSeen({
@@ -203,15 +207,24 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
           color: "#1f7a8c"
         },
         handler: async (response) => {
-          await api.post(`/fees/${feeId}/razorpay/verify`, {
+          const { data: verifyData } = await api.post(`/fees/${feeId}/razorpay/verify`, {
             ...response,
             amount
           });
           await load();
+          const earnedXp = Number(verifyData?.xpAwarded || verifyData?.receipt?.xpAwarded || 0);
+          const timingStatus = String(verifyData?.timingStatus || verifyData?.receipt?.timingStatus || "");
+          const timingDays = Number(verifyData?.timingDays || verifyData?.receipt?.timingDays || 0);
+          const timingText = timingStatus === "late"
+            ? `${timingDays} day(s) late`
+            : timingStatus === "early"
+              ? `${timingDays} day(s) early`
+              : "on time";
           setPaymentSuccessPopup({
             amount,
             paidOn: new Date().toISOString(),
-            xpAwarded: 50
+            xpAwarded: earnedXp,
+            timingText
           });
           setPayingFeeId("");
         },
@@ -262,7 +275,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     const feeId = resolveFeeIdFromMonthInput(offlineRequestDraft.monthInput);
     const amount = Number(offlineRequestDraft.amount || 0);
     if (!feeId) {
-      setOfflineRequestState("No fee record found for this month. Ask teacher to create it once.");
+      setOfflineRequestState("No fee record found for this month.");
       return;
     }
     if (!amount || amount <= 0) {
@@ -289,6 +302,29 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
       : section === "fees"
         ? "Track dues and payment status."
         : "Your homework, fees, and updates.";
+
+  const feeReminder = useMemo(() => {
+    const today = new Date();
+    let mostOverdue = null;
+    fees.forEach((row) => {
+      const paid = row.payments?.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || 0;
+      const due = Math.max(Number(row.total || 0) - paid, 0);
+      if (due <= 0 || !row?.dueDate) return;
+      const dueDate = new Date(row.dueDate);
+      const dayDiff = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (dayDiff <= 0) return;
+      if (!mostOverdue || dayDiff > mostOverdue.days) {
+        mostOverdue = { feeId: row._id, month: row.month, due, days: dayDiff };
+      }
+    });
+    return mostOverdue;
+  }, [fees]);
+
+  useEffect(() => {
+    if (!feeReminder) {
+      setFeeReminderDismissed(false);
+    }
+  }, [feeReminder]);
 
   const toLocalDateKey = (value) => {
     const date = new Date(value);
@@ -426,6 +462,9 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
               ₹{Number(paymentSuccessPopup.amount || 0).toLocaleString("en-IN")}
             </div>
             <div className="fee-success-popup-date">+{Number(paymentSuccessPopup.xpAwarded || 0)} XP earned</div>
+            {paymentSuccessPopup.timingText ? (
+              <div className="fee-success-popup-date">Payment timing: {paymentSuccessPopup.timingText}</div>
+            ) : null}
             <div className="fee-success-popup-date">
               Paid on{" "}
               {new Date(paymentSuccessPopup.paidOn).toLocaleString()}
@@ -442,6 +481,32 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
           <p className="page-subtitle">{pageSubtitle}</p>
         </div>
       </div>
+      {feeReminder && !feeReminderDismissed && !previewStudentId ? (
+        <button
+          type="button"
+          className="fee-due-toast"
+          onClick={() => {
+            const sectionNode = document.getElementById("student-fees-section");
+            if (sectionNode) {
+              sectionNode.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+        >
+          <span className="fee-due-toast-title">Fee due date passed</span>
+          <span className="fee-due-toast-text">
+            Your fee for {feeReminder.month} is overdue by {feeReminder.days} day(s). Click to pay now.
+          </span>
+          <span
+            className="fee-due-toast-close"
+            onClick={(event) => {
+              event.stopPropagation();
+              setFeeReminderDismissed(true);
+            }}
+          >
+            x
+          </span>
+        </button>
+      ) : null}
 
       {loading ? (
         <div>Loading...</div>
@@ -556,7 +621,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
           )}
 
           {(section === "dashboard" || section === "fees") && (
-            <div className="card" style={{ marginTop: "24px" }}>
+            <div className="card" style={{ marginTop: "24px" }} id="student-fees-section">
               <h2 className="card-title">My Fees</h2>
               {feeError ? (
                 <div className="auth-error" style={{ marginBottom: "12px" }}>
@@ -663,9 +728,11 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                         <td>{due}</td>
                         <td>
                           {lastPayment
-                            ? (lastPayment.lateDays > 0
-                              ? `${lastPayment.lateDays} day(s) late`
-                              : "Paid on time")
+                            ? (lastPayment.timingStatus === "late"
+                              ? `${Number(lastPayment.timingDays || lastPayment.lateDays || 0)} day(s) late`
+                              : lastPayment.timingStatus === "early"
+                                ? `${Number(lastPayment.timingDays || 0)} day(s) early`
+                                : "Paid on time")
                             : "Not paid yet"}
                         </td>
                         <td>
@@ -689,7 +756,40 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
                   })}
                   {!fees.length && (
                     <tr>
-                      <td colSpan="5">No fee records yet.</td>
+                      <td colSpan="7">No fee records yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <h3 style={{ marginTop: "18px" }}>Payment Transaction History</h3>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Amount</th>
+                    <th>Payment Mode</th>
+                    <th>Transaction ID</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>XP</th>
+                    <th>Paid On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feeTransactions.map((tx) => (
+                    <tr key={tx.receiptId}>
+                      <td>₹{Number(tx.amount || 0).toLocaleString("en-IN")}</td>
+                      <td>{tx.paymentMode || tx.method || "-"}</td>
+                      <td>{tx.transactionId || "-"}</td>
+                      <td>{tx.dueDate ? new Date(tx.dueDate).toLocaleDateString() : "-"}</td>
+                      <td>{tx.timingLabel || "on time"}</td>
+                      <td>+{Number(tx.xpAwarded || 0)}</td>
+                      <td>{tx.paidOn ? new Date(tx.paidOn).toLocaleString() : "-"}</td>
+                    </tr>
+                  ))}
+                  {!feeTransactions.length && (
+                    <tr>
+                      <td colSpan="7">No payment transactions yet.</td>
                     </tr>
                   )}
                 </tbody>

@@ -4,6 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 import { setActiveAuthSession } from "../authAccounts.js";
 
+const Field = ({ label, children }) => (
+  <label className="field">
+    <span className="field-label">{label}</span>
+    {children}
+  </label>
+);
+
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -41,27 +48,30 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-shell">
+    <div className="auth-shell auth-shell-dark">
       <div className="card auth-card">
         <h1 className="page-title">Welcome back</h1>
         <p className="page-subtitle">Sign in to your Our Tution workspace.</p>
         {error && <div className="auth-error">{error}</div>}
         <form className="form" onSubmit={submit}>
-          <input
-            className="input"
-            placeholder="Email"
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            required
-          />
-          <input
-            className="input"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-            required
-          />
+          <Field label="Email">
+            <input
+              className="input"
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              required
+            />
+          </Field>
+          <Field label="Password">
+            <input
+              className="input"
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              required
+            />
+          </Field>
           <button className="btn" type="submit">
             Sign In
           </button>

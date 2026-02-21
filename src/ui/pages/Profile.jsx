@@ -3,6 +3,37 @@ import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
 
+const Field = ({ label, children }) => (
+  <label className="field">
+    <span className="field-label">{label}</span>
+    {children}
+  </label>
+);
+
+const listToInput = (value) => (Array.isArray(value) ? value.join(", ") : "");
+const toDateInput = (value) => (value ? new Date(value).toISOString().slice(0, 10) : "");
+
+const buildFormState = ({ user, student }) => ({
+  name: user?.name || "",
+  phone: user?.phone || "",
+  bio: user?.bio || "",
+  avatar: null,
+  dateOfBirth: toDateInput(student?.dateOfBirth),
+  joinedAt: toDateInput(student?.joinedAt),
+  monthlyFee: student?.monthlyFee ? String(student.monthlyFee) : "",
+  grade: student?.grade || "",
+  schoolName: student?.schoolName || "",
+  address: student?.address || "",
+  guardianName: student?.guardian?.name || "",
+  guardianPhone: student?.guardian?.phone || "",
+  guardianRelation: student?.guardian?.relation || "",
+  emergencyContact: student?.emergencyContact || "",
+  hobbies: listToInput(student?.hobbies),
+  strongSubjects: listToInput(student?.strongSubjects),
+  weakSubjects: listToInput(student?.weakSubjects),
+  goals: student?.goals || ""
+});
+
 const getXpTierClass = (xpValue) => {
   const xp = Number(xpValue) || 0;
   if (xp >= 1000) return "xp-tier-1000";
@@ -49,10 +80,12 @@ const getLevelTierClass = (levelValue) => {
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+  const [studentProfile, setStudentProfile] = useState(null);
   const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
   const [quizStats, setQuizStats] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", bio: "", avatar: null });
+  const [form, setForm] = useState(buildFormState({ user: null, student: null }));
   const [saving, setSaving] = useState(false);
+  const [editingInfo, setEditingInfo] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [passwordForm, setPasswordForm] = useState({
@@ -87,13 +120,14 @@ export default function Profile() {
     setError("");
     try {
       const data = await api.get("/auth/me").then((res) => res.data.user);
+      let student = null;
+      if (data.role === "student") {
+        student = await api.get("/students/me").then((res) => res.data).catch(() => null);
+      }
       setUser(data);
-      setForm({
-        name: data.name || "",
-        phone: data.phone || "",
-        bio: data.bio || "",
-        avatar: null
-      });
+      setStudentProfile(student);
+      setForm(buildFormState({ user: data, student }));
+
       if (data.role === "student") {
         try {
           const [badgeData, quizData] = await Promise.all([
@@ -118,12 +152,7 @@ export default function Profile() {
         const cached = JSON.parse(localStorage.getItem("auth_user") || "null");
         if (cached) {
           setUser(cached);
-          setForm({
-            name: cached.name || "",
-            phone: cached.phone || "",
-            bio: cached.bio || "",
-            avatar: null
-          });
+          setForm(buildFormState({ user: cached, student: null }));
         }
       } catch {
         // no-op
@@ -148,6 +177,24 @@ export default function Profile() {
     if (form.avatar) {
       formData.append("avatar", form.avatar);
     }
+
+    if (user?.role === "student") {
+      formData.append("dateOfBirth", form.dateOfBirth || "");
+      formData.append("joinedAt", form.joinedAt || "");
+      formData.append("monthlyFee", form.monthlyFee || "");
+      formData.append("grade", form.grade || "");
+      formData.append("schoolName", form.schoolName || "");
+      formData.append("address", form.address || "");
+      formData.append("guardianName", form.guardianName || "");
+      formData.append("guardianPhone", form.guardianPhone || "");
+      formData.append("guardianRelation", form.guardianRelation || "");
+      formData.append("emergencyContact", form.emergencyContact || "");
+      formData.append("hobbies", form.hobbies || "");
+      formData.append("strongSubjects", form.strongSubjects || "");
+      formData.append("weakSubjects", form.weakSubjects || "");
+      formData.append("goals", form.goals || "");
+    }
+
     try {
       const res = await api.put("/auth/me", formData, {
         headers: { "Content-Type": "multipart/form-data" }
@@ -160,8 +207,15 @@ export default function Profile() {
         localStorage.setItem("auth_user", JSON.stringify(updated));
       }
       setUser(updated);
-      setForm((prev) => ({ ...prev, avatar: null }));
-      setMessage("Profile updated.");
+
+      let student = studentProfile;
+      if (updated.role === "student") {
+        student = await api.get("/students/me").then((response) => response.data).catch(() => null);
+      }
+      setStudentProfile(student);
+      setForm(buildFormState({ user: updated, student }));
+      setMessage("Your information has been updated.");
+      setEditingInfo(false);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update profile.");
     } finally {
@@ -225,7 +279,7 @@ export default function Profile() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Profile</h1>
-          <p className="page-subtitle">Update your picture, bio, and contact info.</p>
+          <p className="page-subtitle">Manage all your info from one place.</p>
         </div>
       </div>
 
@@ -261,6 +315,20 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {user.role === "student" ? (
+        <div className="card" style={{ marginTop: "24px" }}>
+          <h2 className="card-title">Student Info Snapshot</h2>
+          <div className="list">
+            <div className="list-item"><div>Class / Grade</div><div>{studentProfile?.grade || "-"}</div></div>
+            <div className="list-item"><div>Tuition Joined</div><div>{studentProfile?.joinedAt ? new Date(studentProfile.joinedAt).toLocaleDateString() : "-"}</div></div>
+            <div className="list-item"><div>Monthly Fee</div><div>{studentProfile?.monthlyFee ? `₹${Number(studentProfile.monthlyFee).toLocaleString("en-IN")}` : "-"}</div></div>
+            <div className="list-item"><div>Strong Subjects</div><div>{Array.isArray(studentProfile?.strongSubjects) && studentProfile.strongSubjects.length ? studentProfile.strongSubjects.join(", ") : "-"}</div></div>
+            <div className="list-item"><div>Weak Subjects</div><div>{Array.isArray(studentProfile?.weakSubjects) && studentProfile.weakSubjects.length ? studentProfile.weakSubjects.join(", ") : "-"}</div></div>
+            <div className="list-item"><div>Goals</div><div>{studentProfile?.goals || "-"}</div></div>
+          </div>
+        </div>
+      ) : null}
 
       {user.role === "student" ? (
         <div className="card student-profile-quiz-card" style={{ marginTop: "24px" }}>
@@ -335,39 +403,170 @@ export default function Profile() {
       ) : null}
 
       <div className="card" style={{ marginTop: "24px" }}>
-        <h2 className="card-title">Edit Profile</h2>
+        <div className="page-header">
+          <h2 className="card-title" style={{ margin: 0 }}>Edit Your Info</h2>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={() => {
+              setEditingInfo((prev) => !prev);
+              setForm(buildFormState({ user, student: studentProfile }));
+            }}
+          >
+            {editingInfo ? "Close" : "Edit Your Info"}
+          </button>
+        </div>
         {message ? <div className="auth-success">{message}</div> : null}
         {error ? <div className="auth-error">{error}</div> : null}
-        <form className="form" onSubmit={submit}>
-          <input
-            className="input"
-            placeholder="Full name"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            required
-          />
-          <input
-            className="input"
-            placeholder="Phone"
-            value={form.phone}
-            onChange={(event) => setForm({ ...form, phone: event.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Bio"
-            value={form.bio}
-            onChange={(event) => setForm({ ...form, bio: event.target.value })}
-          />
-          <input
-            className="input"
-            type="file"
-            accept="image/*"
-            onChange={(event) => setForm({ ...form, avatar: event.target.files?.[0] || null })}
-          />
-          <button className="btn" type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </form>
+        {editingInfo ? (
+          <form className="form" onSubmit={submit}>
+            <Field label="Full Name">
+              <input
+                className="input"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                required
+              />
+            </Field>
+            <Field label="Phone">
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(event) => setForm({ ...form, phone: event.target.value })}
+              />
+            </Field>
+            <Field label="Bio">
+              <input
+                className="input"
+                value={form.bio}
+                onChange={(event) => setForm({ ...form, bio: event.target.value })}
+              />
+            </Field>
+            <Field label="Profile Picture">
+              <input
+                className="input"
+                type="file"
+                accept="image/*"
+                onChange={(event) => setForm({ ...form, avatar: event.target.files?.[0] || null })}
+              />
+            </Field>
+
+            {user.role === "student" ? (
+              <>
+                <Field label="Date of Birth">
+                  <input
+                    className="input"
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+                  />
+                </Field>
+                <Field label="Tuition Joining Date">
+                  <input
+                    className="input"
+                    type="date"
+                    value={form.joinedAt}
+                    onChange={(event) => setForm({ ...form, joinedAt: event.target.value })}
+                  />
+                </Field>
+                <Field label="Monthly Fee (INR)">
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={form.monthlyFee}
+                    onChange={(event) => setForm({ ...form, monthlyFee: event.target.value })}
+                  />
+                </Field>
+                <Field label="Class / Grade">
+                  <input
+                    className="input"
+                    value={form.grade}
+                    onChange={(event) => setForm({ ...form, grade: event.target.value })}
+                  />
+                </Field>
+                <Field label="School Name">
+                  <input
+                    className="input"
+                    value={form.schoolName}
+                    onChange={(event) => setForm({ ...form, schoolName: event.target.value })}
+                  />
+                </Field>
+                <Field label="Address">
+                  <input
+                    className="input"
+                    value={form.address}
+                    onChange={(event) => setForm({ ...form, address: event.target.value })}
+                  />
+                </Field>
+                <Field label="Guardian Name">
+                  <input
+                    className="input"
+                    value={form.guardianName}
+                    onChange={(event) => setForm({ ...form, guardianName: event.target.value })}
+                  />
+                </Field>
+                <Field label="Guardian Phone">
+                  <input
+                    className="input"
+                    value={form.guardianPhone}
+                    onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })}
+                  />
+                </Field>
+                <Field label="Guardian Relation">
+                  <input
+                    className="input"
+                    value={form.guardianRelation}
+                    onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })}
+                  />
+                </Field>
+                <Field label="Emergency Contact">
+                  <input
+                    className="input"
+                    value={form.emergencyContact}
+                    onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+                  />
+                </Field>
+                <Field label="Hobbies (comma separated)">
+                  <input
+                    className="input"
+                    value={form.hobbies}
+                    onChange={(event) => setForm({ ...form, hobbies: event.target.value })}
+                  />
+                </Field>
+                <Field label="Strong Subjects (comma separated)">
+                  <input
+                    className="input"
+                    value={form.strongSubjects}
+                    onChange={(event) => setForm({ ...form, strongSubjects: event.target.value })}
+                  />
+                </Field>
+                <Field label="Weak Subjects (comma separated)">
+                  <input
+                    className="input"
+                    value={form.weakSubjects}
+                    onChange={(event) => setForm({ ...form, weakSubjects: event.target.value })}
+                  />
+                </Field>
+                <Field label="Goals">
+                  <input
+                    className="input"
+                    value={form.goals}
+                    onChange={(event) => setForm({ ...form, goals: event.target.value })}
+                  />
+                </Field>
+              </>
+            ) : null}
+
+            <button className="btn" type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save All Changes"}
+            </button>
+          </form>
+        ) : (
+          <div className="student-directory-meta">
+            Click <strong>Edit Your Info</strong> to update profile picture, name, bio, and all student details.
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>

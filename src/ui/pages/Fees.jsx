@@ -1,23 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
 
-const emptyForm = { studentId: "", month: "", total: "", payment: "" };
+const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
 export default function Fees() {
   const [items, setItems] = useState([]);
   const [students, setStudents] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [offlineRequests, setOfflineRequests] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     const [feeData, studentData, transactionData, offlineData] = await Promise.all([
-      api.get("/fees").then((res) => res.data),
-      api.get("/students").then((res) => res.data),
+      api.get("/fees").then((res) => res.data || []),
+      api.get("/students").then((res) => res.data || []),
       api.get("/fees/transactions").then((res) => res.data || []),
       api.get("/fees/offline-requests?status=pending").then((res) => res.data || [])
     ]);
@@ -25,6 +24,18 @@ export default function Fees() {
     setStudents(studentData);
     setTransactions(transactionData);
     setOfflineRequests(offlineData);
+    setSelectedStudentId((prev) => {
+      if (prev && studentData.some((item) => item._id === prev)) return prev;
+      const firstPending = studentData.find((student) => {
+        const studentFees = feeData.filter((fee) => String(fee.studentId) === String(student._id));
+        const pendingAmount = studentFees.reduce((sum, fee) => {
+          const paid = fee.payments?.reduce((acc, payment) => acc + Number(payment.amount || 0), 0) || 0;
+          return sum + Math.max(Number(fee.total || 0) - paid, 0);
+        }, 0);
+        return pendingAmount > 0;
+      });
+      return firstPending?._id || studentData[0]?._id || "";
+    });
     setLoading(false);
   };
 
@@ -37,9 +48,7 @@ export default function Fees() {
     if (!token) return undefined;
     const socket = connectSocket(token);
     if (!socket) return undefined;
-    const onFeeUpdated = () => {
-      load();
-    };
+    const onFeeUpdated = () => load();
     socket.on("fee:updated", onFeeUpdated);
     socket.on("connect", load);
     return () => {
@@ -47,50 +56,6 @@ export default function Fees() {
       socket.off("connect", load);
     };
   }, []);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    const payload = {
-      studentId: form.studentId,
-      month: form.month,
-      total: Number(form.total || 0),
-      payments: form.payment ? [{ amount: Number(form.payment) }] : []
-    };
-    if (editingId) {
-      await api.put(`/fees/${editingId}`, payload);
-    } else {
-      await api.post("/fees", payload);
-    }
-    setEditingId(null);
-    setForm(emptyForm);
-    load();
-  };
-
-  const remove = async (id) => {
-    await api.delete(`/fees/${id}`);
-    load();
-  };
-
-  const edit = (row) => {
-    setEditingId(row._id);
-    setForm({
-      studentId: row.studentId || "",
-      month: row.month || "",
-      total: row.total || "",
-      payment: ""
-    });
-  };
-
-  const addPayment = async (id) => {
-    const amount = Number(prompt("Payment amount"));
-    if (!amount) return;
-    const method = prompt("Payment method (UPI/Cash)", "UPI") || "UPI";
-    const reference = prompt("Reference/UTR (optional)", "") || "";
-    await api.post(`/fees/${id}/payments`, { amount, method, reference });
-    load();
-  };
-
-  const studentLookup = Object.fromEntries(students.map((item) => [item._id, item.name]));
 
   const reviewOfflineRequest = async (requestId, action) => {
     const teacherNote = prompt(
@@ -109,69 +74,46 @@ export default function Fees() {
     load();
   };
 
+  const studentCards = useMemo(() => {
+    return students
+      .map((student) => {
+        const feeRows = items.filter((fee) => String(fee.studentId) === String(student._id));
+        const studentTransactions = transactions.filter(
+          (tx) => String(tx.studentId || "") === String(student._id)
+        );
+        const total = feeRows.reduce((sum, fee) => sum + Number(fee.total || 0), 0);
+        const paid = feeRows.reduce(
+          (sum, fee) => sum + (fee.payments?.reduce((acc, payment) => acc + Number(payment.amount || 0), 0) || 0),
+          0
+        );
+        const due = Math.max(total - paid, 0);
+        return {
+          student,
+          feeRows,
+          studentTransactions,
+          total,
+          paid,
+          due
+        };
+      })
+      .sort((a, b) => {
+        const dueDelta = Number(b.due || 0) - Number(a.due || 0);
+        if (dueDelta !== 0) return dueDelta;
+        return String(a.student?.name || "").localeCompare(String(b.student?.name || ""));
+      });
+  }, [students, items, transactions]);
+
+  const activeStudentData = studentCards.find((card) => String(card.student._id) === String(selectedStudentId)) || null;
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Fees</h1>
-          <p className="page-subtitle">Track payments, dues, and monthly collection.</p>
+          <p className="page-subtitle">
+            Monthly fees are auto-generated from each student&apos;s joining date and monthly fee.
+          </p>
         </div>
-      </div>
-
-      <div className="card" style={{ marginTop: "24px" }}>
-        <h2 className="card-title">Create Fee Record</h2>
-        <form className="form" onSubmit={submit}>
-          <select
-            className="select"
-            value={form.studentId}
-            onChange={(event) => setForm({ ...form, studentId: event.target.value })}
-            required
-          >
-            <option value="">Select student</option>
-            {students.map((student) => (
-              <option key={student._id} value={student._id}>
-                {student.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="input"
-            placeholder="Month (e.g. Feb 2026)"
-            value={form.month}
-            onChange={(event) => setForm({ ...form, month: event.target.value })}
-            required
-          />
-          <input
-            className="input"
-            type="number"
-            placeholder="Total fee"
-            value={form.total}
-            onChange={(event) => setForm({ ...form, total: event.target.value })}
-            required
-          />
-          <input
-            className="input"
-            type="number"
-            placeholder="Initial payment"
-            value={form.payment}
-            onChange={(event) => setForm({ ...form, payment: event.target.value })}
-          />
-          <button className="btn" type="submit">
-            {editingId ? "Update Fee" : "Save Fee"}
-          </button>
-          {editingId && (
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setForm(emptyForm);
-              }}
-            >
-              Cancel
-            </button>
-          )}
-        </form>
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
@@ -184,7 +126,7 @@ export default function Fees() {
               <div className="list-item" key={item._id}>
                 <div>
                   <div style={{ fontWeight: 700 }}>
-                    {item?.studentId?.name || "Student"} • ₹{Number(item.amount || 0)}
+                    {item?.studentId?.name || "Student"} • {money(item.amount)}
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--muted)" }}>
                     {item?.studentId?.phone || item?.studentId?.guardian?.phone || "No phone"} •
@@ -210,96 +152,128 @@ export default function Fees() {
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
-        <h2 className="card-title">Payment Transactions</h2>
+        <h2 className="card-title">Students Fee Cards</h2>
         {loading ? (
           <div>Loading...</div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Mobile</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Due Date</th>
-                <th>Late By</th>
-                <th>XP</th>
-                <th>Time</th>
-                <th>Days Since Prev</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((row) => (
-                <tr key={row.receiptId}>
-                  <td>{row.studentName}</td>
-                  <td>{row.studentPhone || "-"}</td>
-                  <td>₹{Number(row.amount || 0).toLocaleString("en-IN")}</td>
-                  <td>{row.method}</td>
-                  <td>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "-"}</td>
-                  <td>{Number(row.lateDays || 0)} day(s)</td>
-                  <td>+{Number(row.xpAwarded || 0)}</td>
-                  <td>{row.paidOn ? new Date(row.paidOn).toLocaleString() : "-"}</td>
-                  <td>{row.daysSincePrevious === null ? "-" : `${row.daysSincePrevious} day(s)`}</td>
-                </tr>
-              ))}
-              {!transactions.length ? (
-                <tr>
-                  <td colSpan="9">No transactions yet.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+          <div className="student-fee-card-grid">
+            {studentCards.map((card) => {
+              const selected = String(card.student._id) === String(selectedStudentId);
+              return (
+                <button
+                  key={card.student._id}
+                  type="button"
+                  className={`student-fee-card${selected ? " student-fee-card-active" : ""}`}
+                  onClick={() => setSelectedStudentId(card.student._id)}
+                >
+                  <div className="student-fee-card-title">{card.student.name || "Student"}</div>
+                  <div className="student-fee-card-row">
+                    <span>Total</span>
+                    <strong>{money(card.total)}</strong>
+                  </div>
+                  <div className="student-fee-card-row">
+                    <span>Paid</span>
+                    <strong>{money(card.paid)}</strong>
+                  </div>
+                  <div className="student-fee-card-row">
+                    <span>Due</span>
+                    <strong>{money(card.due)}</strong>
+                  </div>
+                  <div className="student-fee-card-foot">
+                    {card.studentTransactions.length} payment transaction(s)
+                  </div>
+                </button>
+              );
+            })}
+            {!studentCards.length ? <div>No students found.</div> : null}
+          </div>
         )}
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
-        <h2 className="card-title">All Fees</h2>
-        {loading ? (
-          <div>Loading...</div>
+        <h2 className="card-title">Selected Student History</h2>
+        {!activeStudentData ? (
+          <div>{loading ? "Loading..." : "Select a student card to view details."}</div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Month</th>
-                <th>Total</th>
-                <th>Paid</th>
-                <th>Due</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row) => {
-                const paid = row.payments?.reduce((sum, item) => sum + item.amount, 0) || 0;
-                const due = Math.max(row.total - paid, 0);
-                return (
-                  <tr key={row._id}>
-                    <td>{studentLookup[row.studentId] || "-"}</td>
-                    <td>{row.month}</td>
-                    <td>{row.total}</td>
-                    <td>{paid}</td>
-                    <td>{due}</td>
-                    <td>
-                      <button className="btn btn-ghost" onClick={() => edit(row)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-ghost" onClick={() => addPayment(row._id)}>
-                        Add Payment
-                      </button>
-                      <button className="btn btn-ghost" onClick={() => remove(row._id)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!items.length && (
+          <>
+            <div className="list" style={{ marginBottom: "14px" }}>
+              <div className="list-item">
+                <div>
+                  <div style={{ fontWeight: 700 }}>{activeStudentData.student.name}</div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    {activeStudentData.student.phone || activeStudentData.student.guardian?.phone || "-"}
+                  </div>
+                </div>
+                <div className="pill">Due: {money(activeStudentData.due)}</div>
+              </div>
+            </div>
+
+            <h3 style={{ marginBottom: "8px" }}>Fee Records</h3>
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan="6">No fee records yet.</td>
+                  <th>Month</th>
+                  <th>Due Date</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Due</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {activeStudentData.feeRows.map((row) => {
+                  const paid = row.payments?.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || 0;
+                  const due = Math.max(Number(row.total || 0) - paid, 0);
+                  return (
+                    <tr key={row._id}>
+                      <td>{row.month}</td>
+                      <td>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "-"}</td>
+                      <td>{money(row.total)}</td>
+                      <td>{money(paid)}</td>
+                      <td>{money(due)}</td>
+                    </tr>
+                  );
+                })}
+                {!activeStudentData.feeRows.length ? (
+                  <tr>
+                    <td colSpan="5">No fee records yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+
+            <h3 style={{ margin: "18px 0 8px" }}>Transaction History</h3>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Mode</th>
+                  <th>Transaction ID</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>XP</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeStudentData.studentTransactions.map((row) => (
+                  <tr key={row.receiptId}>
+                    <td>{money(row.amount)}</td>
+                    <td>{row.paymentMode || row.method}</td>
+                    <td>{row.transactionId || "-"}</td>
+                    <td>{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "-"}</td>
+                    <td>{row.timingLabel || "on time"}</td>
+                    <td>+{Number(row.xpAwarded || 0)}</td>
+                    <td>{row.paidOn ? new Date(row.paidOn).toLocaleString() : "-"}</td>
+                  </tr>
+                ))}
+                {!activeStudentData.studentTransactions.length ? (
+                  <tr>
+                    <td colSpan="7">No transactions yet.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>
