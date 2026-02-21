@@ -2390,6 +2390,11 @@ html[data-theme="dark"] .student-profile-quiz-total {
   cursor: pointer;
 }
 
+.level-journey-sound-btn:disabled {
+  cursor: default;
+  opacity: 0.96;
+}
+
 .level-journey-sound-btn.is-active {
   border-color: rgba(130, 214, 255, 0.72);
   background: rgba(77, 175, 255, 0.2);
@@ -2398,6 +2403,7 @@ html[data-theme="dark"] .student-profile-quiz-total {
 }
 
 .level-cinematic-stage {
+  position: relative;
   border: 1px solid rgba(255, 185, 102, 0.33);
   border-radius: 18px;
   background:
@@ -2405,6 +2411,56 @@ html[data-theme="dark"] .student-profile-quiz-total {
     radial-gradient(circle at 84% 18%, rgba(108, 183, 255, 0.12), transparent 42%),
     linear-gradient(170deg, rgba(11, 18, 28, 0.95), rgba(15, 24, 36, 0.92));
   box-shadow: 0 24px 52px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.level-cinematic-stage-playing .level-cinematic-replay {
+  opacity: 0.7;
+}
+
+.level-cinematic-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.level-cinematic-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.56));
+  transition: height 0.55s ease;
+}
+
+.level-cinematic-bar-top {
+  top: 0;
+}
+
+.level-cinematic-bar-bottom {
+  bottom: 0;
+  transform: rotate(180deg);
+}
+
+.level-cinematic-overlay.is-active .level-cinematic-bar {
+  height: 38px;
+}
+
+.level-cinematic-caption {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(252, 218, 157, 0.95);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.level-cinematic-overlay.is-active .level-cinematic-caption {
+  opacity: 1;
 }
 
 .level-cinematic-head {
@@ -2594,6 +2650,7 @@ html[data-theme="dark"] .student-profile-quiz-total {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
     rgba(5, 10, 18, 0.72);
+  scroll-behavior: auto;
 }
 
 .level-map-canvas {
@@ -2910,6 +2967,16 @@ html[data-theme="dark"] .student-profile-quiz-total {
 
   .level-cinematic-replay {
     width: 100%;
+  }
+
+  .level-cinematic-overlay.is-active .level-cinematic-bar {
+    height: 28px;
+  }
+
+  .level-cinematic-caption {
+    top: 8px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
   }
 
   .level-cinematic-viewport {

@@ -3,15 +3,13 @@ import { gsap } from "gsap";
 import { api } from "../api.js";
 import { MAX_LEVEL, getLevelsRemaining, getNextRank, getRank } from "../levelSystem.js";
 
-const AMBIENT_PREF_KEY = "ot_level_journey_ambient";
-
 export default function LevelJourneyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [levelData, setLevelData] = useState(null);
-  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem(AMBIENT_PREF_KEY) !== "0");
   const [hypeMode, setHypeMode] = useState(true);
   const [newlyUnlockedZones, setNewlyUnlockedZones] = useState([]);
+  const [cinematicPlaying, setCinematicPlaying] = useState(false);
   const shellRef = useRef(null);
   const orbARef = useRef(null);
   const orbBRef = useRef(null);
@@ -216,6 +214,7 @@ export default function LevelJourneyPage() {
     gsap.set(path, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
     gsap.set(rankEl, { opacity: 0, y: 10, filter: "blur(5px)" });
     gsap.set(xpFill, { width: "0%" });
+    gsap.set(canvas, { scale: 1.08, rotate: -1.2, transformOrigin: "50% 50%" });
     viewport.scrollTop = 0;
 
     const viewportHeight = viewport.clientHeight;
@@ -226,8 +225,14 @@ export default function LevelJourneyPage() {
       Math.min(canvasHeight - viewportHeight, currentOffset - viewportHeight / 2)
     );
 
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    tl.to(path, { strokeDashoffset: 0, duration: 0.8 })
+    const tl = gsap.timeline({
+      defaults: { ease: "power3.out" },
+      onStart: () => setCinematicPlaying(true),
+      onComplete: () => setCinematicPlaying(false)
+    });
+    tl.to(canvas, { scale: 1.02, rotate: 0.35, duration: 1.2 }, 0)
+      .to(canvas, { scale: 1, rotate: 0, duration: 1.28, ease: "power2.out" }, 1.1)
+      .to(path, { strokeDashoffset: 0, duration: 0.84 }, 0.18)
       .to(nodes, { opacity: 1, scale: 1, filter: "blur(0px)", stagger: 0.06, duration: 0.2 }, "-=0.3")
       .to(viewport, { scrollTop: targetScroll, duration: 1.2, ease: "power2.out" }, "-=0.02")
       .to(rankEl, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.34 }, "-=0.1")
@@ -350,16 +355,16 @@ export default function LevelJourneyPage() {
   }, [newlyUnlockedZones]);
 
   useEffect(() => {
-    localStorage.setItem(AMBIENT_PREF_KEY, soundEnabled ? "1" : "0");
-    if (!soundEnabled) {
-      stopAmbient();
-      return;
-    }
     startAmbient();
+    const retryAmbient = () => startAmbient();
+    window.addEventListener("pointerdown", retryAmbient, { passive: true });
+    window.addEventListener("keydown", retryAmbient);
     return () => {
+      window.removeEventListener("pointerdown", retryAmbient);
+      window.removeEventListener("keydown", retryAmbient);
       stopAmbient();
     };
-  }, [soundEnabled, startAmbient, stopAmbient]);
+  }, [startAmbient, stopAmbient]);
 
   useEffect(
     () => () => {
@@ -438,11 +443,11 @@ export default function LevelJourneyPage() {
               <div className="level-journey-page-stat">
                 <div className="level-journey-page-stat-label">Ambient Audio</div>
                 <button
-                  className={`level-journey-sound-btn${soundEnabled ? " is-active" : ""}`}
+                  className="level-journey-sound-btn is-active"
                   type="button"
-                  onClick={() => setSoundEnabled((prev) => !prev)}
+                  disabled
                 >
-                  {soundEnabled ? "On" : "Off"}
+                  Always On
                 </button>
               </div>
               <div className="level-journey-page-stat">
@@ -502,7 +507,12 @@ export default function LevelJourneyPage() {
             </div>
           </section>
 
-          <section className="card level-cinematic-stage" style={{ marginTop: "16px" }}>
+          <section className={`card level-cinematic-stage${cinematicPlaying ? " level-cinematic-stage-playing" : ""}`} style={{ marginTop: "16px" }}>
+            <div className={`level-cinematic-overlay${cinematicPlaying ? " is-active" : ""}`} aria-hidden="true">
+              <div className="level-cinematic-bar level-cinematic-bar-top" />
+              <div className="level-cinematic-bar level-cinematic-bar-bottom" />
+              <div className="level-cinematic-caption">SCENE: STUDENT ASCENSION</div>
+            </div>
             <div className="level-cinematic-head">
               <div className="level-cinematic-rank" ref={rankRef}>
                 {rank}
