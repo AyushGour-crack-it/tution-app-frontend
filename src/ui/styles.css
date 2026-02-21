@@ -1947,6 +1947,48 @@ html[data-theme="dark"] .student-profile-quiz-total {
   margin-top: 4px;
 }
 
+.profile-summary-level-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-summary-level-btn:hover {
+  color: var(--text-primary);
+}
+
+.level-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.level-chip {
+  min-width: 34px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.level-chip-done {
+  color: #3a2406;
+  border-color: rgba(255, 197, 103, 0.66);
+  background: linear-gradient(145deg, #ffdfa3, #f6bf59);
+}
+
+.level-chip-locked {
+  color: #9ba7af;
+  border-color: rgba(122, 134, 145, 0.45);
+  background: rgba(120, 134, 146, 0.16);
+}
+
 .profile-summary-avatar-img {
   width: 84px;
   height: 84px;
@@ -2205,6 +2247,134 @@ html[data-theme="dark"] .student-profile-quiz-total {
   right: -4px;
   top: -9px;
   font-size: 12px;
+}
+
+.level-journey-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.level-journey-page-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255, 191, 106, 0.16), transparent 35%),
+    radial-gradient(circle at 84% 14%, rgba(84, 173, 255, 0.14), transparent 32%),
+    linear-gradient(160deg, rgba(12, 19, 31, 0.95), rgba(15, 31, 43, 0.92) 48%, rgba(27, 24, 18, 0.9));
+}
+
+.level-journey-page-orb {
+  position: absolute;
+  width: 300px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(32px);
+  opacity: 0.3;
+}
+
+.level-journey-page-orb-a {
+  left: -90px;
+  top: 90px;
+  background: radial-gradient(circle, rgba(255, 189, 96, 0.95), rgba(255, 189, 96, 0.05));
+}
+
+.level-journey-page-orb-b {
+  right: -90px;
+  bottom: 140px;
+  background: radial-gradient(circle, rgba(103, 189, 255, 0.92), rgba(103, 189, 255, 0.05));
+}
+
+.level-journey-page-hero {
+  border: 1px solid rgba(255, 189, 109, 0.35);
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 201, 125, 0.2), transparent 42%),
+    radial-gradient(circle at 86% 16%, rgba(97, 172, 255, 0.16), transparent 46%),
+    rgba(17, 23, 31, 0.82);
+}
+
+.level-journey-page-hero-main {
+  display: grid;
+  gap: 8px;
+}
+
+.level-journey-page-kicker {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  color: #f2c87f;
+  font-weight: 700;
+}
+
+.level-journey-page-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-family: "Space Grotesk", sans-serif;
+  color: #f6f8fd;
+}
+
+.level-journey-page-copy {
+  margin: 0;
+  color: #bfcad7;
+}
+
+.level-journey-page-stats {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.level-journey-page-stat {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.level-journey-page-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca9b8;
+}
+
+.level-journey-page-stat-value {
+  margin-top: 4px;
+  color: #f2f7fd;
+  font-weight: 700;
+}
+
+.level-journey-page-panel {
+  border: 1px solid rgba(255, 173, 93, 0.25);
+  background: rgba(17, 24, 31, 0.82);
+}
+
+.level-journey-sound-btn {
+  margin-top: 7px;
+  border: 1px solid rgba(255, 173, 92, 0.45);
+  border-radius: 10px;
+  background: rgba(255, 173, 92, 0.14);
+  color: #f7dfb5;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.level-journey-sound-btn.is-active {
+  border-color: rgba(130, 214, 255, 0.72);
+  background: rgba(77, 175, 255, 0.2);
+  color: #dff4ff;
+  box-shadow: 0 0 18px rgba(104, 184, 255, 0.24);
+}
+
+@media (max-width: 640px) {
+  .level-journey-page-orb {
+    width: 180px;
+    filter: blur(24px);
+  }
 }
 
 .badges-layout {

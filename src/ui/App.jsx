@@ -25,6 +25,7 @@ import Badges from "./pages/Badges.jsx";
 import BadgeRequests from "./pages/BadgeRequests.jsx";
 import StudentAccessPending from "./pages/StudentAccessPending.jsx";
 import QuizDashboard from "../features/quiz/Dashboard.jsx";
+import LevelJourneyPage from "./pages/LevelJourneyPage.jsx";
 import LevelUpOverlay from "./components/LevelUpOverlay.jsx";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
@@ -1046,6 +1047,7 @@ export default function App() {
             {user?.role === "student" ? (
               <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/student/badges"] || 0} />
             ) : null}
+            <NavItem to="/student/level-journey" label="Level Journey" onNavigate={closeMobileNavOnNavigate} />
             <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/students"] || 0} />
             <NavItem
               to="/chat"
@@ -1260,6 +1262,16 @@ export default function App() {
             element={
               user?.role === "student" ? (
                 <Badges />
+              ) : (
+                <Navigate to="/student" replace />
+              )
+            }
+          />
+          <Route
+            path="/student/level-journey"
+            element={
+              user?.role === "student" ? (
+                <LevelJourneyPage />
               ) : (
                 <Navigate to="/student" replace />
               )

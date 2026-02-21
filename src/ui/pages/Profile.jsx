@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
@@ -79,6 +80,7 @@ const getLevelTierClass = (levelValue) => {
 };
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [studentProfile, setStudentProfile] = useState(null);
   const [badgeStats, setBadgeStats] = useState({ level: null, earned: [] });
@@ -305,12 +307,17 @@ export default function Profile() {
             <div className="profile-summary-name">{user.name}</div>
             <div className="profile-summary-email">{user.email}</div>
             {badgeStats.level ? (
-              <div className="profile-summary-level">
+              <button
+                className="profile-summary-level profile-summary-level-btn"
+                type="button"
+                onClick={() => navigate("/student/level-journey")}
+              >
                 <span className={`level-pill ${getLevelTierClass(badgeStats.level.level)}`}>
                   Level {badgeStats.level.level}
                 </span>{" "}
                 • {badgeStats.level.totalXp} XP • {totalBadges} Badges
-              </div>
+                {" "}• Click for journey
+              </button>
             ) : null}
           </div>
         </div>
