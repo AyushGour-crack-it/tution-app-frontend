@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
 
 export default function Chat() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [chatUsers, setChatUsers] = useState([]);
   const [text, setText] = useState("");
@@ -10,6 +12,8 @@ export default function Chat() {
   const [typingLabel, setTypingLabel] = useState("");
   const chatWindowRef = useRef(null);
   const socketRef = useRef(null);
+  const messagesRef = useRef([]);
+  const skipNextAutoScrollRef = useRef(false);
   const typingResetTimeoutRef = useRef(null);
   const lastTypingEmitRef = useRef(0);
   const isFirstLoadRef = useRef(true);
@@ -23,6 +27,9 @@ export default function Chat() {
   const [localClearAfter, setLocalClearAfter] = useState(0);
   const [showLocalClearConfirm, setShowLocalClearConfirm] = useState(false);
   const [prevSeenAt, setPrevSeenAt] = useState(0);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  const [beforeCursor, setBeforeCursor] = useState("");
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user") || "null");
@@ -62,11 +69,24 @@ export default function Chat() {
     const groups = (Array.isArray(message?.reactions) ? message.reactions : []).reduce((acc, item) => {
       const emoji = String(item?.emoji || "").trim();
       if (!emoji) return acc;
-      acc[emoji] = (acc[emoji] || 0) + 1;
+      if (!acc[emoji]) {
+        acc[emoji] = { count: 0, users: [] };
+      }
+      acc[emoji].count += 1;
+      const actorId = String(item?.userId || "");
+      const actor = actorId ? chatUserLookup[actorId] : null;
+      const actorName = actor?.name || (actorId === String(user?.id || "") ? "You" : "Unknown");
+      if (actorName && !acc[emoji].users.includes(actorName)) {
+        acc[emoji].users.push(actorName);
+      }
       return acc;
     }, {});
     return Object.entries(groups)
-      .map(([emoji, count]) => ({ emoji, count }))
+      .map(([emoji, meta]) => ({
+        emoji,
+        count: Number(meta?.count || 0),
+        users: Array.isArray(meta?.users) ? meta.users : []
+      }))
       .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
   };
   const formatLastSeen = (value) => {
@@ -87,30 +107,57 @@ export default function Chat() {
     node.scrollTop = node.scrollHeight;
   };
 
-  const load = async () => {
+  const PAGE_SIZE = 100;
+
+  const normalizeChatResponse = (payload) => {
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        hasMore: payload.length >= PAGE_SIZE,
+        nextBefore: payload[0]?.createdAt || null
+      };
+    }
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    return {
+      items,
+      hasMore: Boolean(payload?.hasMore),
+      nextBefore: payload?.nextBefore || items[0]?.createdAt || null
+    };
+  };
+
+  const loadInitialMessages = async () => {
     if (isFirstLoadRef.current) {
       setLoadingMessages(true);
     }
     setLoadError("");
     try {
-      const tasks = [api.get("/chat/messages").then((res) => res.data)];
+      const tasks = [api.get(`/chat/messages?limit=${PAGE_SIZE}`).then((res) => res.data)];
       tasks.push(api.get("/chat/users").then((res) => res.data || []));
       const [chatData, usersData] = await Promise.all(tasks);
-      setMessages(chatData);
+      const normalized = normalizeChatResponse(chatData);
+      setMessages(normalized.items);
+      setHasMoreMessages(normalized.hasMore);
+      setBeforeCursor(normalized.nextBefore || "");
       api.post("/chat/messages/read").catch(() => {});
       setChatUsers(Array.isArray(usersData) ? usersData : []);
     } catch (error) {
       setLoadError(error?.response?.data?.message || "Failed to load chat.");
       setMessages([]);
       setChatUsers([]);
+      setHasMoreMessages(false);
+      setBeforeCursor("");
     } finally {
       setLoadingMessages(false);
     }
   };
 
   useEffect(() => {
-    load();
+    loadInitialMessages();
   }, []);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(
     () => () => {
@@ -120,6 +167,72 @@ export default function Chat() {
     },
     []
   );
+
+  const mergeChronological = (currentItems, incomingItems) => {
+    const map = new Map();
+    [...currentItems, ...incomingItems].forEach((item) => {
+      if (item?._id) {
+        map.set(item._id, item);
+      }
+    });
+    return [...map.values()].sort(
+      (a, b) => new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime()
+    );
+  };
+
+  const loadOlderMessages = async () => {
+    if (!beforeCursor || loadingOlderMessages || !hasMoreMessages) return;
+    const container = chatWindowRef.current;
+    const previousHeight = container?.scrollHeight || 0;
+    skipNextAutoScrollRef.current = true;
+    setLoadingOlderMessages(true);
+    try {
+      const payload = await api
+        .get(`/chat/messages?limit=${PAGE_SIZE}&before=${encodeURIComponent(beforeCursor)}`, {
+          showGlobalLoader: false
+        })
+        .then((res) => res.data);
+      const normalized = normalizeChatResponse(payload);
+      setMessages((prev) => mergeChronological(prev, normalized.items));
+      setHasMoreMessages(normalized.hasMore);
+      setBeforeCursor(normalized.nextBefore || "");
+
+      if (container) {
+        requestAnimationFrame(() => {
+          const nextHeight = container.scrollHeight;
+          container.scrollTop = Math.max(0, nextHeight - previousHeight);
+        });
+      }
+    } finally {
+      setLoadingOlderMessages(false);
+    }
+  };
+
+  const syncAfterReconnect = async () => {
+    const latestCreatedAt = messagesRef.current[messagesRef.current.length - 1]?.createdAt;
+    const query = latestCreatedAt
+      ? `/chat/messages?limit=${PAGE_SIZE}&after=${encodeURIComponent(latestCreatedAt)}`
+      : `/chat/messages?limit=${PAGE_SIZE}`;
+
+    try {
+      const [chatPayload, usersData] = await Promise.all([
+        api.get(query, { showGlobalLoader: false }).then((res) => res.data),
+        api.get("/chat/users", { showGlobalLoader: false }).then((res) => res.data || [])
+      ]);
+      const normalized = normalizeChatResponse(chatPayload);
+      setMessages((prev) =>
+        latestCreatedAt ? mergeChronological(prev, normalized.items) : normalized.items
+      );
+      if (!latestCreatedAt) {
+        setHasMoreMessages(normalized.hasMore);
+        setBeforeCursor(normalized.nextBefore || "");
+      }
+      setChatUsers(Array.isArray(usersData) ? usersData : []);
+      api.post("/chat/messages/read", null, { showGlobalLoader: false }).catch(() => {});
+    } catch {
+      // best-effort sync on reconnect
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -156,7 +269,22 @@ export default function Chat() {
     const onChatDeleted = (payload) => {
       const messageId = String(payload?.messageId || "");
       if (!messageId) return;
-      setMessages((prev) => prev.filter((item) => item._id !== messageId));
+      setMessages((prev) =>
+        prev.map((item) =>
+          item._id === messageId
+            ? {
+                ...item,
+                deletedAt: payload?.deletedAt || new Date().toISOString(),
+                deletedBy: payload?.deletedBy || null,
+                editedAt: null,
+                content: "",
+                fileName: "",
+                mimeType: "",
+                reactions: []
+              }
+            : item
+        )
+      );
     };
 
     const onChatTyping = (payload) => {
@@ -190,14 +318,14 @@ export default function Chat() {
     socket.on("chat:deleted", onChatDeleted);
     socket.on("chat:typing", onChatTyping);
     socket.on("presence:updated", onPresenceUpdated);
-    socket.on("connect", load);
+    socket.on("connect", syncAfterReconnect);
     return () => {
       socket.off("chat:new", onChatNew);
       socket.off("chat:updated", onChatUpdated);
       socket.off("chat:deleted", onChatDeleted);
       socket.off("chat:typing", onChatTyping);
       socket.off("presence:updated", onPresenceUpdated);
-      socket.off("connect", load);
+      socket.off("connect", syncAfterReconnect);
       socketRef.current = null;
     };
   }, [user?.id]);
@@ -214,6 +342,11 @@ export default function Chat() {
   }, [chatPrevSeenKey]);
 
   useEffect(() => {
+    if (skipNextAutoScrollRef.current) {
+      skipNextAutoScrollRef.current = false;
+      isFirstLoadRef.current = false;
+      return;
+    }
     scrollToLatest();
     isFirstLoadRef.current = false;
   }, [messages]);
@@ -240,6 +373,21 @@ export default function Chat() {
     socket.emit("chat:typing", {
       recipientUserId: recipientUserId || null
     });
+  };
+
+  const openChatProfile = (msg) => {
+    const senderId = String(msg?.senderId || "");
+    if (!senderId) return;
+    if (senderId === String(user?.id || "")) {
+      navigate("/profile");
+      return;
+    }
+    if (String(msg?.role || "") !== "student") return;
+    if (user?.role === "teacher") {
+      navigate(`/students/${senderId}`);
+      return;
+    }
+    navigate(`/student/students/${senderId}`);
   };
 
   const appendOptimisticMessage = ({ type, content, fileName = "", mimeType = "" }) => {
@@ -380,7 +528,12 @@ export default function Chat() {
   };
 
   const deleteMessage = async (id) => {
-    await api.delete(`/chat/messages/${id}`);
+    const saved = await api.delete(`/chat/messages/${id}`);
+    const next = saved?.data;
+    if (next?._id) {
+      setMessages((prev) => prev.map((item) => (item._id === next._id ? next : item)));
+      return;
+    }
     setMessages((prev) => prev.filter((item) => item._id !== id));
   };
 
@@ -402,7 +555,7 @@ export default function Chat() {
     try {
       await api.delete("/chat/messages/clear");
       setReplyTo(null);
-      await load();
+      await loadInitialMessages();
       setShowClearConfirm(false);
     } finally {
       setClearingChat(false);
@@ -613,6 +766,18 @@ export default function Chat() {
           </div>
         </div>
         <div className="chat-window" ref={chatWindowRef}>
+          {!loadingMessages && hasMoreMessages ? (
+            <div className="chat-meta" style={{ padding: "4px 0 10px" }}>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={loadOlderMessages}
+                disabled={loadingOlderMessages}
+              >
+                {loadingOlderMessages ? "Loading older..." : "Load older messages"}
+              </button>
+            </div>
+          ) : null}
           {loadingMessages ? (
             <div className="chat-meta" style={{ padding: "12px 0" }}>
               Loading latest messages...
@@ -624,7 +789,7 @@ export default function Chat() {
               <button
                 className="btn btn-ghost"
                 type="button"
-                onClick={load}
+                onClick={loadInitialMessages}
                 style={{ marginLeft: "8px" }}
               >
                 Retry
@@ -672,17 +837,25 @@ export default function Chat() {
               >
                 <div className="chat-meta-row">
                   <div className="chat-meta-sender">
-                    {senderAvatar ? (
-                      <img
-                        className={`chat-avatar chat-avatar-img ${senderIsOnline ? "chat-avatar-online" : ""}`}
-                        src={senderAvatar}
-                        alt={senderName}
-                      />
-                    ) : (
-                      <div className={`chat-avatar ${senderIsOnline ? "chat-avatar-online" : ""}`} aria-hidden="true">
-                        {String(senderName || "?").slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => openChatProfile(msg)}
+                      style={{ background: "none", border: "0", padding: "0", cursor: "pointer" }}
+                      title={msg?.role === "student" || msg?.senderId === user?.id ? "Open profile" : ""}
+                      disabled={msg?.role !== "student" && msg?.senderId !== user?.id}
+                    >
+                      {senderAvatar ? (
+                        <img
+                          className={`chat-avatar chat-avatar-img ${senderIsOnline ? "chat-avatar-online" : ""}`}
+                          src={senderAvatar}
+                          alt={senderName}
+                        />
+                      ) : (
+                        <div className={`chat-avatar ${senderIsOnline ? "chat-avatar-online" : ""}`} aria-hidden="true">
+                          {String(senderName || "?").slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </button>
                     <div className="chat-meta">
                       <strong className={getSenderColorClass(msg)}>{senderName}</strong>
                     </div>
@@ -702,7 +875,12 @@ export default function Chat() {
                       </button>
                       {menuMessageId === msg._id && (
                         <div className="chat-menu">
-                          <button className="chat-menu-item" type="button" onClick={() => setReply(msg)}>
+                          <button
+                            className="chat-menu-item"
+                            type="button"
+                            onClick={() => setReply(msg)}
+                            disabled={Boolean(msg?.deletedAt)}
+                          >
                             Reply
                           </button>
                           <div className="chat-menu-label">React</div>
@@ -712,6 +890,7 @@ export default function Chat() {
                                 key={`${msg._id}-${emoji}`}
                                 className="chat-menu-emoji-btn"
                                 type="button"
+                                disabled={Boolean(msg?.deletedAt)}
                                 onClick={() => {
                                   reactTo(msg._id, emoji);
                                   setMenuMessageId("");
@@ -726,6 +905,7 @@ export default function Chat() {
                               <button
                                 className="chat-menu-item"
                                 type="button"
+                                disabled={Boolean(msg?.deletedAt)}
                                 onClick={() => {
                                   editMessage(msg);
                                   setMenuMessageId("");
@@ -760,21 +940,26 @@ export default function Chat() {
                 {msg.recipientUserId && (
                   <div className="chat-meta">To: {msg.recipientName || "User"}</div>
                 )}
-                {msg.type === "text" && <div className="chat-content">{msg.content}</div>}
-                {msg.type === "announcement" && <div className="chat-content">{msg.content}</div>}
-                {(msg.type === "image" || msg.type === "gif" || msg.type === "meme") && (
+                {msg.deletedAt ? (
+                  <div className="chat-content" style={{ opacity: 0.75, fontStyle: "italic" }}>
+                    This message was deleted.
+                  </div>
+                ) : null}
+                {!msg.deletedAt && msg.type === "text" ? <div className="chat-content">{msg.content}</div> : null}
+                {!msg.deletedAt && msg.type === "announcement" ? <div className="chat-content">{msg.content}</div> : null}
+                {!msg.deletedAt && (msg.type === "image" || msg.type === "gif" || msg.type === "meme") ? (
                   <img className="chat-media" src={msg.content} alt={msg.fileName || msg.type} />
-                )}
-                {msg.type === "video" && (
+                ) : null}
+                {!msg.deletedAt && msg.type === "video" ? (
                   <video controls className="chat-media">
                     <source src={msg.content} type={msg.mimeType || "video/mp4"} />
                   </video>
-                )}
-                {msg.type === "audio" && (
+                ) : null}
+                {!msg.deletedAt && msg.type === "audio" ? (
                   <audio controls className="chat-audio">
                     <source src={msg.content} type={msg.mimeType || "audio/mpeg"} />
                   </audio>
-                )}
+                ) : null}
                 {msg.editedAt && <div className="chat-meta">(edited)</div>}
                 {msg._localStatus === "sending" ? (
                   <div className="chat-meta chat-send-state">Sending...</div>
@@ -793,10 +978,22 @@ export default function Chat() {
                 {reactionGroups.length ? (
                   <div className="chat-reactions">
                     {reactionGroups.map((group) => (
-                      <span key={`${msg._id}-${group.emoji}`} className="chat-reaction-pill">
+                      <span
+                        key={`${msg._id}-${group.emoji}`}
+                        className="chat-reaction-pill"
+                        title={group.users.length ? `Reacted by: ${group.users.join(", ")}` : "Reaction"}
+                      >
                         {group.emoji} {group.count}
                       </span>
                     ))}
+                  </div>
+                ) : null}
+                {reactionGroups.length ? (
+                  <div className="chat-meta" style={{ marginTop: "4px" }}>
+                    {reactionGroups
+                      .filter((group) => group.users.length)
+                      .map((group) => `${group.emoji} ${group.users.join(", ")}`)
+                      .join("  •  ")}
                   </div>
                 ) : null}
               </div>

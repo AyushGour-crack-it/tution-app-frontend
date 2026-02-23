@@ -82,6 +82,8 @@ const inferSectionPathFromNotification = (item) => {
   return "";
 };
 
+const FALLBACK_POLL_INTERVAL_MS = 120000;
+
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
     to={to}
@@ -554,12 +556,25 @@ export default function App() {
     };
 
     loadUnreadCount();
-    const intervalId = setInterval(loadUnreadCount, 30000);
+    if (socketStatus === "connected") {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const intervalId = setInterval(loadUnreadCount, FALLBACK_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [user?.id, user?.role, location.pathname, notificationSeenKey, badgePopupSeenKey, rewardPopupSeenKey]);
+  }, [
+    user?.id,
+    user?.role,
+    notificationSeenKey,
+    badgePopupSeenKey,
+    rewardPopupSeenKey,
+    socketStatus
+  ]);
 
   React.useEffect(() => {
     if (location.pathname === "/notifications") {
@@ -581,39 +596,30 @@ export default function App() {
 
   React.useEffect(() => {
     if (!user?.id) return undefined;
+    if (socketStatus === "connected") return undefined;
     let cancelled = false;
 
     const loadUnreadChat = async () => {
       try {
-        const items = await api
-          .get("/chat/messages", { showGlobalLoader: false })
-          .then((res) => res.data || []);
+        const unreadCount = await api
+          .get("/chat/unread-count", { showGlobalLoader: false })
+          .then((res) => Number(res?.data?.count || 0));
         if (cancelled) return;
-        const existingSeen = localStorage.getItem(chatSeenKey);
-        if (!existingSeen) {
-          localStorage.setItem(chatSeenKey, new Date().toISOString());
-          setUnreadChatCount(0);
-          return;
+        if (locationPathRef.current !== "/chat") {
+          setUnreadChatCount(unreadCount);
         }
-        const seenTime = new Date(existingSeen).getTime();
-        const freshCount = items.filter((item) => {
-          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
-          const senderId = String(item?.senderId || "");
-          return createdAt > seenTime && senderId !== String(user.id || "");
-        }).length;
-        setUnreadChatCount(freshCount);
       } catch {
         if (!cancelled) setUnreadChatCount(0);
       }
     };
 
     loadUnreadChat();
-    const intervalId = setInterval(loadUnreadChat, 30000);
+    const intervalId = setInterval(loadUnreadChat, FALLBACK_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [user?.id, user?.role, chatSeenKey, location.pathname]);
+  }, [user?.id, socketStatus]);
 
   React.useEffect(() => {
     const unsubscribe = subscribeSocketStatus((status) => setSocketStatus(status));
@@ -637,9 +643,11 @@ export default function App() {
 
     const syncUnreadCounters = async () => {
       try {
-        const [notifications, chatItems] = await Promise.all([
+        const [notifications, chatUnread] = await Promise.all([
           api.get("/notifications", { showGlobalLoader: false }).then((res) => res.data || []),
-          api.get("/chat/messages", { showGlobalLoader: false }).then((res) => res.data || [])
+          api
+            .get("/chat/unread-count", { showGlobalLoader: false })
+            .then((res) => Number(res?.data?.count || 0))
         ]);
 
         const seenNotification = localStorage.getItem(notificationSeenKey);
@@ -652,15 +660,8 @@ export default function App() {
           setUnreadNotificationCount(nextNotificationCount);
         }
 
-        const seenChat = localStorage.getItem(chatSeenKey);
-        const chatSeenAt = seenChat ? new Date(seenChat).getTime() : Date.now();
-        const nextChatCount = chatItems.filter((item) => {
-          const createdAt = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
-          const senderId = String(item?.senderId || "");
-          return createdAt > chatSeenAt && senderId !== String(user.id || "");
-        }).length;
         if (locationPathRef.current !== "/chat") {
-          setUnreadChatCount(nextChatCount);
+          setUnreadChatCount(chatUnread);
         }
       } catch {
         // no-op on transient sync errors
@@ -823,7 +824,6 @@ export default function App() {
     user?.role,
     badgePopupSeenKey,
     notificationSeenKey,
-    chatSeenKey,
     rewardPopupSeenKey,
     bumpSectionIndicator
   ]);
