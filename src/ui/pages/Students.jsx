@@ -11,16 +11,23 @@ export default function Students() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const load = async () => {
-    setLoading(true);
-    const [directory, requests] = await Promise.all([
-      api.get("/students/directory").then((res) => res.data || []),
-      api.get("/auth/student-requests?status=pending").then((res) => res.data || [])
-    ]);
-    setItems(directory);
-    setPendingRequests(requests);
-    setLoading(false);
+    try {
+      setLoading(true);
+      setErrorMessage("");
+      const [directory, requests] = await Promise.all([
+        api.get("/students/directory").then((res) => res.data || []),
+        api.get("/auth/student-requests?status=pending").then((res) => res.data || [])
+      ]);
+      setItems(directory);
+      setPendingRequests(requests);
+    } catch (error) {
+      setErrorMessage(error?.response?.data?.message || "Failed to load students.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -46,8 +53,13 @@ export default function Students() {
       action === "reject" ? "Why are you rejecting this request?" : "Optional approval message",
       action === "approve" ? "Approved. Welcome to the class." : ""
     ) || "";
-    await api.post(`/auth/student-requests/${userId}/review`, { action, message });
-    load();
+    try {
+      setErrorMessage("");
+      await api.post(`/auth/student-requests/${userId}/review`, { action, message });
+      await load();
+    } catch (error) {
+      setErrorMessage(error?.response?.data?.message || "Failed to review request.");
+    }
   };
 
   const filtered = useMemo(() => {
@@ -79,6 +91,7 @@ export default function Students() {
 
       <div className="card" style={{ marginTop: "24px" }}>
         <h2 className="card-title">Pending Registration Requests</h2>
+        {errorMessage ? <div className="auth-error">{errorMessage}</div> : null}
         {loading ? (
           <div>Loading...</div>
         ) : (
