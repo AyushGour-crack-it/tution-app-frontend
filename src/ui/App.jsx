@@ -859,24 +859,6 @@ export default function App() {
     setShowAotDetails(false);
   }, [location.pathname]);
 
-  const toggleAotTheme = React.useCallback(async () => {
-    const audio = aotThemeAudioRef.current;
-    if (!audio) return;
-    setAotAudioError("");
-    if (!audio.paused) {
-      audio.pause();
-      setIsAotThemePlaying(false);
-      return;
-    }
-    try {
-      await audio.play();
-      setIsAotThemePlaying(true);
-    } catch {
-      setAotAudioError("Unable to play theme on this device.");
-      setIsAotThemePlaying(false);
-    }
-  }, []);
-
   const playAotTheme = React.useCallback(async () => {
     const audio = aotThemeAudioRef.current;
     if (!audio || !audio.paused) return;
@@ -888,6 +870,16 @@ export default function App() {
       setAotAudioError("Unable to play theme on this device.");
       setIsAotThemePlaying(false);
     }
+  }, []);
+
+  const closeAotDetails = React.useCallback(() => {
+    const audio = aotThemeAudioRef.current;
+    if (audio && !audio.paused) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    setIsAotThemePlaying(false);
+    setShowAotDetails(false);
   }, []);
 
   if (!authReady) {
@@ -1201,22 +1193,15 @@ export default function App() {
             />
             <div
               className="aot-event-pill"
-              role="button"
-              tabIndex={0}
-              onClick={toggleAotTheme}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleAotTheme();
-                }
-              }}
             >
               <div className="aot-event-pill-left">
                 <span className="aot-event-chip">Coming Soon</span>
                 <div className="aot-event-text">
-                  <div className="aot-event-title">Attack on Titan Event</div>
+                  <div className="aot-event-title">
+                    Attack on Titan Event <span className="aot-event-version">1.0</span>
+                  </div>
                   <div className="aot-event-subtitle">
-                    Click pill to {isAotThemePlaying ? "pause" : "play"} theme music
+                    Our first event drop. More versions coming soon.
                   </div>
                 </div>
               </div>
@@ -1238,14 +1223,14 @@ export default function App() {
             {showAotDetails ? (
               <div
                 className="aot-event-modal-overlay"
-                onClick={() => setShowAotDetails(false)}
+                onClick={closeAotDetails}
               >
                 <div
                   className="aot-event-modal-card"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="aot-event-modal-kicker">Event Brief</div>
-                  <h2 className="aot-event-modal-title">Attack on Titan Event</h2>
+                  <div className="aot-event-modal-kicker">First Event • Version 1.0</div>
+                  <h2 className="aot-event-modal-title">Attack on Titan Event 1.0</h2>
                   <p className="aot-event-modal-text">
                     Event goes live soon. Badges and competitive objectives will unlock together.
                   </p>
@@ -1259,7 +1244,7 @@ export default function App() {
                     Titan Kill rule: only one student can claim it. First student to hit the target gets
                     the kill, then this objective turns off for everyone else.
                   </div>
-                  <button className="btn" type="button" onClick={() => setShowAotDetails(false)}>
+                  <button className="btn" type="button" onClick={closeAotDetails}>
                     Close
                   </button>
                 </div>

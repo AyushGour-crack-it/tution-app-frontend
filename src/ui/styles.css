@@ -271,7 +271,7 @@ html[data-theme="dark"] {
   justify-content: space-between;
   gap: 14px;
   padding: 8px 10px 8px 12px;
-  cursor: pointer;
+  cursor: default;
   box-shadow: 0 12px 30px rgba(26, 8, 10, 0.36);
 }
 
@@ -305,6 +305,21 @@ html[data-theme="dark"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.aot-event-version {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffd57a, #ff8f4e);
+  color: #2a1011;
+  font-family: "Bebas Neue", "Space Grotesk", sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.8px;
+  line-height: 1;
+  vertical-align: middle;
+  box-shadow: 0 4px 10px rgba(255, 157, 96, 0.35);
 }
 
 .aot-event-subtitle {
