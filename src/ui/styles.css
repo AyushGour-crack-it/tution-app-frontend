@@ -255,6 +255,165 @@ html[data-theme="dark"] {
   min-width: 0;
 }
 
+.aot-event-pill {
+  position: sticky;
+  top: 12px;
+  z-index: 28;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 76, 60, 0.45);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.12), transparent 48%),
+    linear-gradient(110deg, #1f2428 0%, #2a1518 45%, #4b1519 100%);
+  color: #f8f2ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 10px 8px 12px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(26, 8, 10, 0.36);
+}
+
+.aot-event-pill-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.aot-event-chip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #2f0609;
+  background: linear-gradient(135deg, #ffd9bf, #ff9f6e);
+  animation: aotPulse 2s ease-in-out infinite;
+}
+
+.aot-event-text {
+  min-width: 0;
+}
+
+.aot-event-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aot-event-subtitle {
+  font-size: 12px;
+  color: rgba(248, 242, 239, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aot-event-pill-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.aot-details-btn {
+  border-color: rgba(255, 197, 167, 0.5);
+  color: #ffd7c2;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 7px 14px;
+}
+
+.aot-audio-error {
+  margin: -4px 2px 12px;
+  font-size: 12px;
+  color: #a61a1a;
+}
+
+.aot-event-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(7, 10, 12, 0.72);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.aot-event-modal-card {
+  width: min(620px, 95vw);
+  border-radius: 20px;
+  border: 1px solid rgba(246, 128, 92, 0.45);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 125, 88, 0.18), transparent 44%),
+    radial-gradient(circle at 18% 86%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(140deg, #181a1f, #211517 58%, #2f1719);
+  color: #f9efea;
+  padding: 22px;
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 12px;
+}
+
+.aot-event-modal-kicker {
+  font-size: 11px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: rgba(255, 198, 170, 0.9);
+  font-weight: 700;
+}
+
+.aot-event-modal-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 28px;
+}
+
+.aot-event-modal-text {
+  margin: 0;
+  color: rgba(249, 239, 234, 0.84);
+}
+
+.aot-event-badge-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.aot-event-badge-item {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 196, 171, 0.35);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 126, 88, 0.12));
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.aot-event-rule-card {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 138, 98, 0.38);
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 231, 219, 0.94);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+@keyframes aotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 159, 110, 0.4);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 6px rgba(255, 159, 110, 0);
+  }
+}
+
 .main-chat {
   height: 100dvh;
   overflow: hidden;
@@ -4535,6 +4694,17 @@ html[data-theme="dark"] .student-profile-quiz-total {
     padding: 68px 18px 22px;
   }
 
+  .aot-event-pill {
+    top: 58px;
+    border-radius: 18px;
+    align-items: flex-start;
+  }
+
+  .aot-event-title,
+  .aot-event-subtitle {
+    white-space: normal;
+  }
+
   .main-chat {
     height: 100dvh;
     overflow: hidden;
@@ -4667,6 +4837,31 @@ html[data-theme="dark"] .student-profile-quiz-total {
 
   .main {
     padding: 66px 14px 18px;
+  }
+
+  .aot-event-pill {
+    top: 58px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .aot-event-pill-left {
+    align-items: flex-start;
+  }
+
+  .aot-event-pill-right {
+    justify-content: flex-end;
+  }
+
+  .aot-event-modal-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .aot-event-modal-title {
+    font-size: 22px;
   }
 
   .page-title {

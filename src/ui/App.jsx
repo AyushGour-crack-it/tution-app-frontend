@@ -132,7 +132,11 @@ export default function App() {
   const [levelUpPayload, setLevelUpPayload] = React.useState(null);
   const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
   const [sectionUnread, setSectionUnread] = React.useState({});
+  const [showAotDetails, setShowAotDetails] = React.useState(false);
+  const [isAotThemePlaying, setIsAotThemePlaying] = React.useState(false);
+  const [aotAudioError, setAotAudioError] = React.useState("");
   const locationPathRef = React.useRef(location.pathname);
+  const aotThemeAudioRef = React.useRef(null);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
     [user?.id]
@@ -837,6 +841,32 @@ export default function App() {
     }
   }, [user]);
 
+  React.useEffect(() => {
+    return () => {
+      if (aotThemeAudioRef.current) {
+        aotThemeAudioRef.current.pause();
+      }
+    };
+  }, []);
+
+  const toggleAotTheme = React.useCallback(async () => {
+    const audio = aotThemeAudioRef.current;
+    if (!audio) return;
+    setAotAudioError("");
+    if (!audio.paused) {
+      audio.pause();
+      setIsAotThemePlaying(false);
+      return;
+    }
+    try {
+      await audio.play();
+      setIsAotThemePlaying(true);
+    } catch {
+      setAotAudioError("Unable to play theme on this device.");
+      setIsAotThemePlaying(false);
+    }
+  }, []);
+
   if (!authReady) {
     return (
       <div className="auth-shell">
@@ -1136,6 +1166,77 @@ export default function App() {
         </div>
       </aside>
       <main className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}>
+        <audio
+          ref={aotThemeAudioRef}
+          src="/musicthemes/01. Attack on Titan.mp3"
+          preload="none"
+          onEnded={() => setIsAotThemePlaying(false)}
+        />
+        <div
+          className="aot-event-pill"
+          role="button"
+          tabIndex={0}
+          onClick={toggleAotTheme}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggleAotTheme();
+            }
+          }}
+        >
+          <div className="aot-event-pill-left">
+            <span className="aot-event-chip">Coming Soon</span>
+            <div className="aot-event-text">
+              <div className="aot-event-title">Attack on Titan Event</div>
+              <div className="aot-event-subtitle">
+                Click pill to {isAotThemePlaying ? "pause" : "play"} theme music
+              </div>
+            </div>
+          </div>
+          <div className="aot-event-pill-right">
+            <button
+              className="btn btn-ghost aot-details-btn"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowAotDetails(true);
+              }}
+            >
+              Details
+            </button>
+          </div>
+        </div>
+        {aotAudioError ? <div className="aot-audio-error">{aotAudioError}</div> : null}
+        {showAotDetails ? (
+          <div
+            className="aot-event-modal-overlay"
+            onClick={() => setShowAotDetails(false)}
+          >
+            <div
+              className="aot-event-modal-card"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="aot-event-modal-kicker">Event Brief</div>
+              <h2 className="aot-event-modal-title">Attack on Titan Event</h2>
+              <p className="aot-event-modal-text">
+                Event goes live soon. Badges and competitive objectives will unlock together.
+              </p>
+              <div className="aot-event-badge-list">
+                <div className="aot-event-badge-item">Captain Levi</div>
+                <div className="aot-event-badge-item">Eren</div>
+                <div className="aot-event-badge-item">Mikasa</div>
+                <div className="aot-event-badge-item">Titan Kill</div>
+              </div>
+              <div className="aot-event-rule-card">
+                Titan Kill rule: only one student can claim it. First student to hit the target gets
+                the kill, then this objective turns off for everyone else.
+              </div>
+              <button className="btn" type="button" onClick={() => setShowAotDetails(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
         <Routes>
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
