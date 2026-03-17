@@ -2,60 +2,67 @@ import axios from "axios";
 import { getActiveAccountKey, removeAuthAccount } from "./authAccounts.js";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const DEFAULT_GET_CACHE_TTL_MS = 8000;
 
-export const api = axios.create({ baseURL });
-let activeRequests = 0;
-const activityListeners = new Set();
+export const api = axios.create({ baseURL, timeout: 12000 });
+const responseCache = new Map();
 const SESSION_ERROR_MESSAGES = new Set(["invalid token", "session expired", "missing token"]);
-
-const notifyActivity = () => {
-  const isActive = activeRequests > 0;
-  activityListeners.forEach((listener) => {
-    try {
-      listener(isActive);
-    } catch {
-      // no-op
-    }
-  });
-};
-
-const beginRequest = (config) => {
-  if (config?.showGlobalLoader === false) return config;
-  activeRequests += 1;
-  config.__countedForLoader = true;
-  notifyActivity();
-  return config;
-};
-
-const endRequest = (config) => {
-  if (!config?.__countedForLoader) return;
-  activeRequests = Math.max(0, activeRequests - 1);
-  notifyActivity();
-};
-
-export const subscribeApiActivity = (listener) => {
-  if (typeof listener !== "function") return () => {};
-  activityListeners.add(listener);
-  listener(activeRequests > 0);
-  return () => activityListeners.delete(listener);
+const buildCacheKey = (config) => {
+  const method = String(config?.method || "get").toLowerCase();
+  const url = String(config?.url || "");
+  const params = config?.params ? JSON.stringify(config.params) : "";
+  const userScope = localStorage.getItem("auth_user") || "guest";
+  return `${method}:${url}:${params}:${userScope}`;
 };
 
 api.interceptors.request.use((config) => {
-  beginRequest(config);
+  const method = String(config?.method || "get").toLowerCase();
+  if (method !== "get") {
+    responseCache.clear();
+  }
+
   const token = localStorage.getItem("auth_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (method === "get" && config?.cache !== false) {
+    const key = buildCacheKey(config);
+    const ttlMs = Math.max(0, Number(config?.cacheTtlMs ?? DEFAULT_GET_CACHE_TTL_MS));
+    const cached = responseCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      config.adapter = async () => ({
+        data: cached.data,
+        status: 200,
+        statusText: "OK",
+        headers: cached.headers || {},
+        config,
+        request: null
+      });
+      return config;
+    }
+    config.__cacheKey = key;
+    config.__cacheTtlMs = ttlMs;
+  }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => {
-    endRequest(response?.config);
+    const method = String(response?.config?.method || "get").toLowerCase();
+    const cacheKey = response?.config?.__cacheKey;
+    const cacheTtlMs = Number(response?.config?.__cacheTtlMs || 0);
+    if (method === "get" && cacheKey && cacheTtlMs > 0) {
+      responseCache.set(cacheKey, {
+        data: response.data,
+        headers: response.headers || {},
+        expiresAt: Date.now() + cacheTtlMs
+      });
+    }
     return response;
   },
   (error) => {
-    endRequest(error?.config);
     const status = error?.response?.status;
     const hasToken = Boolean(localStorage.getItem("auth_token"));
     const requestUrl = String(error?.config?.url || "");

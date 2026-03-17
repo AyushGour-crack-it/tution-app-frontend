@@ -84,6 +84,8 @@ const inferSectionPathFromNotification = (item) => {
 };
 
 const FALLBACK_POLL_INTERVAL_MS = 120000;
+const STARTUP_DEFER_MS = 1200;
+const SOCKET_FALLBACK_FETCH_DELAY_MS = 8000;
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -117,6 +119,7 @@ export default function App() {
   const location = useLocation();
   const [user, setUser] = React.useState(() => getSession());
   const [authReady, setAuthReady] = React.useState(false);
+  const [startupReady, setStartupReady] = React.useState(false);
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("ui_theme") || "light"
   );
@@ -269,6 +272,36 @@ export default function App() {
   }, [user?.id, user?.role]);
 
   React.useEffect(() => {
+    if (!user?.id) {
+      setStartupReady(false);
+      return undefined;
+    }
+
+    setStartupReady(false);
+    let timeoutId = null;
+    let idleId = null;
+    const markReady = () => setStartupReady(true);
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(
+        () => {
+          timeoutId = setTimeout(markReady, 120);
+        },
+        { timeout: STARTUP_DEFER_MS }
+      );
+    } else {
+      timeoutId = setTimeout(markReady, STARTUP_DEFER_MS);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (idleId && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
+  }, [user?.id]);
+
+  React.useEffect(() => {
     setAccounts(getAuthAccounts());
   }, [user?.id]);
 
@@ -368,7 +401,7 @@ export default function App() {
 
   React.useEffect(() => {
     const token = localStorage.getItem("auth_token");
-    if (!user?.id || !token) return;
+    if (!user?.id || !token || !startupReady) return;
     setupPushForSession()
       .then((result) => {
         if (!result?.enabled) {
@@ -380,15 +413,15 @@ export default function App() {
         // eslint-disable-next-line no-console
         console.warn("Push notifications setup failed");
       });
-  }, [user?.id]);
+  }, [user?.id, startupReady]);
 
   React.useEffect(() => {
-    if (!user?.id || user?.role !== "student") return;
+    if (!user?.id || user?.role !== "student" || !startupReady) return;
     api
       .post("/auth/daily-xp", {}, { showGlobalLoader: false })
       .then(() => {})
       .catch(() => {});
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, startupReady]);
 
   React.useEffect(() => {
     if (user?.id) return;
@@ -396,7 +429,7 @@ export default function App() {
   }, [user?.id]);
 
   React.useEffect(() => {
-    if (!user?.id) return undefined;
+    if (!user?.id || !startupReady) return undefined;
     let cancelled = false;
 
     const loadUnreadCount = async () => {
@@ -533,25 +566,28 @@ export default function App() {
       }
     };
 
-    loadUnreadCount();
-    if (socketStatus === "connected") {
-      return () => {
-        cancelled = true;
-      };
-    }
+    const initialTimeoutId = setTimeout(() => {
+      if (cancelled || getSocketStatus() === "connected") return;
+      loadUnreadCount();
+    }, SOCKET_FALLBACK_FETCH_DELAY_MS);
 
-    const intervalId = setInterval(loadUnreadCount, FALLBACK_POLL_INTERVAL_MS);
+    const intervalId = setInterval(() => {
+      if (getSocketStatus() === "connected") return;
+      loadUnreadCount();
+    }, FALLBACK_POLL_INTERVAL_MS);
+
     return () => {
       cancelled = true;
+      clearTimeout(initialTimeoutId);
       clearInterval(intervalId);
     };
   }, [
     user?.id,
     user?.role,
+    startupReady,
     notificationSeenKey,
     badgePopupSeenKey,
-    rewardPopupSeenKey,
-    socketStatus
+    rewardPopupSeenKey
   ]);
 
   React.useEffect(() => {
@@ -573,8 +609,7 @@ export default function App() {
   }, [location.pathname]);
 
   React.useEffect(() => {
-    if (!user?.id) return undefined;
-    if (socketStatus === "connected") return undefined;
+    if (!user?.id || !startupReady) return undefined;
     let cancelled = false;
 
     const loadUnreadChat = async () => {
@@ -591,13 +626,22 @@ export default function App() {
       }
     };
 
-    loadUnreadChat();
-    const intervalId = setInterval(loadUnreadChat, FALLBACK_POLL_INTERVAL_MS);
+    const initialTimeoutId = setTimeout(() => {
+      if (cancelled || getSocketStatus() === "connected") return;
+      loadUnreadChat();
+    }, SOCKET_FALLBACK_FETCH_DELAY_MS);
+
+    const intervalId = setInterval(() => {
+      if (getSocketStatus() === "connected") return;
+      loadUnreadChat();
+    }, FALLBACK_POLL_INTERVAL_MS);
+
     return () => {
       cancelled = true;
+      clearTimeout(initialTimeoutId);
       clearInterval(intervalId);
     };
-  }, [user?.id, socketStatus]);
+  }, [user?.id, startupReady]);
 
   React.useEffect(() => {
     const unsubscribe = subscribeSocketStatus((status) => setSocketStatus(status));
@@ -612,7 +656,7 @@ export default function App() {
 
   React.useEffect(() => {
     const token = localStorage.getItem("auth_token");
-    if (!user?.id || !token) {
+    if (!user?.id || !token || !startupReady) {
       disconnectSocket();
       return undefined;
     }
@@ -800,6 +844,7 @@ export default function App() {
   }, [
     user?.id,
     user?.role,
+    startupReady,
     badgePopupSeenKey,
     notificationSeenKey,
     rewardPopupSeenKey,
