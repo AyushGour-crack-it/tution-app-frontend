@@ -1,32 +1,6 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
-import Dashboard from "./pages/Dashboard.jsx";
-import Classes from "./pages/Classes.jsx";
-import Students from "./pages/Students.jsx";
-import TeacherStudentProfile from "./pages/TeacherStudentProfile.jsx";
-import Homework from "./pages/Homework.jsx";
-import Syllabus from "./pages/Syllabus.jsx";
-import Attendance from "./pages/Attendance.jsx";
-import Fees from "./pages/Fees.jsx";
-import Holidays from "./pages/Holidays.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
-import StudentPortal from "./pages/StudentPortal.jsx";
-import Chat from "./pages/Chat.jsx";
-import Profile from "./pages/Profile.jsx";
-import Marks from "./pages/Marks.jsx";
-import Notifications from "./pages/Notifications.jsx";
-import Leaderboard from "./pages/Leaderboard.jsx";
-import { api, subscribeApiActivity } from "./api.js";
-import StudentDirectory from "./pages/StudentDirectory.jsx";
-import StudentPublicProfile from "./pages/StudentPublicProfile.jsx";
-import Badges from "./pages/Badges.jsx";
-import BadgeRequests from "./pages/BadgeRequests.jsx";
-import StudentAccessPending from "./pages/StudentAccessPending.jsx";
-import QuizDashboard from "../features/quiz/Dashboard.jsx";
-import LevelJourneyPage from "./pages/LevelJourneyPage.jsx";
-import LevelUpOverlay from "./components/LevelUpOverlay.jsx";
+import { api } from "./api.js";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
@@ -43,6 +17,33 @@ import {
   getSocketStatus,
   subscribeSocketStatus
 } from "./socket.js";
+
+const Dashboard = React.lazy(() => import("./pages/Dashboard.jsx"));
+const Classes = React.lazy(() => import("./pages/Classes.jsx"));
+const Students = React.lazy(() => import("./pages/Students.jsx"));
+const TeacherStudentProfile = React.lazy(() => import("./pages/TeacherStudentProfile.jsx"));
+const Homework = React.lazy(() => import("./pages/Homework.jsx"));
+const Syllabus = React.lazy(() => import("./pages/Syllabus.jsx"));
+const Attendance = React.lazy(() => import("./pages/Attendance.jsx"));
+const Fees = React.lazy(() => import("./pages/Fees.jsx"));
+const Holidays = React.lazy(() => import("./pages/Holidays.jsx"));
+const Login = React.lazy(() => import("./pages/Login.jsx"));
+const Register = React.lazy(() => import("./pages/Register.jsx"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword.jsx"));
+const StudentPortal = React.lazy(() => import("./pages/StudentPortal.jsx"));
+const Chat = React.lazy(() => import("./pages/Chat.jsx"));
+const Profile = React.lazy(() => import("./pages/Profile.jsx"));
+const Marks = React.lazy(() => import("./pages/Marks.jsx"));
+const Notifications = React.lazy(() => import("./pages/Notifications.jsx"));
+const Leaderboard = React.lazy(() => import("./pages/Leaderboard.jsx"));
+const StudentDirectory = React.lazy(() => import("./pages/StudentDirectory.jsx"));
+const StudentPublicProfile = React.lazy(() => import("./pages/StudentPublicProfile.jsx"));
+const Badges = React.lazy(() => import("./pages/Badges.jsx"));
+const BadgeRequests = React.lazy(() => import("./pages/BadgeRequests.jsx"));
+const StudentAccessPending = React.lazy(() => import("./pages/StudentAccessPending.jsx"));
+const QuizDashboard = React.lazy(() => import("../features/quiz/Dashboard.jsx"));
+const LevelJourneyPage = React.lazy(() => import("./pages/LevelJourneyPage.jsx"));
+const LevelUpOverlay = React.lazy(() => import("./components/LevelUpOverlay.jsx"));
 
 const SECTION_EVENT_ROUTE_MAP = {
   "classes:updated": "/classes",
@@ -123,8 +124,6 @@ export default function App() {
   const [navOpen, setNavOpen] = React.useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
-  const [routeLoading, setRouteLoading] = React.useState(false);
-  const [apiLoading, setApiLoading] = React.useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
@@ -292,7 +291,7 @@ export default function App() {
     const token = localStorage.getItem("auth_token");
     const timeoutId = setTimeout(() => {
       if (!cancelled) setAuthReady(true);
-    }, 7000);
+    }, 2500);
 
     if (!token) {
       clearTimeout(timeoutId);
@@ -301,7 +300,7 @@ export default function App() {
     }
 
     api
-      .get("/auth/me")
+      .get("/auth/me", { showGlobalLoader: false })
       .then((res) => {
         if (cancelled) return;
         const freshUser = res?.data?.user || null;
@@ -354,31 +353,6 @@ export default function App() {
   React.useEffect(() => {
     setNavOpen(false);
   }, [location.pathname]);
-
-  React.useEffect(() => {
-    setRouteLoading(true);
-    const timeoutId = setTimeout(() => setRouteLoading(false), 240);
-    return () => clearTimeout(timeoutId);
-  }, [location.pathname]);
-
-  React.useEffect(() => {
-    let offTimer = null;
-    const unsubscribe = subscribeApiActivity((active) => {
-      if (active) {
-        if (offTimer) {
-          clearTimeout(offTimer);
-          offTimer = null;
-        }
-        setApiLoading(true);
-        return;
-      }
-      offTimer = setTimeout(() => setApiLoading(false), 150);
-    });
-    return () => {
-      if (offTimer) clearTimeout(offTimer);
-      unsubscribe();
-    };
-  }, []);
 
   React.useEffect(() => {
     const sessionUser = getSession();
@@ -882,7 +856,7 @@ export default function App() {
     setShowAotDetails(false);
   }, []);
 
-  if (!authReady) {
+  if (!authReady && !user) {
     return (
       <div className="auth-shell">
         <div className="card auth-card">
@@ -901,17 +875,14 @@ export default function App() {
   ) {
     return (
       <>
-        {routeLoading || apiLoading ? (
-          <div className="global-loading-overlay">
-            <div className="global-loading-spinner" />
-          </div>
-        ) : null}
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        <React.Suspense fallback={null}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot" element={<ForgotPassword />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </React.Suspense>
       </>
     );
   }
@@ -921,21 +892,22 @@ export default function App() {
   }
 
   if (user.role === "student" && user.studentApprovalStatus && user.studentApprovalStatus !== "approved") {
-    return <StudentAccessPending user={user} onRefresh={refreshCurrentUser} onLogout={logout} />;
+    return (
+      <React.Suspense fallback={null}>
+        <StudentAccessPending user={user} onRefresh={refreshCurrentUser} onLogout={logout} />
+      </React.Suspense>
+    );
   }
 
   const showAotEventPill = location.pathname === "/" || location.pathname === "/student";
 
   return (
     <div className="app-shell">
-      {routeLoading || apiLoading ? (
-        <div className="global-loading-overlay">
-          <div className="global-loading-spinner" />
-        </div>
-      ) : null}
-      {levelUpPayload ? (
-        <LevelUpOverlay data={levelUpPayload} onDone={() => setLevelUpPayload(null)} />
-      ) : null}
+      <React.Suspense fallback={null}>
+        {levelUpPayload ? (
+          <LevelUpOverlay data={levelUpPayload} onDone={() => setLevelUpPayload(null)} />
+        ) : null}
+      </React.Suspense>
       {activeFeePayment ? (
         <div
           className="fee-alert-popup-overlay"
@@ -1252,7 +1224,8 @@ export default function App() {
             ) : null}
           </>
         ) : null}
-        <Routes>
+        <React.Suspense fallback={null}>
+          <Routes>
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
           <Route path="/forgot" element={<Navigate to="/" replace />} />
@@ -1395,7 +1368,8 @@ export default function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
-        </Routes>
+          </Routes>
+        </React.Suspense>
       </main>
     </div>
   );

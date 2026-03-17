@@ -6,6 +6,7 @@ const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 export const api = axios.create({ baseURL });
 let activeRequests = 0;
 const activityListeners = new Set();
+const SESSION_ERROR_MESSAGES = new Set(["invalid token", "session expired", "missing token"]);
 
 const notifyActivity = () => {
   const isActive = activeRequests > 0;
@@ -57,7 +58,14 @@ api.interceptors.response.use(
     endRequest(error?.config);
     const status = error?.response?.status;
     const hasToken = Boolean(localStorage.getItem("auth_token"));
-    if (status === 401 && hasToken) {
+    const requestUrl = String(error?.config?.url || "");
+    const responseMessage = String(error?.response?.data?.message || "").toLowerCase();
+    const shouldClearSession =
+      status === 401 &&
+      hasToken &&
+      (requestUrl.includes("/auth/me") || SESSION_ERROR_MESSAGES.has(responseMessage));
+
+    if (shouldClearSession) {
       const activeKey = getActiveAccountKey();
       if (activeKey) {
         removeAuthAccount(activeKey);
