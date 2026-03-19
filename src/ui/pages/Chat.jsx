@@ -60,7 +60,11 @@ export default function Chat() {
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupTitle, setGroupTitle] = useState("");
   const [groupImageUrl, setGroupImageUrl] = useState("");
+  const [groupImageUploading, setGroupImageUploading] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
+  const [groupSearch, setGroupSearch] = useState("");
+  const [groupSearchResults, setGroupSearchResults] = useState([]);
+  const [groupSearchLoading, setGroupSearchLoading] = useState(false);
   const [groupSaving, setGroupSaving] = useState(false);
 
   const [typingState, setTypingState] = useState({ conversationId: "", senderName: "" });
@@ -70,6 +74,7 @@ export default function Chat() {
 
   const chatWindowRef = useRef(null);
   const inputFileRef = useRef(null);
+  const groupImageInputRef = useRef(null);
   const socketRef = useRef(null);
   const lastTypingSentAtRef = useRef(0);
 
@@ -189,7 +194,7 @@ export default function Chat() {
   };
 
   const createGroup = async () => {
-    if (!groupTitle.trim() || groupMembers.length < 1 || groupSaving) return;
+    if (!groupTitle.trim() || groupMembers.length < 1 || groupSaving || groupImageUploading) return;
     setGroupSaving(true);
     try {
       const payload = {
@@ -205,9 +210,32 @@ export default function Chat() {
       setGroupOpen(false);
       setGroupTitle("");
       setGroupImageUrl("");
+      setGroupImageUploading(false);
       setGroupMembers([]);
+      setGroupSearch("");
+      setGroupSearchResults([]);
     } finally {
       setGroupSaving(false);
+    }
+  };
+
+  const uploadGroupImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setGroupImageUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const uploaded = await api.post("/chat/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      const url = String(uploaded?.data?.url || "");
+      if (url) {
+        setGroupImageUrl(url);
+      }
+    } finally {
+      setGroupImageUploading(false);
+      event.target.value = "";
     }
   };
 
@@ -464,6 +492,29 @@ export default function Chat() {
   }, [userSearch, searchOpen]);
 
   useEffect(() => {
+    if (!groupOpen) return;
+    const query = groupSearch.trim();
+    if (!query) {
+      setGroupSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    setGroupSearchLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const rows = await api.get(`/chat/search-users?q=${encodeURIComponent(query)}`).then((res) => res.data || []);
+        if (!cancelled) setGroupSearchResults(rows);
+      } finally {
+        if (!cancelled) setGroupSearchLoading(false);
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [groupSearch, groupOpen]);
+
+  useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!token || !user?.id) return undefined;
     const socket = connectSocket(token);
@@ -625,9 +676,17 @@ export default function Chat() {
           ) : (
             <>
               <div className="chat-thread-head">
-                <div>
-                  <h3 className="card-title" style={{ margin: 0 }}>{selectedConversation.title}</h3>
-                  <div className="chat-thread-meta">
+                <div className="chat-thread-head-main">
+                  {selectedConversation.imageUrl ? (
+                    <img src={selectedConversation.imageUrl} alt={selectedConversation.title} className="chat-thread-head-avatar" />
+                  ) : (
+                    <div className="chat-thread-head-avatar chat-inbox-avatar-fallback">
+                      {String(selectedConversation.title || "C").slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="chat-thread-head-title">
+                    <h3 className="card-title" style={{ margin: 0 }}>{selectedConversation.title}</h3>
+                    <div className="chat-thread-meta">
                     {selectedConversation.type === "group"
                       ? `${selectedConversation.members?.length || 0} members`
                       : selectedConversation?.counterpart?.isOnline
@@ -635,6 +694,7 @@ export default function Chat() {
                         : selectedConversation?.counterpart?.lastSeenAt
                           ? `Last seen ${toTimeLabel(selectedConversation.counterpart.lastSeenAt)}`
                           : "Direct chat"}
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -774,15 +834,43 @@ export default function Chat() {
           <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(620px, 96vw)" }}>
             <h3 className="confirm-popup-title">Create Group</h3>
             <input className="input" placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} />
-            <input className="input" placeholder="Group image URL (optional)" value={groupImageUrl} onChange={(event) => setGroupImageUrl(event.target.value)} />
+            <div className="chat-group-image-row">
+              <button className="btn btn-ghost" type="button" onClick={() => groupImageInputRef.current?.click()} disabled={groupImageUploading}>
+                {groupImageUploading ? "Uploading image..." : groupImageUrl ? "Change Group Image" : "Upload Group Image"}
+              </button>
+              {groupImageUrl ? (
+                <>
+                  <img src={groupImageUrl} alt="Group avatar" className="chat-group-image-preview" />
+                  <button className="btn btn-ghost" type="button" onClick={() => setGroupImageUrl("")}>Remove</button>
+                </>
+              ) : null}
+            </div>
             <input
               className="input"
               placeholder="Search and add members"
-              value={userSearch}
-              onChange={(event) => setUserSearch(event.target.value)}
+              value={groupSearch}
+              onChange={(event) => setGroupSearch(event.target.value)}
             />
+            {!!groupMembers.length ? (
+              <div className="chat-group-member-chips">
+                {groupMembers.map((member) => (
+                  <button
+                    key={member.userId}
+                    type="button"
+                    className="chat-group-member-chip"
+                    onClick={() =>
+                      setGroupMembers((prev) => prev.filter((item) => String(item.userId) !== String(member.userId)))
+                    }
+                  >
+                    {member.name} ×
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="list" style={{ maxHeight: "34vh", overflow: "auto" }}>
-              {searchResults.map((item) => {
+              {groupSearchLoading ? <div>Searching...</div> : null}
+              {!groupSearchLoading && groupSearch.trim() && !groupSearchResults.length ? <div>No users found.</div> : null}
+              {groupSearchResults.map((item) => {
                 const added = groupMembers.some((member) => String(member.userId) === String(item.userId));
                 return (
                   <button
@@ -808,10 +896,16 @@ export default function Chat() {
             </div>
             <div className="confirm-popup-actions">
               <button className="btn btn-ghost" type="button" onClick={() => setGroupOpen(false)}>Cancel</button>
-              <button className="btn" type="button" onClick={createGroup} disabled={groupSaving || !groupTitle.trim() || groupMembers.length < 1}>
+              <button
+                className="btn"
+                type="button"
+                onClick={createGroup}
+                disabled={groupSaving || groupImageUploading || !groupTitle.trim() || groupMembers.length < 1}
+              >
                 {groupSaving ? "Creating..." : "Create Group"}
               </button>
             </div>
+            <input ref={groupImageInputRef} type="file" accept="image/*" hidden onChange={uploadGroupImage} />
           </div>
         </div>
       ) : null}

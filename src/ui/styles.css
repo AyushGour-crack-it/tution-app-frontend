@@ -5418,18 +5418,22 @@ html[data-theme="dark"] .student-profile-quiz-total {
   gap: 0;
   padding: 0;
   overflow: hidden;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(10px);
 }
 
 .chat-inbox-panel {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(148, 163, 184, 0.26);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 70vh;
+  background: linear-gradient(180deg, #fff6f2, #f8fafc 62%, #fdfefe);
 }
 
 .chat-inbox-head {
-  padding: 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5444,26 +5448,34 @@ html[data-theme="dark"] .student-profile-quiz-total {
 
 .chat-inbox-list {
   overflow-y: auto;
-  padding: 10px;
+  padding: 12px 10px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .chat-inbox-item {
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  padding: 11px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 11px;
   text-align: left;
   color: var(--text-primary);
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.chat-inbox-item:hover {
+  border-color: rgba(255, 122, 89, 0.45);
+  background: rgba(255, 255, 255, 0.97);
+  transform: translateY(-1px);
 }
 
 .chat-inbox-item-active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(255, 157, 122, 0.2);
+  border-color: rgba(255, 122, 89, 0.74);
+  box-shadow: 0 0 0 2px rgba(255, 122, 89, 0.16);
+  background: linear-gradient(135deg, #fff8f5, #fffefc);
 }
 
 .chat-inbox-avatar-wrap {
@@ -5471,23 +5483,25 @@ html[data-theme="dark"] .student-profile-quiz-total {
 }
 
 .chat-inbox-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
   object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .chat-inbox-avatar-fallback {
   display: grid;
   place-items: center;
   font-weight: 700;
-  background: var(--tag-bg);
+  background: linear-gradient(135deg, #ffe7db, #f5f9ff);
+  color: #293646;
 }
 
 .chat-inbox-main {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
 .chat-inbox-row {
@@ -5498,22 +5512,24 @@ html[data-theme="dark"] .student-profile-quiz-total {
 }
 
 .chat-inbox-name {
+  font-size: 14px;
+  letter-spacing: 0.1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .chat-inbox-preview {
-  color: var(--muted);
-  font-size: 12px;
+  color: #6a7a88;
+  font-size: 12.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .chat-inbox-time {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 11.5px;
+  color: #8492a0;
   white-space: nowrap;
 }
 
@@ -5521,42 +5537,68 @@ html[data-theme="dark"] .student-profile-quiz-total {
   min-width: 20px;
   height: 20px;
   border-radius: 999px;
-  background: var(--accent);
-  color: #132226;
+  background: linear-gradient(135deg, #ff7a59, #ff9f7a);
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 6px 14px rgba(255, 122, 89, 0.35);
 }
 
 .chat-thread-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   min-height: 70vh;
+  background: linear-gradient(180deg, #fffdfc, #f8fbff);
 }
 
 .chat-thread-head {
-  padding: 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.chat-thread-head-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chat-thread-head-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  flex: 0 0 auto;
+}
+
+.chat-thread-head-title {
+  min-width: 0;
 }
 
 .chat-thread-meta {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 12.5px;
+  color: #738293;
 }
 
 .chat-thread-window {
   overflow-y: auto;
-  padding: 12px;
-  background: var(--chat-window-bg);
+  padding: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 161, 130, 0.11), transparent 36%),
+    radial-gradient(circle at bottom left, rgba(128, 176, 248, 0.09), transparent 34%),
+    var(--chat-window-bg);
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .chat-thread-empty {
@@ -5566,17 +5608,18 @@ html[data-theme="dark"] .student-profile-quiz-total {
 }
 
 .chat-bubble {
-  width: min(80%, 640px);
-  border-radius: 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
+  width: min(82%, 640px);
+  border-radius: 18px;
+  padding: 11px 13px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
   background: var(--chat-bubble-other-bg);
-  box-shadow: var(--chat-bubble-shadow);
+  box-shadow: 0 4px 16px rgba(24, 32, 41, 0.08);
 }
 
 .chat-bubble-mine {
   justify-self: end;
-  background: linear-gradient(135deg, #ffd7c3, #ffc39f);
+  background: linear-gradient(135deg, #ffccae, #ffb88e);
+  border-color: rgba(255, 140, 105, 0.36);
 }
 
 .chat-bubble-other {
@@ -5615,11 +5658,47 @@ html[data-theme="dark"] .student-profile-quiz-total {
 }
 
 .chat-thread-compose {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
   padding: 10px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.chat-thread-compose .input {
+  border-radius: 999px;
+}
+
+.chat-group-image-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chat-group-image-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.chat-group-member-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-group-member-chip {
+  border: 1px solid rgba(255, 122, 89, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 122, 89, 0.09);
+  color: #24313f;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .chat-report-context {
@@ -5637,6 +5716,50 @@ html[data-theme="dark"] .student-profile-quiz-total {
   font-size: 12px;
   color: var(--text-primary);
   line-height: 1.35;
+}
+
+html[data-theme="dark"] .chat-inbox-page .chat-layout {
+  background: linear-gradient(180deg, rgba(16, 24, 27, 0.9), rgba(13, 20, 24, 0.86));
+}
+
+html[data-theme="dark"] .chat-inbox-panel {
+  background: linear-gradient(180deg, #131d22, #111a1f 60%, #0f171b);
+}
+
+html[data-theme="dark"] .chat-inbox-item {
+  background: rgba(20, 31, 36, 0.85);
+  border-color: rgba(56, 73, 82, 0.72);
+}
+
+html[data-theme="dark"] .chat-inbox-item:hover,
+html[data-theme="dark"] .chat-inbox-item-active {
+  background: rgba(27, 41, 47, 0.95);
+}
+
+html[data-theme="dark"] .chat-inbox-preview,
+html[data-theme="dark"] .chat-inbox-time,
+html[data-theme="dark"] .chat-thread-meta {
+  color: #9db0b9;
+}
+
+html[data-theme="dark"] .chat-thread-panel,
+html[data-theme="dark"] .chat-thread-head,
+html[data-theme="dark"] .chat-thread-compose {
+  background: rgba(16, 24, 27, 0.92);
+}
+
+html[data-theme="dark"] .chat-bubble {
+  border-color: rgba(56, 73, 82, 0.72);
+}
+
+html[data-theme="dark"] .chat-bubble-mine {
+  color: #172026;
+}
+
+html[data-theme="dark"] .chat-group-member-chip {
+  color: #dfe8ec;
+  border-color: rgba(255, 157, 122, 0.4);
+  background: rgba(255, 157, 122, 0.14);
 }
 
 @media (max-width: 980px) {
@@ -5700,9 +5823,15 @@ html[data-theme="dark"] .student-profile-quiz-total {
   }
 
   .chat-inbox-item {
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 46px minmax(0, 1fr);
     border-radius: 14px;
     min-height: 64px;
+  }
+
+  .chat-inbox-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
   }
 
   .chat-bubble {
@@ -5730,6 +5859,10 @@ html[data-theme="dark"] .student-profile-quiz-total {
     padding: 10px;
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .chat-thread-head-main {
+    width: 100%;
   }
 
   .chat-thread-head > div:last-child {
