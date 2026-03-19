@@ -5418,6 +5418,8 @@ html[data-theme="dark"] .student-profile-quiz-total {
   gap: 0;
   padding: 0;
   overflow: hidden;
+  height: min(82vh, 860px);
+  min-height: 620px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
   backdrop-filter: blur(10px);
@@ -5427,7 +5429,8 @@ html[data-theme="dark"] .student-profile-quiz-total {
   border-right: 1px solid rgba(148, 163, 184, 0.26);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  min-height: 70vh;
+  min-height: 0;
+  height: 100%;
   background: linear-gradient(180deg, #fff6f2, #f8fafc 62%, #fdfefe);
 }
 
@@ -5451,6 +5454,9 @@ html[data-theme="dark"] .student-profile-quiz-total {
   padding: 12px 10px;
   display: grid;
   gap: 10px;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .chat-inbox-item {
@@ -5550,7 +5556,8 @@ html[data-theme="dark"] .student-profile-quiz-total {
 .chat-thread-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
-  min-height: 70vh;
+  min-height: 0;
+  height: 100%;
   background: linear-gradient(180deg, #fffdfc, #f8fbff);
 }
 
@@ -5599,6 +5606,9 @@ html[data-theme="dark"] .student-profile-quiz-total {
   display: grid;
   align-content: start;
   gap: 10px;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .chat-thread-empty {
@@ -5767,6 +5777,7 @@ html[data-theme="dark"] .chat-group-member-chip {
     grid-template-columns: 1fr;
     min-height: calc(var(--chat-safe-vh, 100dvh) - 112px);
     max-height: calc(var(--chat-safe-vh, 100dvh) - 112px);
+    height: calc(var(--chat-safe-vh, 100dvh) - 112px);
   }
   .chat-inbox-panel {
     min-height: 100%;
