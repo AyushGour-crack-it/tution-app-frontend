@@ -390,6 +390,36 @@ export default function Chat() {
     navigate(`/student/students/${senderId}`);
   };
 
+  const openMedia = (url) => {
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadMedia = (url, fileName = "download") => {
+    if (!url) return;
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName || "download";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const shareMedia = async (url, text = "Check out this media") => {
+    if (!url) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Shared media", text, url });
+      } catch {
+        // ignore cancel
+      }
+      return;
+    }
+    window.prompt("Copy share link", url);
+  };
+
   const appendOptimisticMessage = ({ type, content, fileName = "", mimeType = "" }) => {
     const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const optimistic = {
@@ -948,12 +978,60 @@ export default function Chat() {
                 {!msg.deletedAt && msg.type === "text" ? <div className="chat-content">{msg.content}</div> : null}
                 {!msg.deletedAt && msg.type === "announcement" ? <div className="chat-content">{msg.content}</div> : null}
                 {!msg.deletedAt && (msg.type === "image" || msg.type === "gif" || msg.type === "meme") ? (
-                  <img className="chat-media" src={msg.content} alt={msg.fileName || msg.type} />
+                  <div className="chat-media-wrap">
+                    <img
+                      className="chat-media"
+                      src={msg.content}
+                      alt={msg.fileName || msg.type}
+                      onClick={() => openMedia(msg.content)}
+                      style={{ cursor: "pointer" }}
+                    />
+                    <div className="chat-media-actions">
+                      <button type="button" className="btn btn-ghost" onClick={() => openMedia(msg.content)}>
+                        Open
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => downloadMedia(msg.content, msg.fileName || "image")}
+                      >
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => shareMedia(msg.content, msg.fileName || "Shared media")}
+                      >
+                        Share
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
                 {!msg.deletedAt && msg.type === "video" ? (
-                  <video controls className="chat-media">
-                    <source src={msg.content} type={msg.mimeType || "video/mp4"} />
-                  </video>
+                  <div className="chat-media-wrap">
+                    <video controls className="chat-media">
+                      <source src={msg.content} type={msg.mimeType || "video/mp4"} />
+                    </video>
+                    <div className="chat-media-actions">
+                      <button type="button" className="btn btn-ghost" onClick={() => openMedia(msg.content)}>
+                        Open
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => downloadMedia(msg.content, msg.fileName || "video")}
+                      >
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => shareMedia(msg.content, msg.fileName || "Shared video")}
+                      >
+                        Share
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
                 {!msg.deletedAt && msg.type === "audio" ? (
                   <audio controls className="chat-audio">

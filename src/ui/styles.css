@@ -1231,6 +1231,21 @@ html[data-theme="dark"] {
   overflow: hidden;
   object-fit: cover;
 }
+.chat-media-wrap {
+  display: grid;
+  gap: 6px;
+}
+.chat-media-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chat-media-actions .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  line-height: 1;
+}
 
 .chat-audio {
   width: 100%;
