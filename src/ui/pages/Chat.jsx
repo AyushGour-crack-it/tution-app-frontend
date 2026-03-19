@@ -22,6 +22,26 @@ const toShortTime = (value) => {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
+const toUnreadLabel = (count) => {
+  const value = Number(count || 0);
+  if (value <= 0) return "";
+  return value > 99 ? "99+" : String(value);
+};
+
+const formatInboxPreview = (item, currentUser) => {
+  const base = String(item?.lastMessagePreview || "").trim();
+  if (!base) return "No messages yet";
+  const type = String(item?.type || "");
+  if (type === "group") {
+    const senderName = String(item?.lastMessageSenderName || "").trim();
+    if (senderName) {
+      const mine = String(item?.lastMessageSenderId || "") === String(currentUser?.id || "");
+      return `${mine ? "You" : senderName}: ${base}`;
+    }
+  }
+  return base;
+};
+
 const useAuthUser = () =>
   useMemo(() => {
     try {
@@ -115,13 +135,14 @@ export default function Chat() {
 
   const filteredInbox = useMemo(() => {
     const query = inboxFilter.trim().toLowerCase();
-    if (!query) return inbox;
-    return inbox.filter((item) => {
+    const sorted = [...inbox].sort((a, b) => new Date(b?.lastMessageAt || 0) - new Date(a?.lastMessageAt || 0));
+    if (!query) return sorted;
+    return sorted.filter((item) => {
       const title = String(item?.title || "").toLowerCase();
-      const preview = String(item?.lastMessagePreview || "").toLowerCase();
+      const preview = formatInboxPreview(item, user).toLowerCase();
       return title.includes(query) || preview.includes(query);
     });
-  }, [inbox, inboxFilter]);
+  }, [inbox, inboxFilter, user]);
 
   const isGroupAdmin = useMemo(() => {
     if (!selectedConversation || selectedConversation.type !== "group") return false;
@@ -733,7 +754,7 @@ export default function Chat() {
               <button
                 key={item._id}
                 type="button"
-                className={`chat-inbox-item ${String(item._id) === String(selectedConversationId) ? "chat-inbox-item-active" : ""}`}
+                className={`chat-inbox-item ${String(item._id) === String(selectedConversationId) ? "chat-inbox-item-active" : ""} ${Number(item.unreadCount || 0) > 0 ? "chat-inbox-item-unread" : ""}`}
                 onClick={() => {
                   setSelectedConversationId(String(item._id));
                   if (isMobile) setMobilePane("thread");
@@ -752,8 +773,8 @@ export default function Chat() {
                     <span className="chat-inbox-time">{toShortTime(item.lastMessageAt)}</span>
                   </div>
                   <div className="chat-inbox-row">
-                    <span className="chat-inbox-preview">{item.lastMessagePreview || "No messages yet"}</span>
-                    {Number(item.unreadCount || 0) > 0 ? <span className="chat-inbox-unread">{item.unreadCount}</span> : null}
+                    <span className="chat-inbox-preview">{formatInboxPreview(item, user)}</span>
+                    {Number(item.unreadCount || 0) > 0 ? <span className="chat-inbox-unread">{toUnreadLabel(item.unreadCount)}</span> : null}
                   </div>
                 </div>
               </button>
