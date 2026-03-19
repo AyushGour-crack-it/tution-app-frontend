@@ -676,6 +676,13 @@ export default function Chat() {
     };
   }, [user?.id, selectedConversationId]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadInbox();
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
+
   const onScrollMessages = () => {
     const node = chatWindowRef.current;
     if (!node) return;
@@ -723,22 +730,20 @@ export default function Chat() {
                 <button className="chat-ig-icon-btn" type="button" onClick={() => setGroupOpen(true)} title="New group">
                   <FiUsers size={17} />
                 </button>
+                {user?.role === "teacher" ? (
+                  <button
+                    className="chat-ig-action-btn"
+                    type="button"
+                    onClick={() => {
+                      setReportsOpen(true);
+                      loadReports();
+                    }}
+                  >
+                    Reports
+                  </button>
+                ) : null}
               </div>
             </div>
-            {user?.role === "teacher" ? (
-              <div className="chat-ig-tabs">
-                <button
-                  className="chat-ig-tab chat-ig-tab-active"
-                  type="button"
-                  onClick={() => {
-                    setReportsOpen(true);
-                    loadReports();
-                  }}
-                >
-                  Reports
-                </button>
-              </div>
-            ) : null}
             <input
               className="input chat-ig-search"
               placeholder="Search conversations"
