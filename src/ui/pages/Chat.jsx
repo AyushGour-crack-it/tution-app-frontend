@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { FiEdit2, FiPaperclip, FiSend, FiUsers } from "react-icons/fi";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
 
@@ -695,16 +696,18 @@ export default function Chat() {
                 {user?.name || "Messages"} <span className="chat-ig-username-caret">⌄</span>
               </h2>
               <div className="chat-inbox-head-actions">
-                <button className="chat-ig-icon-btn" type="button" onClick={() => setSearchOpen(true)} title="New chat">✎</button>
-                <button className="chat-ig-icon-btn" type="button" onClick={() => setGroupOpen(true)} title="New group">＋</button>
+                <button className="chat-ig-icon-btn" type="button" onClick={() => setSearchOpen(true)} title="New chat">
+                  <FiEdit2 size={16} />
+                </button>
+                <button className="chat-ig-icon-btn" type="button" onClick={() => setGroupOpen(true)} title="New group">
+                  <FiUsers size={17} />
+                </button>
               </div>
             </div>
-            <div className="chat-ig-tabs">
-              <button className="chat-ig-tab chat-ig-tab-active" type="button">Primary</button>
-              <button className="chat-ig-tab" type="button">General</button>
-              {user?.role === "teacher" ? (
+            {user?.role === "teacher" ? (
+              <div className="chat-ig-tabs">
                 <button
-                  className="chat-ig-tab"
+                  className="chat-ig-tab chat-ig-tab-active"
                   type="button"
                   onClick={() => {
                     setReportsOpen(true);
@@ -713,8 +716,8 @@ export default function Chat() {
                 >
                   Reports
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <input
               className="input chat-ig-search"
               placeholder="Search conversations"
@@ -786,9 +789,6 @@ export default function Chat() {
                   </div>
                 </div>
                 <div className="chat-thread-head-actions">
-                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Call">Call</button>
-                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Video">Video</button>
-                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Info">Info</button>
                   {isMobile ? (
                     <button className="btn btn-ghost" type="button" onClick={() => setMobilePane("inbox")}>Inbox</button>
                   ) : null}
@@ -865,12 +865,12 @@ export default function Chat() {
               ) : null}
 
               <div className="chat-thread-compose">
-                <button className="btn btn-ghost" type="button" onClick={() => inputFileRef.current?.click()}>
-                  Upload
+                <button className="btn btn-ghost chat-compose-icon-btn" type="button" onClick={() => inputFileRef.current?.click()} title="Attach">
+                  <FiPaperclip size={17} />
                 </button>
                 <input
                   ref={composerInputRef}
-                  className="input"
+                  className="input chat-compose-input"
                   placeholder="Type a message"
                   value={text}
                   onChange={(event) => {
@@ -885,8 +885,8 @@ export default function Chat() {
                     }
                   }}
                 />
-                <button className="btn" type="button" onClick={sendText} disabled={sending || !text.trim()}>
-                  Send
+                <button className="btn chat-compose-send-btn" type="button" onClick={sendText} disabled={sending || !text.trim()} title="Send">
+                  <FiSend size={16} />
                 </button>
                 <input ref={inputFileRef} type="file" accept="image/*,video/*" hidden onChange={sendFile} />
               </div>

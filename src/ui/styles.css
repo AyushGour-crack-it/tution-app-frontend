@@ -5939,6 +5939,9 @@ html[data-theme="dark"] .chat-group-member-chip {
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chat-ig-tabs {
@@ -6091,6 +6094,31 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-head-icon-btn {
   min-width: 56px;
+}
+
+.chat-compose-icon-btn,
+.chat-compose-send-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.chat-compose-send-btn {
+  background: #3797f0;
+  border-color: #3797f0;
+}
+
+.chat-compose-send-btn:disabled {
+  opacity: 0.6;
+}
+
+.chat-compose-input {
+  min-height: 40px;
 }
 
 @media (max-width: 980px) {
