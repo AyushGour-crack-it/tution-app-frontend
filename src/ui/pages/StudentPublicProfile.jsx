@@ -181,9 +181,16 @@ export default function StudentPublicProfile() {
           <h1 className="page-title">Student Profile</h1>
           <p className="page-subtitle">Public profile view.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={() => navigate("/student/students")}>
-          Back to Students
-        </button>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {student?.userId ? (
+            <button className="btn btn-ghost" type="button" onClick={() => navigate(`/chat?user=${student.userId}`)}>
+              Message
+            </button>
+          ) : null}
+          <button className="btn btn-ghost" type="button" onClick={() => navigate("/student/students")}>
+            Back to Students
+          </button>
+        </div>
       </div>
 
       <div className="card student-profile-card student-section-fill" style={{ marginTop: "24px" }}>

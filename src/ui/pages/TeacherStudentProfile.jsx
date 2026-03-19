@@ -49,9 +49,14 @@ export default function TeacherStudentProfile() {
           <h1 className="page-title">Student Biodata</h1>
           <p className="page-subtitle">All registration/profile fields except password and profile picture.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={() => navigate("/students")}>
-          Back to Students
-        </button>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button className="btn btn-ghost" type="button" onClick={() => navigate(`/chat?user=${userId}`)}>
+            Message
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={() => navigate("/students")}>
+            Back to Students
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
