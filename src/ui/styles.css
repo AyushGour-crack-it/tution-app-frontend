@@ -5905,11 +5905,37 @@ html[data-theme="dark"] .chat-group-member-chip {
   gap: 10px;
 }
 
+.chat-ig-username {
+  color: #f7f9fc;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.chat-ig-username-caret {
+  color: #9ca3af;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+.chat-ig-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: #171c25;
+  color: #f4f6fb;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .chat-ig-tabs {
   margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 18px;
+  border-bottom: 1px solid #222833;
 }
 
 .chat-ig-tab {
@@ -5918,21 +5944,23 @@ html[data-theme="dark"] .chat-group-member-chip {
   color: #9ca3af;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 10px 0;
   cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .chat-ig-tab-active {
   color: #f5f7fb;
-  background: #171c25;
+  border-bottom-color: #f5f7fb;
 }
 
 .chat-ig-search {
   margin-top: 10px;
-  background: #181d25;
+  background: #191f29;
   border-color: #2f3641;
   color: #f3f5f8;
+  border-radius: 14px;
 }
 
 .chat-inbox-page .chat-inbox-head {
@@ -5941,11 +5969,16 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-inbox-page .chat-inbox-item {
   background: #0f131b;
-  border-color: #1b212b;
+  border-color: #0f131b;
+  border-radius: 12px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 10px;
+  min-height: 68px;
 }
 
 .chat-inbox-page .chat-inbox-item:hover {
-  border-color: #2d3543;
+  border-color: #2c333f;
   background: #151b24;
 }
 
@@ -5957,11 +5990,36 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-inbox-page .chat-inbox-name {
   color: #f4f6fb;
+  font-size: 16px;
+}
+
+.chat-inbox-page .chat-inbox-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid #2a313c;
+}
+
+.chat-inbox-page .chat-inbox-avatar-fallback {
+  border-radius: 50%;
+}
+
+.chat-inbox-page .chat-inbox-list {
+  gap: 2px;
+  padding: 8px 6px;
 }
 
 .chat-inbox-page .chat-inbox-preview,
 .chat-inbox-page .chat-inbox-time {
   color: #99a2b1;
+}
+
+.chat-inbox-page .chat-inbox-preview {
+  font-size: 12px;
+}
+
+.chat-inbox-page .chat-inbox-time {
+  font-size: 12px;
 }
 
 .chat-inbox-page .chat-inbox-unread {
@@ -6022,4 +6080,28 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-head-icon-btn {
   min-width: 56px;
+}
+
+@media (max-width: 980px) {
+  .chat-ig-username {
+    font-size: 18px;
+  }
+
+  .chat-ig-tab {
+    font-size: 13px;
+  }
+
+  .chat-inbox-page .chat-inbox-item {
+    min-height: 74px;
+    padding: 8px 8px;
+  }
+
+  .chat-inbox-page .chat-inbox-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .chat-inbox-page .chat-inbox-name {
+    font-size: 15px;
+  }
 }

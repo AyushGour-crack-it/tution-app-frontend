@@ -691,10 +691,12 @@ export default function Chat() {
         <aside className="chat-inbox-panel">
           <div className="chat-inbox-head">
             <div className="chat-ig-head-row">
-              <h2 className="card-title" style={{ margin: 0 }}>Messages</h2>
+              <h2 className="card-title chat-ig-username" style={{ margin: 0 }}>
+                {user?.name || "Messages"} <span className="chat-ig-username-caret">⌄</span>
+              </h2>
               <div className="chat-inbox-head-actions">
-                <button className="btn btn-ghost" type="button" onClick={() => setSearchOpen(true)}>New Chat</button>
-                <button className="btn btn-ghost" type="button" onClick={() => setGroupOpen(true)}>New Group</button>
+                <button className="chat-ig-icon-btn" type="button" onClick={() => setSearchOpen(true)} title="New chat">✎</button>
+                <button className="chat-ig-icon-btn" type="button" onClick={() => setGroupOpen(true)} title="New group">＋</button>
               </div>
             </div>
             <div className="chat-ig-tabs">
