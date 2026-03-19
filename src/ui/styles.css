@@ -6090,6 +6090,8 @@ html[data-theme="dark"] .chat-group-member-chip {
   border-color: #2f3644;
   color: #f3f6fb;
   box-shadow: none;
+  position: relative;
+  overflow: visible;
 }
 
 .chat-inbox-page .chat-bubble-mine {
@@ -6276,9 +6278,25 @@ html[data-theme="dark"] .chat-group-member-chip {
 }
 
 .chat-msg-menu {
-  margin-top: 8px;
   display: grid;
   gap: 5px;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  width: 190px;
+  z-index: 8;
+  background: rgba(20, 24, 31, 0.96);
+  border: 1px solid #2f3644;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.34);
+}
+
+.chat-msg-menu-mine {
+  right: 0;
+}
+
+.chat-msg-menu-other {
+  left: 0;
 }
 
 .chat-msg-menu button {

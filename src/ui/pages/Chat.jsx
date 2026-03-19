@@ -763,7 +763,7 @@ export default function Chat() {
   useEffect(() => {
     const timer = setInterval(() => {
       loadInbox();
-    }, 8000);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -771,7 +771,7 @@ export default function Chat() {
     if (!selectedConversationId) return undefined;
     const timer = setInterval(() => {
       refreshLatestMessages(selectedConversationId);
-    }, 6000);
+    }, 2500);
     return () => clearInterval(timer);
   }, [selectedConversationId]);
 
@@ -1089,9 +1089,9 @@ export default function Chat() {
                               {String(msg.senderName || "U").slice(0, 1).toUpperCase()}
                             </div>
                           )
-                        ) : (
+                        ) : !mine ? (
                           <div className="chat-group-msg-avatar-placeholder" />
-                        )}
+                        ) : null}
                         <div
                           className={`chat-bubble ${mine ? "chat-bubble-mine" : "chat-bubble-other"} ${groupShapeClass}`}
                           onClick={() => toggleTimestamp(msg._id)}
@@ -1174,7 +1174,7 @@ export default function Chat() {
                             </div>
                           ) : null}
                           {String(selectedMessageId) === String(msg._id) ? (
-                            <div className="chat-msg-menu">
+                            <div className={`chat-msg-menu ${mine ? "chat-msg-menu-mine" : "chat-msg-menu-other"}`}>
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "reply")}><FiCornerUpLeft size={14} /> Reply</button>
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "copy")}><FiCopy size={14} /> Copy</button>
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "forward")}><FiShare2 size={14} /> Forward</button>
