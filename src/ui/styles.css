@@ -6095,6 +6095,37 @@ html[data-theme="dark"] .chat-group-member-chip {
   overflow: visible;
 }
 
+.chat-msg-more-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #2f3644;
+  border-radius: 999px;
+  background: rgba(20, 24, 31, 0.96);
+  color: #dce6f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .chat-msg-more-btn {
+    display: none;
+  }
+}
+
+.chat-bubble:hover .chat-msg-more-btn,
+.chat-bubble:focus-within .chat-msg-more-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .chat-inbox-page .chat-bubble-mine {
   background: #3797f0;
   border-color: #3797f0;
@@ -6317,6 +6348,26 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-msg-menu button.danger {
   color: #ff8d8d;
+}
+
+.chat-msg-emoji-row {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.chat-msg-emoji-btn {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .chat-last-seen {

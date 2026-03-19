@@ -8,6 +8,7 @@ import {
   FiCornerUpLeft,
   FiEdit2,
   FiFlag,
+  FiMoreHorizontal,
   FiPaperclip,
   FiSend,
   FiShare2,
@@ -875,6 +876,21 @@ export default function Chat() {
     }
   };
 
+  const editMessage = async (message) => {
+    if (!message?._id) return;
+    const current = String(message.content || "");
+    const next = window.prompt("Edit message", current);
+    if (next === null) return;
+    const value = String(next || "").trim();
+    if (!value || value === current) return;
+    try {
+      const updated = await api.put(`/chat/messages/${message._id}`, { content: value }).then((res) => res.data);
+      setMessages((prev) => prev.map((item) => (String(item._id) === String(updated._id) ? updated : item)));
+    } catch {
+      // no-op
+    }
+  };
+
   const handleMessageMenuAction = async (message, action) => {
     setSelectedMessageId("");
     if (!message) return;
@@ -895,6 +911,10 @@ export default function Chat() {
     if (action === "forward") {
       setText((prev) => `${prev ? `${prev}\n` : ""}${String(message.content || "")}`);
       composerInputRef.current?.focus();
+      return;
+    }
+    if (action === "edit") {
+      await editMessage(message);
       return;
     }
     if (action === "delete-for-me") {
@@ -1030,7 +1050,13 @@ export default function Chat() {
                 </div>
               </div>
 
-              <div className="chat-thread-window" ref={chatWindowRef}>
+              <div
+                className="chat-thread-window"
+                ref={chatWindowRef}
+                onClick={() => {
+                  if (selectedMessageId) setSelectedMessageId("");
+                }}
+              >
                 {loadingMessages ? <div className="chat-meta">Loading messages...</div> : null}
                 {messageError ? <div className="auth-error">{messageError}</div> : null}
                 {!loadingMessages && loadingOlder ? <div className="chat-meta">Loading older...</div> : null}
@@ -1101,11 +1127,28 @@ export default function Chat() {
                         <div
                           className={`chat-bubble ${mine ? "chat-bubble-mine" : "chat-bubble-other"} ${groupShapeClass}`}
                           onClick={() => toggleTimestamp(msg._id)}
+                          onMouseDown={() => startLongPress(msg._id)}
+                          onMouseUp={cancelLongPress}
+                          onMouseLeave={cancelLongPress}
+                          onTouchStart={() => startLongPress(msg._id)}
+                          onTouchEnd={cancelLongPress}
+                          onTouchCancel={cancelLongPress}
                           onContextMenu={(event) => {
                             event.preventDefault();
                             setSelectedMessageId((prev) => (prev === String(msg._id) ? "" : String(msg._id)));
                           }}
                         >
+                          <button
+                            type="button"
+                            className="chat-msg-more-btn"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelectedMessageId((prev) => (prev === String(msg._id) ? "" : String(msg._id)));
+                            }}
+                            title="Message options"
+                          >
+                            <FiMoreHorizontal size={14} />
+                          </button>
                           {showGroupSender ? <div className="chat-bubble-sender">{msg.senderName}</div> : null}
                           {replySource ? (
                             <button
@@ -1181,7 +1224,22 @@ export default function Chat() {
                           ) : null}
                           {String(selectedMessageId) === String(msg._id) ? (
                             <div className={`chat-msg-menu ${mine ? "chat-msg-menu-mine" : "chat-msg-menu-other"}`}>
+                              <div className="chat-msg-emoji-row">
+                                {["❤️", "😂", "🔥", "👍", "😮"].map((emoji) => (
+                                  <button
+                                    key={`${msg._id}-${emoji}`}
+                                    type="button"
+                                    className="chat-msg-emoji-btn"
+                                    onClick={() => toggleReaction(msg._id, emoji)}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "reply")}><FiCornerUpLeft size={14} /> Reply</button>
+                              {mine && !msg.deletedAt && (msg.type === "text" || msg.type === "announcement") ? (
+                                <button type="button" onClick={() => handleMessageMenuAction(msg, "edit")}><FiEdit2 size={14} /> Edit</button>
+                              ) : null}
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "copy")}><FiCopy size={14} /> Copy</button>
                               <button type="button" onClick={() => handleMessageMenuAction(msg, "forward")}><FiShare2 size={14} /> Forward</button>
                               {mine ? <button type="button" onClick={() => handleMessageMenuAction(msg, "delete-for-me")}><FiTrash2 size={14} /> Delete for me</button> : null}
