@@ -33,10 +33,16 @@ const useAuthUser = () =>
 export default function Chat() {
   const location = useLocation();
   const user = useAuthUser();
+  const mobileMedia = "(max-width: 980px)";
 
   const [inbox, setInbox] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState("");
+  const [mobilePane, setMobilePane] = useState("inbox");
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia(mobileMedia).matches;
+  });
   const [messages, setMessages] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [beforeCursor, setBeforeCursor] = useState("");
@@ -161,6 +167,7 @@ export default function Chat() {
     const nextId = String(conversationId || "");
     if (!nextId) return;
     setSelectedConversationId(nextId);
+    if (isMobile) setMobilePane("thread");
     await loadMessages(nextId);
   };
 
@@ -369,6 +376,7 @@ export default function Chat() {
       await api.post(`/chat/groups/${selectedConversation._id}/leave`);
       setSelectedConversationId("");
       setMessages([]);
+      if (isMobile) setMobilePane("inbox");
       await loadInbox();
     } catch {
       // no-op
@@ -402,6 +410,27 @@ export default function Chat() {
   useEffect(() => {
     if (!selectedConversationId) return;
     loadMessages(selectedConversationId);
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const media = window.matchMedia(mobileMedia);
+    const sync = (event) => {
+      const matches = Boolean(event?.matches);
+      setIsMobile(matches);
+      if (!matches) {
+        setMobilePane("thread");
+      } else if (!selectedConversationId) {
+        setMobilePane("inbox");
+      }
+    };
+    sync(media);
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", sync);
+      return () => media.removeEventListener("change", sync);
+    }
+    media.addListener(sync);
+    return () => media.removeListener(sync);
   }, [selectedConversationId]);
 
   useEffect(() => {
@@ -533,7 +562,7 @@ export default function Chat() {
 
   return (
     <div className="page chat-inbox-page">
-      <div className="chat-layout card">
+      <div className={`chat-layout card ${isMobile ? `mobile-pane-${mobilePane}` : ""}`}>
         <aside className="chat-inbox-panel">
           <div className="chat-inbox-head">
             <h2 className="card-title" style={{ margin: 0 }}>Inbox</h2>
@@ -563,7 +592,10 @@ export default function Chat() {
                 key={item._id}
                 type="button"
                 className={`chat-inbox-item ${String(item._id) === String(selectedConversationId) ? "chat-inbox-item-active" : ""}`}
-                onClick={() => setSelectedConversationId(String(item._id))}
+                onClick={() => {
+                  setSelectedConversationId(String(item._id));
+                  if (isMobile) setMobilePane("thread");
+                }}
               >
                 <div className="chat-inbox-avatar-wrap">
                   {item.imageUrl ? (
@@ -606,6 +638,9 @@ export default function Chat() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {isMobile ? (
+                    <button className="btn btn-ghost" type="button" onClick={() => setMobilePane("inbox")}>Inbox</button>
+                  ) : null}
                   {selectedConversation.type === "group" && isGroupAdmin ? (
                     <button className="btn btn-ghost" type="button" onClick={updateGroupMeta}>Manage</button>
                   ) : null}
