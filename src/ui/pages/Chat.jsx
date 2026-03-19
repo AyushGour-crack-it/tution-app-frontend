@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { FiEdit2, FiPaperclip, FiSend, FiUsers } from "react-icons/fi";
+import {
+  FiAlertCircle,
+  FiCheck,
+  FiCheckCircle,
+  FiCopy,
+  FiCornerUpLeft,
+  FiEdit2,
+  FiPaperclip,
+  FiSend,
+  FiShare2,
+  FiTrash2,
+  FiUsers
+} from "react-icons/fi";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
 
@@ -26,6 +38,21 @@ const toUnreadLabel = (count) => {
   const value = Number(count || 0);
   if (value <= 0) return "";
   return value > 99 ? "99+" : String(value);
+};
+
+const formatDayDivider = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString([], { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+};
+
+const isEmojiOnly = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return false;
+  if (text.length > 14) return false;
+  const stripped = text.replace(/\s+/g, "");
+  return /^[\p{Extended_Pictographic}\uFE0F]+$/u.test(stripped);
 };
 
 const formatInboxPreview = (item, currentUser) => {
@@ -120,6 +147,11 @@ export default function Chat() {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [reports, setReports] = useState([]);
+  const [replyTo, setReplyTo] = useState(null);
+  const [expandedTimestamps, setExpandedTimestamps] = useState({});
+  const [selectedMessageId, setSelectedMessageId] = useState("");
+  const [viewerImage, setViewerImage] = useState("");
+  const [hiddenMessageIds, setHiddenMessageIds] = useState({});
 
   const chatWindowRef = useRef(null);
   const composerInputRef = useRef(null);
@@ -127,6 +159,8 @@ export default function Chat() {
   const groupImageInputRef = useRef(null);
   const socketRef = useRef(null);
   const lastTypingSentAtRef = useRef(0);
+  const isNearBottomRef = useRef(true);
+  const messageRefs = useRef({});
 
   const selectedConversation = useMemo(
     () => inbox.find((item) => String(item?._id || "") === String(selectedConversationId || "")) || null,
@@ -178,6 +212,9 @@ export default function Chat() {
     if (!conversationId) return;
     setLoadingMessages(true);
     setMessageError("");
+    setReplyTo(null);
+    setSelectedMessageId("");
+    setExpandedTimestamps({});
     try {
       const data = await api
         .get(`/chat/conversations/${conversationId}/messages?limit=${PAGE_SIZE}`, { showGlobalLoader: false })
@@ -226,6 +263,26 @@ export default function Chat() {
       });
     } finally {
       setLoadingOlder(false);
+    }
+  };
+
+  const refreshLatestMessages = async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      const data = await api
+        .get(`/chat/conversations/${conversationId}/messages?limit=20`, { showGlobalLoader: false })
+        .then((res) => res.data || { items: [] });
+      const latest = Array.isArray(data.items) ? data.items : [];
+      if (!latest.length) return;
+      setMessages((prev) => {
+        let next = prev;
+        latest.forEach((item) => {
+          next = mergeIncomingMessage(next, item);
+        });
+        return next;
+      });
+    } catch {
+      // best-effort sync
     }
   };
 
@@ -321,6 +378,19 @@ export default function Chat() {
     }, 180);
   };
 
+  const scrollToBottom = (force = false) => {
+    const node = chatWindowRef.current;
+    if (!node) return;
+    if (!force && !isNearBottomRef.current) return;
+    node.scrollTop = node.scrollHeight;
+  };
+
+  const toggleTimestamp = (messageId) => {
+    const key = String(messageId || "");
+    if (!key) return;
+    setExpandedTimestamps((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const sendText = async () => {
     const value = text.trim();
     if (!value || !selectedConversationId || sending) return;
@@ -337,23 +407,24 @@ export default function Chat() {
       content: value,
       createdAt: new Date().toISOString(),
       seenCount: 0,
+      sendState: "sending",
+      replyTo: replyTo?._id || null,
       _local: true
     };
     setMessages((prev) => [...prev, optimistic]);
-    requestAnimationFrame(() => {
-      const node = chatWindowRef.current;
-      if (node) node.scrollTop = node.scrollHeight;
-    });
+    requestAnimationFrame(() => scrollToBottom(true));
     try {
       const created = await api
         .post("/chat/messages", {
           conversationId: selectedConversationId,
           type: "text",
           content: value,
-          clientMessageId: tempId
+          clientMessageId: tempId,
+          replyTo: replyTo?._id || undefined
         })
         .then((res) => res.data);
       setMessages((prev) => mergeIncomingMessage(prev, created));
+      setReplyTo(null);
       await loadInbox();
     } catch {
       setMessages((prev) => prev.filter((item) => item._id !== tempId));
@@ -374,22 +445,25 @@ export default function Chat() {
       });
       const url = uploaded?.data?.url;
       if (!url) return;
-      const type = file.type.startsWith("image/") ? "image" : "video";
+      const type = file.type.startsWith("image/")
+        ? "image"
+        : file.type.startsWith("video/")
+          ? "video"
+          : "file";
       const created = await api
         .post("/chat/messages", {
           conversationId: selectedConversationId,
           type,
           content: url,
           fileName: file.name,
-          mimeType: file.type
+          mimeType: file.type,
+          replyTo: replyTo?._id || undefined
         })
         .then((res) => res.data);
       setMessages((prev) => mergeIncomingMessage(prev, created));
+      setReplyTo(null);
       await loadInbox();
-      requestAnimationFrame(() => {
-        const node = chatWindowRef.current;
-        if (node) node.scrollTop = node.scrollHeight;
-      });
+      requestAnimationFrame(() => scrollToBottom(true));
     } finally {
       event.target.value = "";
     }
@@ -627,12 +701,10 @@ export default function Chat() {
     const onMessageNew = ({ conversationId, message }) => {
       const targetId = String(conversationId || "");
       if (targetId && targetId === String(selectedConversationId || "")) {
-        setMessages((prev) => mergeIncomingMessage(prev, message));
+        const normalized = message && String(message.senderId || "") === String(user?.id || "") ? { ...message, delivered: true } : message;
+        setMessages((prev) => mergeIncomingMessage(prev, normalized));
         markConversationRead(targetId);
-        requestAnimationFrame(() => {
-          const node = chatWindowRef.current;
-          if (node) node.scrollTop = node.scrollHeight;
-        });
+        requestAnimationFrame(() => scrollToBottom(false));
       }
       loadInbox();
     };
@@ -683,6 +755,14 @@ export default function Chat() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!selectedConversationId) return undefined;
+    const timer = setInterval(() => {
+      refreshLatestMessages(selectedConversationId);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [selectedConversationId]);
+
   const onScrollMessages = () => {
     const node = chatWindowRef.current;
     if (!node) return;
@@ -700,6 +780,8 @@ export default function Chat() {
     const handle = () => {
       setScrollTop(node.scrollTop);
       setViewportHeight(node.clientHeight || 640);
+      const distance = node.scrollHeight - node.scrollTop - node.clientHeight;
+      isNearBottomRef.current = distance < 120;
       onScrollMessages();
     };
     node.addEventListener("scroll", handle, { passive: true });
@@ -707,12 +789,95 @@ export default function Chat() {
     return () => node.removeEventListener("scroll", handle);
   }, [chatWindowRef.current, beforeCursor, hasMore, loadingOlder]);
 
-  const totalCount = messages.length;
+  const visibleMessages = messages.filter((msg) => !hiddenMessageIds[String(msg?._id || "")]);
+  const messageMap = useMemo(() => {
+    const map = new Map();
+    visibleMessages.forEach((item) => map.set(String(item._id), item));
+    return map;
+  }, [visibleMessages]);
+  const totalCount = visibleMessages.length;
   const startIndex = Math.max(0, Math.floor(scrollTop / ESTIMATED_ROW_HEIGHT) - OVERSCAN);
   const endIndex = Math.min(totalCount, Math.ceil((scrollTop + viewportHeight) / ESTIMATED_ROW_HEIGHT) + OVERSCAN);
-  const virtualItems = messages.slice(startIndex, endIndex);
+  const virtualItems = visibleMessages.slice(startIndex, endIndex);
   const topSpacerHeight = startIndex * ESTIMATED_ROW_HEIGHT;
   const bottomSpacerHeight = Math.max(0, (totalCount - endIndex) * ESTIMATED_ROW_HEIGHT);
+
+  const lastSeenMineId = useMemo(() => {
+    const mineSeen = [...visibleMessages]
+      .reverse()
+      .find((item) => String(item.senderId || "") === String(user?.id || "") && Number(item.seenCount || 0) > 0);
+    return mineSeen ? String(mineSeen._id) : "";
+  }, [visibleMessages, user?.id]);
+
+  const jumpToMessage = (messageId) => {
+    const key = String(messageId || "");
+    if (!key) return;
+    const node = messageRefs.current[key];
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      toggleTimestamp(key);
+      return;
+    }
+    const index = visibleMessages.findIndex((item) => String(item._id) === key);
+    if (index >= 0 && chatWindowRef.current) {
+      chatWindowRef.current.scrollTop = Math.max(0, index * ESTIMATED_ROW_HEIGHT - ESTIMATED_ROW_HEIGHT * 2);
+    }
+  };
+
+  const toggleReaction = async (messageId, emoji = "❤️") => {
+    if (!messageId) return;
+    try {
+      const updated = await api.post(`/chat/messages/${messageId}/reactions`, { emoji }).then((res) => res.data);
+      setMessages((prev) => prev.map((item) => (String(item._id) === String(updated._id) ? updated : item)));
+    } catch {
+      // no-op
+    }
+  };
+
+  const deleteMessageForEveryone = async (messageId) => {
+    if (!messageId) return;
+    try {
+      const updated = await api.delete(`/chat/messages/${messageId}`).then((res) => res.data);
+      setMessages((prev) => prev.map((item) => (String(item._id) === String(updated._id) ? updated : item)));
+    } catch {
+      // no-op
+    }
+  };
+
+  const handleMessageMenuAction = async (message, action) => {
+    setSelectedMessageId("");
+    if (!message) return;
+    const id = String(message._id || "");
+    if (action === "reply") {
+      setReplyTo(message);
+      composerInputRef.current?.focus();
+      return;
+    }
+    if (action === "copy") {
+      try {
+        await navigator.clipboard.writeText(String(message.content || ""));
+      } catch {
+        // no-op
+      }
+      return;
+    }
+    if (action === "forward") {
+      setText((prev) => `${prev ? `${prev}\n` : ""}${String(message.content || "")}`);
+      composerInputRef.current?.focus();
+      return;
+    }
+    if (action === "delete-for-me") {
+      setHiddenMessageIds((prev) => ({ ...prev, [id]: true }));
+      return;
+    }
+    if (action === "delete-for-everyone") {
+      await deleteMessageForEveryone(id);
+      return;
+    }
+    if (action === "report") {
+      await reportMessage(id);
+    }
+  };
 
   return (
     <div className="page chat-inbox-page">
@@ -839,25 +1004,103 @@ export default function Chat() {
                 {!loadingMessages && loadingOlder ? <div className="chat-meta">Loading older...</div> : null}
 
                 <div style={{ height: `${topSpacerHeight}px` }} />
-                {virtualItems.map((msg) => {
+                {virtualItems.map((msg, localIndex) => {
+                  const absoluteIndex = startIndex + localIndex;
+                  const prevMsg = visibleMessages[absoluteIndex - 1] || null;
+                  const nextMsg = visibleMessages[absoluteIndex + 1] || null;
                   const mine = String(msg.senderId || "") === String(user?.id || "");
+                  const sameAsPrev =
+                    prevMsg &&
+                    String(prevMsg.senderId || "") === String(msg.senderId || "") &&
+                    Math.abs(new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime()) < 7 * 60 * 1000;
+                  const sameAsNext =
+                    nextMsg &&
+                    String(nextMsg.senderId || "") === String(msg.senderId || "") &&
+                    Math.abs(new Date(nextMsg.createdAt).getTime() - new Date(msg.createdAt).getTime()) < 7 * 60 * 1000;
+                  const dayChanged =
+                    !prevMsg ||
+                    new Date(prevMsg.createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
+                  const timeGap = prevMsg
+                    ? Math.abs(new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime()) > 20 * 60 * 1000
+                    : true;
+                  const showTimestamp = Boolean(expandedTimestamps[String(msg._id)]) || dayChanged || timeGap;
+                  const groupShapeClass = !sameAsPrev && !sameAsNext
+                    ? "chat-bubble-single"
+                    : !sameAsPrev
+                      ? "chat-bubble-first"
+                      : !sameAsNext
+                        ? "chat-bubble-last"
+                        : "chat-bubble-middle";
+                  const showGroupSender = selectedConversation?.type === "group" && !mine && !sameAsPrev;
+                  const showGroupAvatar = selectedConversation?.type === "group" && !mine && !sameAsNext;
+                  const replySource = msg.replyTo ? messageMap.get(String(msg.replyTo)) : null;
+                  const hasEmojiOnly = !msg.deletedAt && msg.type === "text" && isEmojiOnly(msg.content);
+                  const reactions = Array.isArray(msg.reactions) ? msg.reactions : [];
+                  const statusLabel = msg._local || msg.sendState === "sending"
+                    ? "sending"
+                    : Number(msg.seenCount || 0) > 0
+                      ? "seen"
+                      : msg.delivered
+                        ? "delivered"
+                        : "sent";
                   return (
-                    <div key={msg._id} className={`chat-bubble ${mine ? "chat-bubble-mine" : "chat-bubble-other"}`}>
-                      {!mine ? <div className="chat-bubble-sender">{msg.senderName}</div> : null}
+                    <div
+                      key={msg._id}
+                      ref={(node) => {
+                        if (node) messageRefs.current[String(msg._id)] = node;
+                      }}
+                    >
+                      {dayChanged ? <div className="chat-day-divider">{formatDayDivider(msg.createdAt)}</div> : null}
+                      <div
+                        className={`chat-bubble-row ${mine ? "chat-bubble-row-mine" : "chat-bubble-row-other"}`}
+                        onDoubleClick={() => toggleReaction(msg._id, "❤️")}
+                      >
+                        {showGroupAvatar ? (
+                          msg.senderAvatar ? (
+                            <img src={msg.senderAvatar} alt={msg.senderName || "User"} className="chat-group-msg-avatar" />
+                          ) : (
+                            <div className="chat-group-msg-avatar chat-inbox-avatar-fallback">
+                              {String(msg.senderName || "U").slice(0, 1).toUpperCase()}
+                            </div>
+                          )
+                        ) : (
+                          <div className="chat-group-msg-avatar-placeholder" />
+                        )}
+                        <div
+                          className={`chat-bubble ${mine ? "chat-bubble-mine" : "chat-bubble-other"} ${groupShapeClass}`}
+                          onClick={() => toggleTimestamp(msg._id)}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            setSelectedMessageId((prev) => (prev === String(msg._id) ? "" : String(msg._id)));
+                          }}
+                        >
+                          {showGroupSender ? <div className="chat-bubble-sender">{msg.senderName}</div> : null}
+                          {replySource ? (
+                            <button
+                              type="button"
+                              className="chat-reply-preview-chip"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                jumpToMessage(replySource._id);
+                              }}
+                            >
+                              <span>{replySource.senderName || "User"}</span>
+                              <span>{replySource.deletedAt ? "This message was deleted" : String(replySource.content || "[media]")}</span>
+                            </button>
+                          ) : null}
+                          {replySource === null && msg.replyTo ? (
+                            <div className="chat-reply-preview-chip">
+                              <span>Reply</span>
+                              <span>Original message not in this window</span>
+                            </div>
+                          ) : null}
                       {!msg.deletedAt && (msg.type === "image" || msg.type === "gif" || msg.type === "meme") ? (
                         <img
                           src={msg.content}
                           alt={msg.fileName || "image"}
                           className="chat-media"
                           onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = msg.content;
-                            link.download = msg.fileName || "image";
-                            link.target = "_blank";
-                            link.rel = "noopener noreferrer";
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            setViewerImage(msg.content);
                           }}
                         />
                       ) : null}
@@ -866,28 +1109,79 @@ export default function Chat() {
                           <source src={msg.content} type={msg.mimeType || "video/mp4"} />
                         </video>
                       ) : null}
+                          {!msg.deletedAt && (msg.type === "file" || msg.type === "document") ? (
+                            <a href={msg.content} target="_blank" rel="noreferrer" className="chat-file-chip" onClick={(event) => event.stopPropagation()}>
+                              {msg.fileName || "Open document"}
+                            </a>
+                          ) : null}
                       {(!msg.deletedAt && msg.type === "text") || (!msg.deletedAt && msg.type === "announcement") ? (
-                        <div className="chat-bubble-text">{msg.content}</div>
+                            <div className={`chat-bubble-text ${hasEmojiOnly ? "chat-bubble-emoji-only" : ""}`}>{msg.content}</div>
                       ) : null}
                       {msg.deletedAt ? <div className="chat-bubble-text" style={{ fontStyle: "italic" }}>This message was deleted.</div> : null}
 
-                      <div className="chat-bubble-foot">
-                        <span>{toTimeLabel(msg.createdAt)}</span>
-                        {mine ? <span>{Number(msg.seenCount || 0) > 0 ? "✓✓" : "✓"}</span> : null}
+                          <div className="chat-bubble-foot">
+                            {showTimestamp ? <span>{toTimeLabel(msg.createdAt)}</span> : <span />}
+                            {mine ? (
+                              <span className="chat-send-state">
+                                {statusLabel === "sending" ? "⏳" : null}
+                                {statusLabel === "sent" ? <FiCheck size={13} /> : null}
+                                {statusLabel === "delivered" ? <FiCheckCircle size={13} /> : null}
+                                {statusLabel === "seen" && String(lastSeenMineId) !== String(msg._id) ? <FiCheckCircle size={13} /> : null}
+                              </span>
+                            ) : null}
+                          </div>
+                          {mine && String(lastSeenMineId) === String(msg._id) ? (
+                            <div className="chat-last-seen">Seen</div>
+                          ) : null}
+                          {reactions.length ? (
+                            <div className="chat-reaction-row">
+                              {Object.entries(
+                                reactions.reduce((acc, item) => {
+                                  const key = String(item?.emoji || "");
+                                  if (!key) return acc;
+                                  acc[key] = (acc[key] || 0) + 1;
+                                  return acc;
+                                }, {})
+                              ).map(([emoji, count]) => (
+                                <span key={`${msg._id}-${emoji}`} className="chat-reaction-pill">{emoji} {count}</span>
+                              ))}
+                            </div>
+                          ) : null}
+                          {String(selectedMessageId) === String(msg._id) ? (
+                            <div className="chat-msg-menu">
+                              <button type="button" onClick={() => handleMessageMenuAction(msg, "reply")}><FiCornerUpLeft size={14} /> Reply</button>
+                              <button type="button" onClick={() => handleMessageMenuAction(msg, "copy")}><FiCopy size={14} /> Copy</button>
+                              <button type="button" onClick={() => handleMessageMenuAction(msg, "forward")}><FiShare2 size={14} /> Forward</button>
+                              {mine ? <button type="button" onClick={() => handleMessageMenuAction(msg, "delete-for-me")}><FiTrash2 size={14} /> Delete for me</button> : null}
+                              {mine ? <button type="button" onClick={() => handleMessageMenuAction(msg, "delete-for-everyone")}><FiTrash2 size={14} /> Delete for everyone</button> : null}
+                              {!mine && !msg.deletedAt ? (
+                                <button type="button" onClick={() => handleMessageMenuAction(msg, "report")} className="danger">
+                                  <FiAlertCircle size={14} /> Report
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
-
-                      {!mine && !msg.deletedAt ? (
-                        <button className="chat-report-btn" type="button" onClick={() => reportMessage(msg._id)}>Report</button>
-                      ) : null}
                     </div>
                   );
                 })}
                 <div style={{ height: `${bottomSpacerHeight}px` }} />
-                {!loadingMessages && !messageError && !messages.length ? <div className="chat-meta">No messages yet.</div> : null}
+                {!loadingMessages && !messageError && !visibleMessages.length ? <div className="chat-meta">No messages yet.</div> : null}
               </div>
 
               {typingState.conversationId === String(selectedConversationId) ? (
                 <div className="chat-typing-indicator">{typingState.senderName} is typing...</div>
+              ) : null}
+
+              {replyTo ? (
+                <div className="chat-reply-banner-live">
+                  <div>
+                    <strong>Replying to {replyTo.senderName || "User"}</strong>
+                    <div>{replyTo.deletedAt ? "This message was deleted" : String(replyTo.content || "[media]")}</div>
+                  </div>
+                  <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(null)}>Cancel</button>
+                </div>
               ) : null}
 
               <div className="chat-thread-compose">
@@ -914,12 +1208,24 @@ export default function Chat() {
                 <button className="btn chat-compose-send-btn" type="button" onClick={sendText} disabled={sending || !text.trim()} title="Send">
                   <FiSend size={16} />
                 </button>
-                <input ref={inputFileRef} type="file" accept="image/*,video/*" hidden onChange={sendFile} />
+                <input
+                  ref={inputFileRef}
+                  type="file"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                  hidden
+                  onChange={sendFile}
+                />
               </div>
             </>
           )}
         </section>
       </div>
+
+      {viewerImage ? (
+        <div className="chat-image-viewer" onClick={() => setViewerImage("")}>
+          <img src={viewerImage} alt="Preview" className="chat-image-viewer-img" />
+        </div>
+      ) : null}
 
       {searchOpen ? (
         <div className="confirm-popup-overlay" onClick={() => setSearchOpen(false)}>
