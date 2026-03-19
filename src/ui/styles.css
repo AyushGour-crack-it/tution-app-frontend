@@ -4661,6 +4661,170 @@ html[data-theme="dark"] .student-profile-quiz-total {
   gap: 10px;
 }
 
+.popup-campaign-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.popup-campaign-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.popup-campaign-template-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.popup-campaign-upload-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.popup-campaign-upload-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.popup-campaign-line {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.popup-campaign-status {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25px;
+}
+
+.popup-campaign-status-live {
+  color: #085f39;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.popup-campaign-status-scheduled {
+  color: #135596;
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.popup-campaign-status-expired {
+  color: #7a2e2e;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.popup-campaign-status-inactive {
+  color: #5f5f5f;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+.campaign-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 74;
+  background: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.campaign-popup-card {
+  width: min(500px, 94vw);
+  border-radius: 22px;
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+}
+
+.campaign-popup-image {
+  width: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  max-height: 220px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.campaign-popup-pill {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.campaign-popup-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(22px, 3.3vw, 30px);
+  line-height: 1.12;
+}
+
+.campaign-popup-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.campaign-popup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.campaign-popup-template-announcement {
+  background:
+    radial-gradient(circle at 12% 14%, rgba(79, 70, 229, 0.2), transparent 44%),
+    radial-gradient(circle at 86% 16%, rgba(129, 140, 248, 0.16), transparent 42%),
+    linear-gradient(135deg, #0e1330, #131c43 58%, #152956);
+  color: #edf2ff;
+}
+
+.campaign-popup-template-celebration {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 197, 84, 0.26), transparent 42%),
+    radial-gradient(circle at 80% 18%, rgba(255, 114, 182, 0.22), transparent 42%),
+    linear-gradient(135deg, #35153d, #4c1b5d 58%, #6d1d62);
+  color: #fff5ff;
+}
+
+.campaign-popup-template-deadline {
+  background:
+    radial-gradient(circle at 12% 15%, rgba(255, 95, 95, 0.25), transparent 44%),
+    radial-gradient(circle at 88% 16%, rgba(255, 163, 72, 0.18), transparent 40%),
+    linear-gradient(135deg, #321012, #49171c 58%, #5d1f1f);
+  color: #fff3f0;
+}
+
+.campaign-popup-template-festival {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 214, 117, 0.24), transparent 44%),
+    radial-gradient(circle at 84% 18%, rgba(255, 134, 77, 0.22), transparent 43%),
+    linear-gradient(135deg, #36260f, #5a3a13 58%, #7a4d19);
+  color: #fff5e6;
+}
+
+.campaign-popup-template-achievement {
+  background:
+    radial-gradient(circle at 14% 14%, rgba(106, 213, 255, 0.24), transparent 44%),
+    radial-gradient(circle at 86% 18%, rgba(126, 255, 196, 0.2), transparent 40%),
+    linear-gradient(135deg, #0b2b2a, #123f3c 58%, #115e59);
+  color: #e6fffa;
+}
+
 @keyframes float {
   0% { transform: translateY(0); }
   50% { transform: translateY(-6px); }

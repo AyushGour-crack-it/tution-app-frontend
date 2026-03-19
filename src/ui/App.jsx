@@ -27,6 +27,7 @@ const Syllabus = React.lazy(() => import("./pages/Syllabus.jsx"));
 const Attendance = React.lazy(() => import("./pages/Attendance.jsx"));
 const Fees = React.lazy(() => import("./pages/Fees.jsx"));
 const Holidays = React.lazy(() => import("./pages/Holidays.jsx"));
+const PopupCampaigns = React.lazy(() => import("./pages/PopupCampaigns.jsx"));
 const Login = React.lazy(() => import("./pages/Login.jsx"));
 const Register = React.lazy(() => import("./pages/Register.jsx"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword.jsx"));
@@ -54,6 +55,7 @@ const SECTION_EVENT_ROUTE_MAP = {
   "marks:updated": "/marks",
   "fee:updated": "/fees",
   "holidays:updated": "/holidays",
+  "popup-campaigns:updated": "/popup-campaigns",
   "leaderboard:updated": "/leaderboard",
   "badges:updated": "/student/badges",
   "badge:request-updated": "/badge-requests"
@@ -1082,6 +1084,7 @@ export default function App() {
             <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/leaderboard"] || 0} />
             <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/badge-requests"] || 0} />
             <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/holidays"] || 0} />
+            <NavItem to="/popup-campaigns" label="Popup Campaigns" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/popup-campaigns"] || 0} />
             <NavItem
               to="/chat"
               label="Chat"
@@ -1328,6 +1331,10 @@ export default function App() {
           <Route
             path="/holidays"
             element={user?.role === "teacher" ? <Holidays /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/popup-campaigns"
+            element={user?.role === "teacher" ? <PopupCampaigns /> : <Navigate to="/login" replace />}
           />
 
           <Route

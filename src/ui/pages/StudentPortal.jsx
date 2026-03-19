@@ -15,6 +15,23 @@ const loadRazorpaySdk = () =>
     document.body.appendChild(script);
   });
 
+const readSeenCampaignIds = (storageKey) => {
+  if (!storageKey) return new Set();
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.map((item) => String(item)) : []);
+  } catch {
+    return new Set();
+  }
+};
+
+const writeSeenCampaignIds = (storageKey, nextSet) => {
+  if (!storageKey) return;
+  const data = Array.from(nextSet).slice(-300);
+  localStorage.setItem(storageKey, JSON.stringify(data));
+};
+
 export default function StudentPortal({ section = "dashboard", previewStudentId = "" }) {
   const [homework, setHomework] = useState([]);
   const [fees, setFees] = useState([]);
@@ -30,6 +47,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
   const [popupSeen, setPopupSeen] = useState({ announcementId: "", holidayId: "" });
   const [announcementPopup, setAnnouncementPopup] = useState(null);
   const [holidayPopup, setHolidayPopup] = useState(null);
+  const [customPopupQueue, setCustomPopupQueue] = useState([]);
   const [offlineRequestDraft, setOfflineRequestDraft] = useState({
     monthInput: "",
     amount: "",
@@ -44,6 +62,10 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
       return null;
     }
   }, []);
+  const customPopupSeenKey = useMemo(
+    () => (user?.id ? `custom_popup_seen_${user.id}` : ""),
+    [user?.id]
+  );
 
   const upiId = "ayushgour2526@oksbi";
   const upiName = "Ayush Gour";
@@ -52,13 +74,14 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   const load = async () => {
     setLoading(true);
-    const [homeworkData, feeData, transactionData, announcementData, holidayData, popupState] = await Promise.all([
+    const [homeworkData, feeData, transactionData, announcementData, holidayData, popupState, popupCampaignData] = await Promise.all([
       api.get("/homeworks").then((res) => res.data),
       api.get(previewStudentId ? `/fees?studentId=${previewStudentId}` : "/fees").then((res) => res.data),
       api.get(previewStudentId ? `/fees/transactions?studentId=${previewStudentId}` : "/fees/transactions").then((res) => res.data || []),
       api.get("/announcements").then((res) => res.data || []),
       api.get("/holidays").then((res) => res.data || []),
-      api.get("/notifications/popup-state").then((res) => res.data || {}).catch(() => ({}))
+      api.get("/notifications/popup-state").then((res) => res.data || {}).catch(() => ({})),
+      previewStudentId ? Promise.resolve([]) : api.get("/popup-campaigns/active").then((res) => res.data || []).catch(() => [])
     ]);
     setHomework(homeworkData);
     setFees(feeData);
@@ -69,6 +92,11 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
       announcementId: String(popupState?.announcementId || ""),
       holidayId: String(popupState?.holidayId || "")
     });
+    const seenSet = readSeenCampaignIds(customPopupSeenKey);
+    const campaignQueue = (popupCampaignData || [])
+      .filter((item) => item?._id)
+      .filter((item) => !(item.showOncePerUser !== false && seenSet.has(String(item._id))));
+    setCustomPopupQueue(campaignQueue);
     setOfflineRequestDraft((prev) => {
       if (prev.monthInput) return prev;
       const target = feeData.find((item) => {
@@ -89,7 +117,7 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
 
   useEffect(() => {
     load();
-  }, [previewStudentId]);
+  }, [previewStudentId, customPopupSeenKey]);
 
   useEffect(() => {
     if (section !== "fees" && section !== "dashboard") return undefined;
@@ -118,14 +146,16 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     socket.on("homework:updated", refresh);
     socket.on("marks:updated", refresh);
     socket.on("holidays:updated", refresh);
+    socket.on("popup-campaigns:updated", refresh);
     socket.on("connect", refresh);
     return () => {
       socket.off("homework:updated", refresh);
       socket.off("marks:updated", refresh);
       socket.off("holidays:updated", refresh);
+      socket.off("popup-campaigns:updated", refresh);
       socket.off("connect", refresh);
     };
-  }, [section, previewStudentId]);
+  }, [section, previewStudentId, customPopupSeenKey]);
 
   const messageList = [
     "Small steps every day become big results.",
@@ -395,6 +425,20 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
     setHolidayPopup(null);
   };
 
+  const activeCustomPopup =
+    section === "dashboard" && !announcementPopup && !holidayPopup && customPopupQueue.length
+      ? customPopupQueue[0]
+      : null;
+
+  const closeCustomPopup = () => {
+    if (activeCustomPopup?._id && activeCustomPopup.showOncePerUser !== false) {
+      const seenSet = readSeenCampaignIds(customPopupSeenKey);
+      seenSet.add(String(activeCustomPopup._id));
+      writeSeenCampaignIds(customPopupSeenKey, seenSet);
+    }
+    setCustomPopupQueue((prev) => prev.slice(1));
+  };
+
   return (
     <div className="page">
       {announcementPopup ? (
@@ -442,6 +486,35 @@ export default function StudentPortal({ section = "dashboard", previewStudentId 
             <button className="btn" type="button" onClick={closeHolidayPopup}>
               Celebrate
             </button>
+          </div>
+        </div>
+      ) : null}
+      {activeCustomPopup ? (
+        <div className="campaign-popup-overlay" onClick={closeCustomPopup}>
+          <div
+            className={`campaign-popup-card campaign-popup-template-${activeCustomPopup.template || "announcement"}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {activeCustomPopup.imageUrl ? (
+              <img
+                className="campaign-popup-image"
+                src={activeCustomPopup.imageUrl}
+                alt={activeCustomPopup.title || "Popup image"}
+              />
+            ) : null}
+            <div className="campaign-popup-pill">Teacher Update</div>
+            <h2 className="campaign-popup-title">{activeCustomPopup.title || "Update"}</h2>
+            <p className="campaign-popup-text">{activeCustomPopup.message || ""}</p>
+            <div className="campaign-popup-actions">
+              {activeCustomPopup.ctaLabel && activeCustomPopup.ctaUrl ? (
+                <a className="btn" href={activeCustomPopup.ctaUrl} target="_blank" rel="noreferrer">
+                  {activeCustomPopup.ctaLabel}
+                </a>
+              ) : null}
+              <button className="btn btn-ghost" type="button" onClick={closeCustomPopup}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
