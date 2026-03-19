@@ -186,8 +186,9 @@ export default function Chat() {
     return me?.role === "admin";
   }, [selectedConversation, user?.id]);
 
-  const loadInbox = async () => {
-    setInboxLoading(true);
+  const loadInbox = async (options = {}) => {
+    const silent = Boolean(options?.silent);
+    if (!silent) setInboxLoading(true);
     try {
       const data = await api.get("/chat/inbox", { showGlobalLoader: false }).then((res) => res.data || []);
       setInbox(data);
@@ -200,7 +201,7 @@ export default function Chat() {
         return prevSelected;
       });
     } finally {
-      setInboxLoading(false);
+      if (!silent) setInboxLoading(false);
     }
   };
 
@@ -710,7 +711,7 @@ export default function Chat() {
     socketRef.current = socket;
 
     const onInboxUpdate = () => {
-      loadInbox();
+      loadInbox({ silent: true });
     };
 
     const onMessageNew = ({ conversationId, message }) => {
@@ -722,7 +723,7 @@ export default function Chat() {
         markConversationRead(targetId);
         requestAnimationFrame(() => scrollToBottom(false));
       }
-      loadInbox();
+      loadInbox({ silent: true });
     };
 
     const onMessageUpdated = ({ conversationId, message }) => {
@@ -766,7 +767,7 @@ export default function Chat() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      loadInbox();
+      loadInbox({ silent: true });
     }, 5000);
     return () => clearInterval(timer);
   }, []);
