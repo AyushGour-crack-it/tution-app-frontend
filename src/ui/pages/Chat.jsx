@@ -81,6 +81,7 @@ export default function Chat() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const [inboxFilter, setInboxFilter] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
@@ -110,6 +111,16 @@ export default function Chat() {
     () => inbox.find((item) => String(item?._id || "") === String(selectedConversationId || "")) || null,
     [inbox, selectedConversationId]
   );
+
+  const filteredInbox = useMemo(() => {
+    const query = inboxFilter.trim().toLowerCase();
+    if (!query) return inbox;
+    return inbox.filter((item) => {
+      const title = String(item?.title || "").toLowerCase();
+      const preview = String(item?.lastMessagePreview || "").toLowerCase();
+      return title.includes(query) || preview.includes(query);
+    });
+  }, [inbox, inboxFilter]);
 
   const isGroupAdmin = useMemo(() => {
     if (!selectedConversation || selectedConversation.type !== "group") return false;
@@ -679,13 +690,19 @@ export default function Chat() {
       <div className={`chat-layout card ${isMobile ? `mobile-pane-${mobilePane}` : ""}`}>
         <aside className="chat-inbox-panel">
           <div className="chat-inbox-head">
-            <h2 className="card-title" style={{ margin: 0 }}>Inbox</h2>
-            <div className="chat-inbox-head-actions">
-              <button className="btn btn-ghost" type="button" onClick={() => setSearchOpen(true)}>New Chat</button>
-              <button className="btn btn-ghost" type="button" onClick={() => setGroupOpen(true)}>New Group</button>
+            <div className="chat-ig-head-row">
+              <h2 className="card-title" style={{ margin: 0 }}>Messages</h2>
+              <div className="chat-inbox-head-actions">
+                <button className="btn btn-ghost" type="button" onClick={() => setSearchOpen(true)}>New Chat</button>
+                <button className="btn btn-ghost" type="button" onClick={() => setGroupOpen(true)}>New Group</button>
+              </div>
+            </div>
+            <div className="chat-ig-tabs">
+              <button className="chat-ig-tab chat-ig-tab-active" type="button">Primary</button>
+              <button className="chat-ig-tab" type="button">General</button>
               {user?.role === "teacher" ? (
                 <button
-                  className="btn btn-ghost"
+                  className="chat-ig-tab"
                   type="button"
                   onClick={() => {
                     setReportsOpen(true);
@@ -696,12 +713,18 @@ export default function Chat() {
                 </button>
               ) : null}
             </div>
+            <input
+              className="input chat-ig-search"
+              placeholder="Search conversations"
+              value={inboxFilter}
+              onChange={(event) => setInboxFilter(event.target.value)}
+            />
           </div>
 
           <div className="chat-inbox-list">
             {inboxLoading ? <div>Loading inbox...</div> : null}
-            {!inboxLoading && !inbox.length ? <div>No conversations yet.</div> : null}
-            {inbox.map((item) => (
+            {!inboxLoading && !filteredInbox.length ? <div>No conversations found.</div> : null}
+            {filteredInbox.map((item) => (
               <button
                 key={item._id}
                 type="button"
@@ -760,7 +783,10 @@ export default function Chat() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div className="chat-thread-head-actions">
+                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Call">Call</button>
+                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Video">Video</button>
+                  <button className="btn btn-ghost chat-head-icon-btn" type="button" title="Info">Info</button>
                   {isMobile ? (
                     <button className="btn btn-ghost" type="button" onClick={() => setMobilePane("inbox")}>Inbox</button>
                   ) : null}

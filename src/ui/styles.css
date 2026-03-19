@@ -5881,3 +5881,145 @@ html[data-theme="dark"] .chat-group-member-chip {
     min-height: 38px;
   }
 }
+
+/* Instagram-inspired chat skin */
+.chat-inbox-page .chat-layout {
+  border-radius: 0;
+  border: 1px solid #26292f;
+  background: #0a0d12;
+}
+
+.chat-inbox-page .chat-inbox-panel {
+  background: #0b0e13;
+  border-right: 1px solid #262a31;
+}
+
+.chat-inbox-page .chat-thread-panel {
+  background: #0a0d12;
+}
+
+.chat-ig-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chat-ig-tabs {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-ig-tab {
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.chat-ig-tab-active {
+  color: #f5f7fb;
+  background: #171c25;
+}
+
+.chat-ig-search {
+  margin-top: 10px;
+  background: #181d25;
+  border-color: #2f3641;
+  color: #f3f5f8;
+}
+
+.chat-inbox-page .chat-inbox-head {
+  border-bottom: 1px solid #262a31;
+}
+
+.chat-inbox-page .chat-inbox-item {
+  background: #0f131b;
+  border-color: #1b212b;
+}
+
+.chat-inbox-page .chat-inbox-item:hover {
+  border-color: #2d3543;
+  background: #151b24;
+}
+
+.chat-inbox-page .chat-inbox-item-active {
+  border-color: #3d4657;
+  box-shadow: inset 0 0 0 1px #3d4657;
+  background: #1a202b;
+}
+
+.chat-inbox-page .chat-inbox-name {
+  color: #f4f6fb;
+}
+
+.chat-inbox-page .chat-inbox-preview,
+.chat-inbox-page .chat-inbox-time {
+  color: #99a2b1;
+}
+
+.chat-inbox-page .chat-inbox-unread {
+  background: #3797f0;
+  box-shadow: none;
+}
+
+.chat-inbox-page .chat-thread-head {
+  border-bottom: 1px solid #262a31;
+  background: #0a0d12;
+}
+
+.chat-inbox-page .chat-thread-window {
+  background: #0a0d12;
+}
+
+.chat-inbox-page .chat-bubble {
+  background: #242a35;
+  border-color: #2f3644;
+  color: #f3f6fb;
+  box-shadow: none;
+}
+
+.chat-inbox-page .chat-bubble-mine {
+  background: #3797f0;
+  border-color: #3797f0;
+  color: #ffffff;
+}
+
+.chat-inbox-page .chat-bubble-foot,
+.chat-inbox-page .chat-bubble-sender,
+.chat-inbox-page .chat-thread-meta,
+.chat-inbox-page .chat-meta {
+  color: #9ca7b7;
+}
+
+.chat-inbox-page .chat-thread-compose {
+  border-top: 1px solid #262a31;
+  background: #0a0d12;
+}
+
+.chat-inbox-page .chat-thread-compose .input {
+  background: #111722;
+  border-color: #2e3542;
+  color: #f4f7fb;
+}
+
+.chat-inbox-page .chat-thread-compose .input::placeholder {
+  color: #93a0b3;
+}
+
+.chat-thread-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chat-head-icon-btn {
+  min-width: 56px;
+}
