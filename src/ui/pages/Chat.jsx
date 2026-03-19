@@ -159,6 +159,7 @@ export default function Chat() {
   const groupImageInputRef = useRef(null);
   const socketRef = useRef(null);
   const lastTypingSentAtRef = useRef(0);
+  const longPressTimerRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const messageRefs = useRef({});
 
@@ -208,6 +209,15 @@ export default function Chat() {
     }
   };
 
+  const markConversationDelivered = async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      await api.post(`/chat/conversations/${conversationId}/delivered`, null, { showGlobalLoader: false });
+    } catch {
+      // no-op
+    }
+  };
+
   const loadMessages = async (conversationId) => {
     if (!conversationId) return;
     setLoadingMessages(true);
@@ -223,6 +233,7 @@ export default function Chat() {
       setMessages(items);
       setHasMore(Boolean(data.hasMore));
       setBeforeCursor(String(data.nextBefore || ""));
+      await markConversationDelivered(conversationId);
       await markConversationRead(conversationId);
       requestAnimationFrame(() => {
         const node = chatWindowRef.current;
@@ -703,6 +714,7 @@ export default function Chat() {
       if (targetId && targetId === String(selectedConversationId || "")) {
         const normalized = message && String(message.senderId || "") === String(user?.id || "") ? { ...message, delivered: true } : message;
         setMessages((prev) => mergeIncomingMessage(prev, normalized));
+        markConversationDelivered(targetId);
         markConversationRead(targetId);
         requestAnimationFrame(() => scrollToBottom(false));
       }
@@ -821,6 +833,20 @@ export default function Chat() {
     const index = visibleMessages.findIndex((item) => String(item._id) === key);
     if (index >= 0 && chatWindowRef.current) {
       chatWindowRef.current.scrollTop = Math.max(0, index * ESTIMATED_ROW_HEIGHT - ESTIMATED_ROW_HEIGHT * 2);
+    }
+  };
+
+  const startLongPress = (messageId) => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      setSelectedMessageId(String(messageId || ""));
+    }, 420);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
   };
 
