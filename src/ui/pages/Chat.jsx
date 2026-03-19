@@ -100,6 +100,7 @@ export default function Chat() {
   const [reports, setReports] = useState([]);
 
   const chatWindowRef = useRef(null);
+  const composerInputRef = useRef(null);
   const inputFileRef = useRef(null);
   const groupImageInputRef = useRef(null);
   const socketRef = useRef(null);
@@ -273,6 +274,18 @@ export default function Chat() {
     if (now - lastTypingSentAtRef.current < 900) return;
     lastTypingSentAtRef.current = now;
     socket.emit("chat:typing", { conversationId: selectedConversationId });
+  };
+
+  const keepComposerVisible = () => {
+    requestAnimationFrame(() => {
+      const node = chatWindowRef.current;
+      if (node) node.scrollTop = node.scrollHeight;
+      composerInputRef.current?.scrollIntoView({ block: "nearest" });
+    });
+    setTimeout(() => {
+      const node = chatWindowRef.current;
+      if (node) node.scrollTop = node.scrollHeight;
+    }, 180);
   };
 
   const sendText = async () => {
@@ -466,6 +479,32 @@ export default function Chat() {
     if (!selectedConversationId) return;
     loadMessages(selectedConversationId);
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    const updateVh = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+      if (viewportHeight > 0) {
+        root.style.setProperty("--chat-safe-vh", `${Math.round(viewportHeight)}px`);
+      }
+    };
+    updateVh();
+    window.addEventListener("resize", updateVh, { passive: true });
+    window.addEventListener("orientationchange", updateVh, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateVh, { passive: true });
+      window.visualViewport.addEventListener("scroll", updateVh, { passive: true });
+    }
+    return () => {
+      window.removeEventListener("resize", updateVh);
+      window.removeEventListener("orientationchange", updateVh);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updateVh);
+        window.visualViewport.removeEventListener("scroll", updateVh);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
@@ -802,6 +841,7 @@ export default function Chat() {
                   Upload
                 </button>
                 <input
+                  ref={composerInputRef}
                   className="input"
                   placeholder="Type a message"
                   value={text}
@@ -809,6 +849,7 @@ export default function Chat() {
                     setText(event.target.value);
                     sendTyping();
                   }}
+                  onFocus={keepComposerVisible}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();
