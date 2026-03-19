@@ -191,11 +191,14 @@ export default function Chat() {
     try {
       const data = await api.get("/chat/inbox", { showGlobalLoader: false }).then((res) => res.data || []);
       setInbox(data);
-      if (!selectedConversationId && data.length) {
-        setSelectedConversationId(String(data[0]._id));
-      } else if (selectedConversationId && !data.some((item) => String(item._id) === String(selectedConversationId))) {
-        setSelectedConversationId(data[0]?._id ? String(data[0]._id) : "");
-      }
+      setSelectedConversationId((prevSelected) => {
+        const prev = String(prevSelected || "");
+        if (!prev && data.length) return String(data[0]._id || "");
+        if (prev && !data.some((item) => String(item?._id || "") === prev)) {
+          return data[0]?._id ? String(data[0]._id) : "";
+        }
+        return prevSelected;
+      });
     } finally {
       setInboxLoading(false);
     }
