@@ -30,6 +30,33 @@ const useAuthUser = () =>
     }
   }, []);
 
+const mergeIncomingMessage = (prev, incoming) => {
+  if (!incoming?._id) return prev;
+  const incomingId = String(incoming._id);
+  const incomingClientId = String(incoming.clientMessageId || "");
+  let replaced = false;
+  const next = prev.map((item) => {
+    const sameId = String(item?._id || "") === incomingId;
+    const sameClientId = incomingClientId && String(item?.clientMessageId || "") === incomingClientId;
+    if (sameId || sameClientId) {
+      replaced = true;
+      return incoming;
+    }
+    return item;
+  });
+  if (!replaced) {
+    return [...prev, incoming];
+  }
+  const seen = new Set();
+  return next.filter((item) => {
+    const key = String(item?._id || "");
+    if (!key) return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export default function Chat() {
   const location = useLocation();
   const user = useAuthUser();
@@ -280,7 +307,7 @@ export default function Chat() {
           clientMessageId: tempId
         })
         .then((res) => res.data);
-      setMessages((prev) => prev.map((item) => (item._id === tempId ? created : item)));
+      setMessages((prev) => mergeIncomingMessage(prev, created));
       await loadInbox();
     } catch {
       setMessages((prev) => prev.filter((item) => item._id !== tempId));
@@ -311,7 +338,7 @@ export default function Chat() {
           mimeType: file.type
         })
         .then((res) => res.data);
-      setMessages((prev) => [...prev, created]);
+      setMessages((prev) => mergeIncomingMessage(prev, created));
       await loadInbox();
       requestAnimationFrame(() => {
         const node = chatWindowRef.current;
@@ -528,10 +555,7 @@ export default function Chat() {
     const onMessageNew = ({ conversationId, message }) => {
       const targetId = String(conversationId || "");
       if (targetId && targetId === String(selectedConversationId || "")) {
-        setMessages((prev) => {
-          if (!message?._id || prev.some((item) => String(item._id) === String(message._id))) return prev;
-          return [...prev, message];
-        });
+        setMessages((prev) => mergeIncomingMessage(prev, message));
         markConversationRead(targetId);
         requestAnimationFrame(() => {
           const node = chatWindowRef.current;
