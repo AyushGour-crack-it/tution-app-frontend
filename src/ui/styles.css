@@ -6083,6 +6083,7 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-inbox-page .chat-thread-window {
   background: #0a0d12;
+  overflow-x: hidden;
 }
 
 .chat-inbox-page .chat-bubble {
@@ -6171,6 +6172,7 @@ html[data-theme="dark"] .chat-group-member-chip {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  max-width: 100%;
 }
 
 .chat-bubble-row-mine {
@@ -6289,6 +6291,7 @@ html[data-theme="dark"] .chat-group-member-chip {
   border-radius: 12px;
   padding: 8px;
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.34);
+  max-width: min(190px, calc(100vw - 48px));
 }
 
 .chat-msg-menu-mine {

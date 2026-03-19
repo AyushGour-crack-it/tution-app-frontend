@@ -7,6 +7,7 @@ import {
   FiCopy,
   FiCornerUpLeft,
   FiEdit2,
+  FiFlag,
   FiPaperclip,
   FiSend,
   FiShare2,
@@ -808,11 +809,11 @@ export default function Chat() {
     return map;
   }, [visibleMessages]);
   const totalCount = visibleMessages.length;
-  const startIndex = Math.max(0, Math.floor(scrollTop / ESTIMATED_ROW_HEIGHT) - OVERSCAN);
-  const endIndex = Math.min(totalCount, Math.ceil((scrollTop + viewportHeight) / ESTIMATED_ROW_HEIGHT) + OVERSCAN);
-  const virtualItems = visibleMessages.slice(startIndex, endIndex);
-  const topSpacerHeight = startIndex * ESTIMATED_ROW_HEIGHT;
-  const bottomSpacerHeight = Math.max(0, (totalCount - endIndex) * ESTIMATED_ROW_HEIGHT);
+  const startIndex = 0;
+  const endIndex = totalCount;
+  const virtualItems = visibleMessages;
+  const topSpacerHeight = 0;
+  const bottomSpacerHeight = 0;
 
   const lastSeenMineId = useMemo(() => {
     const mineSeen = [...visibleMessages]
@@ -923,14 +924,15 @@ export default function Chat() {
                 </button>
                 {user?.role === "teacher" ? (
                   <button
-                    className="chat-ig-action-btn"
+                    className="chat-ig-icon-btn"
                     type="button"
+                    title="Reports"
                     onClick={() => {
                       setReportsOpen(true);
                       loadReports();
                     }}
                   >
-                    Reports
+                    <FiFlag size={16} />
                   </button>
                 ) : null}
               </div>
