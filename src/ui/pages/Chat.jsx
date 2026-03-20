@@ -174,6 +174,7 @@ export default function Chat() {
   const longPressTimerRef = useRef(null);
   const isNearBottomRef = useRef(true);
   const messageRefs = useRef({});
+  const sendLockRef = useRef(false);
 
   const selectedConversation = useMemo(
     () => inbox.find((item) => String(item?._id || "") === String(selectedConversationId || "")) || null,
@@ -453,7 +454,8 @@ export default function Chat() {
 
   const sendText = async () => {
     const value = text.trim();
-    if (!value || !selectedConversationId || sending) return;
+    if (!value || !selectedConversationId || sending || sendLockRef.current) return;
+    sendLockRef.current = true;
     setSending(true);
     setText("");
     const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -485,18 +487,21 @@ export default function Chat() {
         .then((res) => res.data);
       setMessages((prev) => mergeIncomingMessage(prev, created));
       setReplyTo(null);
-      await loadInbox();
+      loadInbox({ silent: true }).catch(() => {});
     } catch {
       setMessages((prev) => prev.filter((item) => item._id !== tempId));
       setText(value);
     } finally {
+      sendLockRef.current = false;
       setSending(false);
     }
   };
 
   const sendFile = async (event) => {
     const file = event.target.files?.[0];
-    if (!file || !selectedConversationId) return;
+    if (!file || !selectedConversationId || sendLockRef.current) return;
+    sendLockRef.current = true;
+    let created = null;
     try {
       const form = new FormData();
       form.append("file", file);
@@ -510,7 +515,7 @@ export default function Chat() {
         : file.type.startsWith("video/")
           ? "video"
           : "file";
-      const created = await api
+      created = await api
         .post("/chat/messages", {
           conversationId: selectedConversationId,
           type,
@@ -522,9 +527,10 @@ export default function Chat() {
         .then((res) => res.data);
       setMessages((prev) => mergeIncomingMessage(prev, created));
       setReplyTo(null);
-      await loadInbox();
       requestAnimationFrame(() => scrollToBottom(true, true));
+      loadInbox({ silent: true }).catch(() => {});
     } finally {
+      sendLockRef.current = false;
       event.target.value = "";
     }
   };
@@ -714,6 +720,19 @@ export default function Chat() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const className = "chat-mobile-thread-active";
+    if (isMobile && mobilePane === "thread") {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [isMobile, mobilePane]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;

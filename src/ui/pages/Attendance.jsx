@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = { studentId: "", classId: "", date: "", status: "present", note: "" };
 
@@ -140,19 +141,21 @@ export default function Attendance() {
             value={form.note}
             onChange={(event) => setForm({ ...form, note: event.target.value })}
           />
-          <button className="btn" type="submit">
-            {editingId ? "Update Attendance" : "Save Attendance"}
+          <button className="btn btn-icon" type="submit">
+            {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+            <span>{editingId ? "Update Attendance" : "Save Attendance"}</span>
           </button>
           {editingId && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-icon"
               type="button"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
             >
-              Cancel
+              <FiX size={16} />
+              <span>Cancel</span>
             </button>
           )}
         </form>
@@ -183,11 +186,13 @@ export default function Attendance() {
                     <span className="badge">{row.status}</span>
                   </td>
                   <td>
-                    <button className="btn btn-ghost" onClick={() => edit(row)}>
-                      Edit
+                    <button className="btn btn-ghost btn-icon" onClick={() => edit(row)}>
+                      <FiEdit2 size={15} />
+                      <span>Edit</span>
                     </button>
-                    <button className="btn btn-ghost" onClick={() => remove(row._id)}>
-                      Delete
+                    <button className="btn btn-ghost btn-icon" onClick={() => remove(row._id)}>
+                      <FiTrash2 size={15} />
+                      <span>Delete</span>
                     </button>
                   </td>
                 </tr>

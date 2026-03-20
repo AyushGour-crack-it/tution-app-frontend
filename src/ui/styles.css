@@ -552,6 +552,16 @@ html[data-theme="dark"] {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon svg {
+  flex: 0 0 auto;
+}
+
 .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(15, 24, 26, 0.16);
@@ -5838,6 +5848,32 @@ html[data-theme="dark"] .chat-group-member-chip {
 
   .chat-thread-window {
     min-height: 0;
+  }
+
+  body.chat-mobile-thread-active .mobile-nav-toggle,
+  body.chat-mobile-thread-active .sidebar {
+    display: none !important;
+  }
+
+  body.chat-mobile-thread-active .main.main-chat {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  body.chat-mobile-thread-active .main.main-chat .chat-inbox-page {
+    padding: 0;
+    margin: 0;
+  }
+
+  body.chat-mobile-thread-active .chat-inbox-page .chat-layout {
+    border: 0;
+    border-radius: 0;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    height: 100dvh;
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = { classId: "", subject: "", topic: "", targetDate: "", status: "planned" };
 
@@ -115,19 +116,21 @@ export default function Syllabus() {
             <option value="in-progress">In progress</option>
             <option value="done">Done</option>
           </select>
-          <button className="btn" type="submit">
-            {editingId ? "Update Topic" : "Save Topic"}
+          <button className="btn btn-icon" type="submit">
+            {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+            <span>{editingId ? "Update Topic" : "Save Topic"}</span>
           </button>
           {editingId && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-icon"
               type="button"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
             >
-              Cancel
+              <FiX size={16} />
+              <span>Cancel</span>
             </button>
           )}
         </form>
@@ -160,11 +163,13 @@ export default function Syllabus() {
                     <span className="badge">{topic.status}</span>
                   </td>
                   <td>
-                    <button className="btn btn-ghost" onClick={() => edit(topic)}>
-                      Edit
+                    <button className="btn btn-ghost btn-icon" onClick={() => edit(topic)}>
+                      <FiEdit2 size={15} />
+                      <span>Edit</span>
                     </button>
-                    <button className="btn btn-ghost" onClick={() => remove(topic._id)}>
-                      Delete
+                    <button className="btn btn-ghost btn-icon" onClick={() => remove(topic._id)}>
+                      <FiTrash2 size={15} />
+                      <span>Delete</span>
                     </button>
                   </td>
                 </tr>

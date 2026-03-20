@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = {
   studentId: "",
@@ -165,19 +166,21 @@ export default function Marks() {
             value={form.notes}
             onChange={(event) => setForm({ ...form, notes: event.target.value })}
           />
-          <button className="btn" type="submit">
-            {editingId ? "Update Mark" : "Save Mark"}
+          <button className="btn btn-icon" type="submit">
+            {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+            <span>{editingId ? "Update Mark" : "Save Mark"}</span>
           </button>
           {editingId && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-icon"
               type="button"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
             >
-              Cancel
+              <FiX size={16} />
+              <span>Cancel</span>
             </button>
           )}
         </form>
@@ -212,11 +215,13 @@ export default function Marks() {
                   <td>{row.grade || "-"}</td>
                   <td>{row.date ? new Date(row.date).toLocaleDateString() : "-"}</td>
                   <td>
-                    <button className="btn btn-ghost" onClick={() => edit(row)}>
-                      Edit
+                    <button className="btn btn-ghost btn-icon" onClick={() => edit(row)}>
+                      <FiEdit2 size={15} />
+                      <span>Edit</span>
                     </button>
-                    <button className="btn btn-ghost" onClick={() => remove(row._id)}>
-                      Delete
+                    <button className="btn btn-ghost btn-icon" onClick={() => remove(row._id)}>
+                      <FiTrash2 size={15} />
+                      <span>Delete</span>
                     </button>
                   </td>
                 </tr>

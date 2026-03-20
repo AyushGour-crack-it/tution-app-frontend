@@ -5,6 +5,7 @@ import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
 import { setupPushForSession } from "../pushNotifications.js";
 import { appToast } from "../toast.js";
+import { FiBell, FiEdit2, FiSave, FiShield } from "react-icons/fi";
 
 const Field = ({ label, children }) => (
   <label className="field">
@@ -371,8 +372,9 @@ export default function Profile() {
                       : "Not granted"}
               </div>
             </div>
-            <button className="btn btn-ghost" type="button" onClick={enableNotifications} disabled={enablingPush}>
-              {enablingPush ? "Enabling..." : "Enable Notifications"}
+            <button className="btn btn-ghost btn-icon" type="button" onClick={enableNotifications} disabled={enablingPush}>
+              <FiBell size={16} />
+              <span>{enablingPush ? "Enabling..." : "Enable Notifications"}</span>
             </button>
           </div>
         </div>
@@ -468,14 +470,15 @@ export default function Profile() {
         <div className="page-header">
           <h2 className="card-title" style={{ margin: 0 }}>Edit Your Info</h2>
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-icon"
             type="button"
             onClick={() => {
               setEditingInfo((prev) => !prev);
               setForm(buildFormState({ user, student: studentProfile }));
             }}
           >
-            {editingInfo ? "Close" : "Edit Your Info"}
+            <FiEdit2 size={16} />
+            <span>{editingInfo ? "Close" : "Edit Your Info"}</span>
           </button>
         </div>
         {message ? <div className="auth-success">{message}</div> : null}
@@ -620,8 +623,9 @@ export default function Profile() {
               </>
             ) : null}
 
-            <button className="btn" type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save All Changes"}
+            <button className="btn btn-icon" type="submit" disabled={saving}>
+              <FiSave size={16} />
+              <span>{saving ? "Saving..." : "Save All Changes"}</span>
             </button>
           </form>
         ) : (
@@ -666,8 +670,9 @@ export default function Profile() {
             }
             required
           />
-          <button className="btn" type="submit">
-            Update Password
+          <button className="btn btn-icon" type="submit">
+            <FiShield size={16} />
+            <span>Update Password</span>
           </button>
         </form>
       </div>

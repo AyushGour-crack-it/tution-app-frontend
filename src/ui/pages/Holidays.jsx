@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = { title: "", date: "", note: "" };
 
@@ -79,19 +80,21 @@ export default function Holidays() {
             value={form.note}
             onChange={(event) => setForm({ ...form, note: event.target.value })}
           />
-          <button className="btn" type="submit">
-            {editingId ? "Update Holiday" : "Save Holiday"}
+          <button className="btn btn-icon" type="submit">
+            {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+            <span>{editingId ? "Update Holiday" : "Save Holiday"}</span>
           </button>
           {editingId && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-icon"
               type="button"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
             >
-              Cancel
+              <FiX size={16} />
+              <span>Cancel</span>
             </button>
           )}
         </form>
@@ -113,11 +116,13 @@ export default function Holidays() {
                   <span className="badge">
                     {holiday.date ? new Date(holiday.date).toLocaleDateString() : "-"}
                   </span>
-                  <button className="btn btn-ghost" onClick={() => edit(holiday)}>
-                    Edit
+                  <button className="btn btn-ghost btn-icon" onClick={() => edit(holiday)}>
+                    <FiEdit2 size={15} />
+                    <span>Edit</span>
                   </button>
-                  <button className="btn btn-ghost" onClick={() => remove(holiday._id)}>
-                    Delete
+                  <button className="btn btn-ghost btn-icon" onClick={() => remove(holiday._id)}>
+                    <FiTrash2 size={15} />
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>

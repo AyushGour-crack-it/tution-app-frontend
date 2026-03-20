@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = { title: "", classId: "", dueDate: "", description: "" };
 
@@ -119,19 +120,21 @@ export default function Homework() {
             value={form.description}
             onChange={(event) => setForm({ ...form, description: event.target.value })}
           />
-          <button className="btn" type="submit">
-            {editingId ? "Update Homework" : "Save Homework"}
+          <button className="btn btn-icon" type="submit">
+            {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+            <span>{editingId ? "Update Homework" : "Save Homework"}</span>
           </button>
           {editingId && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-icon"
               type="button"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
             >
-              Cancel
+              <FiX size={16} />
+              <span>Cancel</span>
             </button>
           )}
         </form>
@@ -156,11 +159,13 @@ export default function Homework() {
                   <div style={{ fontSize: "12px", color: "#6b7b7f", marginTop: "6px" }}>
                     {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : "-"}
                   </div>
-                  <button className="btn btn-ghost" onClick={() => remove(item._id)}>
-                    Delete
+                  <button className="btn btn-ghost btn-icon" onClick={() => remove(item._id)}>
+                    <FiTrash2 size={15} />
+                    <span>Delete</span>
                   </button>
-                  <button className="btn btn-ghost" onClick={() => edit(item)}>
-                    Edit
+                  <button className="btn btn-ghost btn-icon" onClick={() => edit(item)}>
+                    <FiEdit2 size={15} />
+                    <span>Edit</span>
                   </button>
                 </div>
               </div>

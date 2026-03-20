@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import { appToast } from "../toast.js";
+import { FiEdit2, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 
 const TEMPLATE_OPTIONS = [
   { key: "announcement", label: "Classic Announcement", mood: "Clean information card" },
@@ -320,12 +321,14 @@ export default function PopupCampaigns() {
             Active
           </label>
           <div className="popup-campaign-actions">
-            <button className="btn" type="submit" disabled={submitting}>
-              {submitting ? "Saving..." : editingId ? "Update Campaign" : "Create Campaign"}
+            <button className="btn btn-icon" type="submit" disabled={submitting}>
+              {editingId ? <FiSave size={16} /> : <FiPlus size={16} />}
+              <span>{submitting ? "Saving..." : editingId ? "Update Campaign" : "Create Campaign"}</span>
             </button>
             {editingId ? (
-              <button className="btn btn-ghost" type="button" onClick={resetForm}>
-                Cancel Edit
+              <button className="btn btn-ghost btn-icon" type="button" onClick={resetForm}>
+                <FiX size={16} />
+                <span>Cancel Edit</span>
               </button>
             ) : null}
           </div>
@@ -377,11 +380,13 @@ export default function PopupCampaigns() {
                   <span className={`popup-campaign-status popup-campaign-status-${item.status || "scheduled"}`}>
                     {item.status || "scheduled"}
                   </span>
-                  <button className="btn btn-ghost" type="button" onClick={() => edit(item)}>
-                    Edit
+                  <button className="btn btn-ghost btn-icon" type="button" onClick={() => edit(item)}>
+                    <FiEdit2 size={15} />
+                    <span>Edit</span>
                   </button>
-                  <button className="btn btn-ghost" type="button" onClick={() => remove(item._id)}>
-                    Delete
+                  <button className="btn btn-ghost btn-icon" type="button" onClick={() => remove(item._id)}>
+                    <FiTrash2 size={15} />
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
@@ -397,11 +402,13 @@ export default function PopupCampaigns() {
             <h3 className="confirm-popup-title">Delete Popup Campaign?</h3>
             <p className="confirm-popup-text">This action cannot be undone.</p>
             <div className="confirm-popup-actions">
-              <button className="btn btn-ghost" type="button" onClick={() => setDeleteTarget(null)}>
-                Cancel
+              <button className="btn btn-ghost btn-icon" type="button" onClick={() => setDeleteTarget(null)}>
+                <FiX size={16} />
+                <span>Cancel</span>
               </button>
-              <button className="btn" type="button" onClick={confirmRemove}>
-                Delete
+              <button className="btn btn-icon" type="button" onClick={confirmRemove}>
+                <FiTrash2 size={16} />
+                <span>Delete</span>
               </button>
             </div>
           </div>

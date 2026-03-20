@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { FiUserCheck, FiUserX } from "react-icons/fi";
 
 const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
@@ -109,11 +110,13 @@ export default function Students() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button className="btn btn-ghost" onClick={() => reviewRequest(req._id, "approve")}>
-                    Approve
+                  <button className="btn btn-ghost btn-icon" onClick={() => reviewRequest(req._id, "approve")}>
+                    <FiUserCheck size={15} />
+                    <span>Approve</span>
                   </button>
-                  <button className="btn btn-ghost" onClick={() => reviewRequest(req._id, "reject")}>
-                    Reject
+                  <button className="btn btn-ghost btn-icon" onClick={() => reviewRequest(req._id, "reject")}>
+                    <FiUserX size={15} />
+                    <span>Reject</span>
                   </button>
                 </div>
               </div>

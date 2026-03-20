@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { FiEdit2, FiPlus, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 
 export default function Dashboard() {
   const [overview, setOverview] = useState(null);
@@ -59,8 +60,9 @@ export default function Dashboard() {
         {error ? (
           <div className="card" style={{ marginTop: "24px" }}>
             <div className="auth-error">{error}</div>
-            <button className="btn" style={{ marginTop: "12px" }} onClick={load}>
-              Retry
+            <button className="btn btn-icon" style={{ marginTop: "12px" }} onClick={load}>
+              <FiRefreshCw size={15} />
+              <span>Retry</span>
             </button>
           </div>
         ) : null}
@@ -82,8 +84,9 @@ export default function Dashboard() {
           <h1 className="page-title">Overview</h1>
           <p className="page-subtitle">Your weekly classroom snapshot.</p>
         </div>
-        <button className="btn" onClick={addAnnouncement}>
-          Add Announcement
+        <button className="btn btn-icon" onClick={addAnnouncement}>
+          <FiPlus size={16} />
+          <span>Add Announcement</span>
         </button>
       </div>
 
@@ -191,11 +194,13 @@ export default function Dashboard() {
                 <span className="badge">
                   {item.date ? new Date(item.date).toLocaleDateString() : "-"}
                 </span>
-                <button className="btn btn-ghost" onClick={() => updateAnnouncement(item)}>
-                  Edit
+                <button className="btn btn-ghost btn-icon" onClick={() => updateAnnouncement(item)}>
+                  <FiEdit2 size={15} />
+                  <span>Edit</span>
                 </button>
-                <button className="btn btn-ghost" onClick={() => removeAnnouncement(item._id)}>
-                  Delete
+                <button className="btn btn-ghost btn-icon" onClick={() => removeAnnouncement(item._id)}>
+                  <FiTrash2 size={15} />
+                  <span>Delete</span>
                 </button>
               </div>
             </div>

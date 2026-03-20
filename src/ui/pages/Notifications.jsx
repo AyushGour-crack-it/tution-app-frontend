@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { FiBell, FiCheck, FiSend, FiTrash2, FiX } from "react-icons/fi";
 
 const emptyForm = { title: "", message: "", studentId: "" };
 
@@ -93,15 +94,17 @@ export default function Notifications() {
             <p className="confirm-popup-text">Clear all notifications from your inbox?</p>
             <div className="confirm-popup-actions">
               <button
-                className="btn btn-ghost"
+                className="btn btn-ghost btn-icon"
                 type="button"
                 onClick={() => setShowClearConfirm(false)}
                 disabled={clearing}
               >
-                Cancel
+                <FiX size={16} />
+                <span>Cancel</span>
               </button>
-              <button className="btn" type="button" onClick={clearNotifications} disabled={clearing}>
-                {clearing ? "Clearing..." : "Yes, Clear"}
+              <button className="btn btn-icon" type="button" onClick={clearNotifications} disabled={clearing}>
+                <FiTrash2 size={16} />
+                <span>{clearing ? "Clearing..." : "Yes, Clear"}</span>
               </button>
             </div>
           </div>
@@ -112,8 +115,9 @@ export default function Notifications() {
           <h1 className="page-title">Notifications</h1>
           <p className="page-subtitle">Broadcasts and alerts.</p>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={() => setShowClearConfirm(true)}>
-          Clear Notifications
+        <button className="btn btn-ghost btn-icon" type="button" onClick={() => setShowClearConfirm(true)}>
+          <FiTrash2 size={16} />
+          <span>Clear Notifications</span>
         </button>
       </div>
 
@@ -147,8 +151,9 @@ export default function Notifications() {
                 </option>
               ))}
             </select>
-            <button className="btn" type="submit">
-              Send
+            <button className="btn btn-icon" type="submit">
+              <FiSend size={16} />
+              <span>Send</span>
             </button>
           </form>
         </div>
@@ -170,8 +175,9 @@ export default function Notifications() {
                   <span className="badge">
                     {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-"}
                   </span>
-                  <button className="btn btn-ghost" onClick={() => markRead(item._id)}>
-                    {isRead(item) ? "Read" : "Mark Read"}
+                  <button className="btn btn-ghost btn-icon" onClick={() => markRead(item._id)}>
+                    {isRead(item) ? <FiBell size={15} /> : <FiCheck size={15} />}
+                    <span>{isRead(item) ? "Read" : "Mark Read"}</span>
                   </button>
                 </div>
               </div>
