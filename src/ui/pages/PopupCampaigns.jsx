@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
+import { appToast } from "../toast.js";
 
 const TEMPLATE_OPTIONS = [
   { key: "announcement", label: "Classic Announcement", mood: "Clean information card" },
@@ -65,6 +66,7 @@ export default function PopupCampaigns() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [editingId, setEditingId] = useState("");
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const selectedTemplate = useMemo(
     () => TEMPLATE_OPTIONS.find((item) => item.key === form.template) || TEMPLATE_OPTIONS[0],
@@ -169,15 +171,22 @@ export default function PopupCampaigns() {
   };
 
   const remove = async (id) => {
-    if (!window.confirm("Delete this popup campaign?")) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/popup-campaigns/${id}`);
+      await api.delete(`/popup-campaigns/${deleteTarget}`);
       await load();
-      if (editingId === id) {
+      if (editingId === deleteTarget) {
         resetForm();
       }
+      appToast.success("Popup campaign deleted.");
+      setDeleteTarget(null);
     } catch (removeError) {
       setError(removeError?.response?.data?.message || "Unable to delete popup campaign.");
+      appToast.error("Unable to delete popup campaign.");
     }
   };
 
@@ -381,6 +390,23 @@ export default function PopupCampaigns() {
           </div>
         )}
       </div>
+
+      {deleteTarget ? (
+        <div className="confirm-popup-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(420px, 92vw)" }}>
+            <h3 className="confirm-popup-title">Delete Popup Campaign?</h3>
+            <p className="confirm-popup-text">This action cannot be undone.</p>
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={confirmRemove}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

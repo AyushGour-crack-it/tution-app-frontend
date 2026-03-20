@@ -17,6 +17,7 @@ import {
 } from "react-icons/fi";
 import { api } from "../api.js";
 import { connectSocket } from "../socket.js";
+import { appToast } from "../toast.js";
 
 const PAGE_SIZE = 40;
 const OVERSCAN = 6;
@@ -154,6 +155,12 @@ export default function Chat() {
   const [selectedMessageId, setSelectedMessageId] = useState("");
   const [viewerImage, setViewerImage] = useState("");
   const [hiddenMessageIds, setHiddenMessageIds] = useState({});
+  const [reportDialog, setReportDialog] = useState({ open: false, messageId: "", reason: "Abuse", note: "" });
+  const [groupMetaDialog, setGroupMetaDialog] = useState({ open: false, title: "", imageUrl: "" });
+  const [addMemberDialog, setAddMemberDialog] = useState({ open: false, keyword: "", loading: false, results: [] });
+  const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
+  const [leaveGroupDialogOpen, setLeaveGroupDialogOpen] = useState(false);
+  const [editDialog, setEditDialog] = useState({ open: false, messageId: "", content: "" });
 
   const chatWindowRef = useRef(null);
   const composerInputRef = useRef(null);
@@ -185,6 +192,13 @@ export default function Chat() {
     if (!selectedConversation || selectedConversation.type !== "group") return false;
     const me = (selectedConversation.members || []).find((member) => String(member.userId || "") === String(user?.id || ""));
     return me?.role === "admin";
+  }, [selectedConversation, user?.id]);
+
+  const removableGroupMembers = useMemo(() => {
+    if (!selectedConversation || selectedConversation.type !== "group") return [];
+    return (selectedConversation.members || []).filter(
+      (member) => String(member.userId || "") !== String(user?.id || "")
+    );
   }, [selectedConversation, user?.id]);
 
   const loadInbox = async (options = {}) => {
@@ -487,91 +501,132 @@ export default function Chat() {
   };
 
   const reportMessage = async (messageId) => {
-    const reason = window.prompt("Reason for report (example: Abuse, Harassment, Spam)", "Abuse");
-    if (!reason) return;
-    const note = window.prompt("Extra note (optional)", "") || "";
+    if (!messageId) return;
+    setReportDialog({ open: true, messageId: String(messageId), reason: "Abuse", note: "" });
+  };
+
+  const submitReport = async () => {
+    if (!reportDialog.messageId || !String(reportDialog.reason || "").trim()) return;
     try {
-      await api.post("/chat/reports", { messageId, reason, note });
+      await api.post("/chat/reports", {
+        messageId: reportDialog.messageId,
+        reason: String(reportDialog.reason || "").trim(),
+        note: String(reportDialog.note || "").trim()
+      });
+      appToast.success("Message reported.");
+      setReportDialog({ open: false, messageId: "", reason: "Abuse", note: "" });
     } catch {
-      // no-op
+      appToast.error("Could not report message.");
     }
   };
 
   const updateGroupMeta = async () => {
     if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin) return;
-    const nextTitle = window.prompt("Rename group", selectedConversation.title || "");
-    if (nextTitle === null) return;
-    const nextImage = window.prompt("Group image URL (leave blank to clear)", selectedConversation.imageUrl || "");
+    setGroupMetaDialog({
+      open: true,
+      title: String(selectedConversation.title || ""),
+      imageUrl: String(selectedConversation.imageUrl || "")
+    });
+  };
+
+  const submitGroupMeta = async () => {
+    if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin) return;
     try {
       await api.put(`/chat/groups/${selectedConversation._id}`, {
-        title: String(nextTitle || "").trim(),
-        imageUrl: String(nextImage || "").trim()
+        title: String(groupMetaDialog.title || "").trim(),
+        imageUrl: String(groupMetaDialog.imageUrl || "").trim()
       });
       await loadInbox();
+      appToast.success("Group updated.");
+      setGroupMetaDialog({ open: false, title: "", imageUrl: "" });
     } catch {
-      // no-op
+      appToast.error("Could not update group.");
     }
   };
 
   const addMemberToGroup = async () => {
     if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin) return;
-    const keyword = window.prompt("Search member name to add");
-    if (!keyword) return;
+    setAddMemberDialog({ open: true, keyword: "", loading: false, results: [] });
+  };
+
+  const searchMembersToAdd = async () => {
+    if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin) return;
+    const keyword = String(addMemberDialog.keyword || "").trim();
+    if (!keyword) {
+      appToast.info("Enter a name to search.");
+      return;
+    }
+    setAddMemberDialog((prev) => ({ ...prev, loading: true }));
     try {
       const matches = await api
-        .get(`/chat/search-users?q=${encodeURIComponent(keyword.trim())}`)
+        .get(`/chat/search-users?q=${encodeURIComponent(keyword)}`)
         .then((res) => res.data || []);
       const existing = new Set((selectedConversation.members || []).map((item) => String(item.userId || "")));
-      const candidate = matches.find((item) => !existing.has(String(item.userId || "")));
-      if (!candidate) {
-        window.alert("No eligible user found for this keyword.");
-        return;
+      const candidates = matches.filter((item) => !existing.has(String(item.userId || "")));
+      if (!candidates.length) {
+        appToast.info("No eligible user found for this keyword.");
+        setAddMemberDialog((prev) => ({ ...prev, loading: false, results: [] }));
+      } else {
+        setAddMemberDialog((prev) => ({ ...prev, loading: false, results: candidates }));
       }
-      const ok = window.confirm(`Add ${candidate.name} to this group?`);
-      if (!ok) return;
+    } catch {
+      setAddMemberDialog((prev) => ({ ...prev, loading: false, results: [] }));
+      appToast.error("Could not search members.");
+    }
+  };
+
+  const addMemberFromCandidate = async (candidate) => {
+    if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin || !candidate?.userId) return;
+    try {
       await api.post(`/chat/groups/${selectedConversation._id}/members`, {
         memberIds: [candidate.userId]
       });
       await loadInbox();
+      appToast.success(`${candidate.name} added to group.`);
+      setAddMemberDialog({ open: false, keyword: "", loading: false, results: [] });
     } catch {
-      // no-op
+      appToast.error("Could not add member.");
     }
   };
 
   const removeMemberFromGroup = async () => {
     if (!selectedConversation || selectedConversation.type !== "group" || !isGroupAdmin) return;
-    const activeMembers = (selectedConversation.members || []).filter(
-      (member) => String(member.userId || "") !== String(user?.id || "")
-    );
-    if (!activeMembers.length) {
-      window.alert("No removable members in this group.");
+    if (!removableGroupMembers.length) {
+      appToast.info("No removable members in this group.");
       return;
     }
-    const hint = activeMembers.map((member) => `${member.name} (${member.userId})`).join("\\n");
-    const targetId = window.prompt(`Paste member userId to remove:\\n${hint}`);
-    if (!targetId) return;
-    const ok = window.confirm("Remove this member from the group?");
-    if (!ok) return;
+    setRemoveMemberDialogOpen(true);
+  };
+
+  const removeMemberById = async (targetId) => {
+    if (!selectedConversation || !targetId) return;
     try {
       await api.delete(`/chat/groups/${selectedConversation._id}/members/${targetId.trim()}`);
       await loadInbox();
+      appToast.success("Member removed.");
+      setRemoveMemberDialogOpen(false);
     } catch {
-      // no-op
+      appToast.error("Could not remove member.");
     }
   };
 
   const leaveGroup = async () => {
     if (!selectedConversation || selectedConversation.type !== "group") return;
-    const ok = window.confirm("Leave this group?");
-    if (!ok) return;
+    setLeaveGroupDialogOpen(true);
+  };
+
+  const confirmLeaveGroup = async () => {
+    if (!selectedConversation || selectedConversation.type !== "group") return;
     try {
       await api.post(`/chat/groups/${selectedConversation._id}/leave`);
       setSelectedConversationId("");
       setMessages([]);
       if (isMobile) setMobilePane("inbox");
       await loadInbox();
+      appToast.success("You left the group.");
+      setLeaveGroupDialogOpen(false);
     } catch {
-      // no-op
+      appToast.error("Could not leave group.");
     }
   };
 
@@ -879,15 +934,22 @@ export default function Chat() {
   const editMessage = async (message) => {
     if (!message?._id) return;
     const current = String(message.content || "");
-    const next = window.prompt("Edit message", current);
-    if (next === null) return;
-    const value = String(next || "").trim();
+    setEditDialog({ open: true, messageId: String(message._id), content: current });
+  };
+
+  const submitEditMessage = async () => {
+    const id = String(editDialog.messageId || "");
+    if (!id) return;
+    const current = String(messages.find((item) => String(item._id) === id)?.content || "");
+    const value = String(editDialog.content || "").trim();
     if (!value || value === current) return;
     try {
-      const updated = await api.put(`/chat/messages/${message._id}`, { content: value }).then((res) => res.data);
+      const updated = await api.put(`/chat/messages/${id}`, { content: value }).then((res) => res.data);
       setMessages((prev) => prev.map((item) => (String(item._id) === String(updated._id) ? updated : item)));
+      appToast.success("Message edited.");
+      setEditDialog({ open: false, messageId: "", content: "" });
     } catch {
-      // no-op
+      appToast.error("Could not edit message.");
     }
   };
 
@@ -1421,6 +1483,177 @@ export default function Chat() {
               </button>
             </div>
             <input ref={groupImageInputRef} type="file" accept="image/*" hidden onChange={uploadGroupImage} />
+          </div>
+        </div>
+      ) : null}
+
+      {groupMetaDialog.open ? (
+        <div className="confirm-popup-overlay" onClick={() => setGroupMetaDialog({ open: false, title: "", imageUrl: "" })}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 96vw)" }}>
+            <h3 className="confirm-popup-title">Manage Group</h3>
+            <input
+              className="input"
+              placeholder="Group name"
+              value={groupMetaDialog.title}
+              onChange={(event) => setGroupMetaDialog((prev) => ({ ...prev, title: event.target.value }))}
+            />
+            <input
+              className="input"
+              placeholder="Group image URL (optional)"
+              value={groupMetaDialog.imageUrl}
+              onChange={(event) => setGroupMetaDialog((prev) => ({ ...prev, imageUrl: event.target.value }))}
+            />
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setGroupMetaDialog({ open: false, title: "", imageUrl: "" })}>
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={submitGroupMeta}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {addMemberDialog.open ? (
+        <div className="confirm-popup-overlay" onClick={() => setAddMemberDialog({ open: false, keyword: "", loading: false, results: [] })}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 96vw)" }}>
+            <h3 className="confirm-popup-title">Add Member</h3>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
+              <input
+                className="input"
+                placeholder="Search member name"
+                value={addMemberDialog.keyword}
+                onChange={(event) => setAddMemberDialog((prev) => ({ ...prev, keyword: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    searchMembersToAdd();
+                  }
+                }}
+              />
+              <button className="btn" type="button" onClick={searchMembersToAdd} disabled={addMemberDialog.loading}>
+                {addMemberDialog.loading ? "Searching..." : "Search"}
+              </button>
+            </div>
+            <div className="list" style={{ maxHeight: "40vh", overflow: "auto" }}>
+              {!addMemberDialog.loading && !addMemberDialog.results.length ? <div>No users selected yet.</div> : null}
+              {addMemberDialog.results.map((item) => (
+                <div key={item.userId} className="list-item">
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{item.name}</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>{item.role}</div>
+                  </div>
+                  <button className="btn btn-ghost" type="button" onClick={() => addMemberFromCandidate(item)}>
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setAddMemberDialog({ open: false, keyword: "", loading: false, results: [] })}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {removeMemberDialogOpen ? (
+        <div className="confirm-popup-overlay" onClick={() => setRemoveMemberDialogOpen(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 96vw)" }}>
+            <h3 className="confirm-popup-title">Remove Member</h3>
+            <div className="list" style={{ maxHeight: "44vh", overflow: "auto" }}>
+              {!removableGroupMembers.length ? <div>No removable members.</div> : null}
+              {removableGroupMembers.map((member) => (
+                <div key={member.userId} className="list-item">
+                  <div>
+                    <div style={{ fontWeight: 700 }}>{member.name}</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>{member.role || "member"}</div>
+                  </div>
+                  <button className="btn btn-ghost" type="button" onClick={() => removeMemberById(member.userId)}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setRemoveMemberDialogOpen(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {leaveGroupDialogOpen ? (
+        <div className="confirm-popup-overlay" onClick={() => setLeaveGroupDialogOpen(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(420px, 92vw)" }}>
+            <h3 className="confirm-popup-title">Leave Group?</h3>
+            <p className="confirm-popup-text">You can rejoin only if an admin adds you again.</p>
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setLeaveGroupDialogOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={confirmLeaveGroup}>
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reportDialog.open ? (
+        <div className="confirm-popup-overlay" onClick={() => setReportDialog({ open: false, messageId: "", reason: "Abuse", note: "" })}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(520px, 95vw)" }}>
+            <h3 className="confirm-popup-title">Report Message</h3>
+            <select
+              className="select"
+              value={reportDialog.reason}
+              onChange={(event) => setReportDialog((prev) => ({ ...prev, reason: event.target.value }))}
+            >
+              <option value="Abuse">Abuse</option>
+              <option value="Harassment">Harassment</option>
+              <option value="Spam">Spam</option>
+              <option value="Other">Other</option>
+            </select>
+            <textarea
+              className="input"
+              rows={3}
+              placeholder="Extra note (optional)"
+              value={reportDialog.note}
+              onChange={(event) => setReportDialog((prev) => ({ ...prev, note: event.target.value }))}
+            />
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setReportDialog({ open: false, messageId: "", reason: "Abuse", note: "" })}>
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={submitReport}>
+                Submit Report
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editDialog.open ? (
+        <div className="confirm-popup-overlay" onClick={() => setEditDialog({ open: false, messageId: "", content: "" })}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 96vw)" }}>
+            <h3 className="confirm-popup-title">Edit Message</h3>
+            <textarea
+              className="input"
+              rows={4}
+              value={editDialog.content}
+              onChange={(event) => setEditDialog((prev) => ({ ...prev, content: event.target.value }))}
+            />
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setEditDialog({ open: false, messageId: "", content: "" })}>
+                Cancel
+              </button>
+              <button className="btn" type="button" onClick={submitEditMessage}>
+                Save
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { api } from "./api.js";
+import { appToast } from "./toast.js";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
 import {
@@ -88,6 +89,20 @@ const inferSectionPathFromNotification = (item) => {
 const FALLBACK_POLL_INTERVAL_MS = 120000;
 const STARTUP_DEFER_MS = 1200;
 const SOCKET_FALLBACK_FETCH_DELAY_MS = 8000;
+const PUSH_TOAST_REASON_MAP = {
+  permission_denied: {
+    type: "warning",
+    message: "Notifications are blocked in your browser. Enable them in site settings to get instant updates."
+  },
+  permission_not_granted: {
+    type: "info",
+    message: "Enable notifications to receive instant message, fee, and update alerts."
+  },
+  missing_config: {
+    type: "warning",
+    message: "Push notifications are not configured yet for this environment."
+  }
+};
 
 const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
@@ -407,13 +422,28 @@ export default function App() {
     setupPushForSession()
       .then((result) => {
         if (!result?.enabled) {
-          // eslint-disable-next-line no-console
-          console.warn("Push notifications disabled:", result?.reason || "unknown");
+          const reason = String(result?.reason || "unknown");
+          const sessionKey = `push_toast_seen_${user.id}_${reason}`;
+          if (!sessionStorage.getItem(sessionKey)) {
+            const entry = PUSH_TOAST_REASON_MAP[reason] || {
+              type: "info",
+              message: "Push notifications are currently disabled for this account."
+            };
+            if (entry.type === "warning") {
+              appToast.warning(entry.message);
+            } else {
+              appToast.info(entry.message);
+            }
+            sessionStorage.setItem(sessionKey, "1");
+          }
         }
       })
       .catch(() => {
-        // eslint-disable-next-line no-console
-        console.warn("Push notifications setup failed");
+        const sessionKey = `push_toast_seen_${user.id}_setup_failed`;
+        if (!sessionStorage.getItem(sessionKey)) {
+          appToast.warning("Could not initialize push notifications right now.");
+          sessionStorage.setItem(sessionKey, "1");
+        }
       });
   }, [user?.id, startupReady]);
 
