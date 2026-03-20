@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+  FiArrowLeft,
   FiAlertCircle,
   FiCheck,
   FiCheckCircle,
@@ -1110,6 +1111,16 @@ export default function Chat() {
             <>
               <div className="chat-thread-head">
                 <div className="chat-thread-head-main">
+                  {isMobile ? (
+                    <button
+                      className="chat-ig-icon-btn"
+                      type="button"
+                      onClick={() => setMobilePane("inbox")}
+                      title="Back to chats"
+                    >
+                      <FiArrowLeft size={17} />
+                    </button>
+                  ) : null}
                   {selectedConversation.imageUrl ? (
                     <button
                       type="button"
@@ -1155,9 +1166,6 @@ export default function Chat() {
                   </div>
                 </div>
                 <div className="chat-thread-head-actions">
-                  {isMobile ? (
-                    <button className="btn btn-ghost" type="button" onClick={() => setMobilePane("inbox")}>Inbox</button>
-                  ) : null}
                   {selectedConversation.type === "group" && isGroupAdmin ? (
                     <button className="btn btn-ghost" type="button" onClick={updateGroupMeta}>Manage</button>
                   ) : null}
