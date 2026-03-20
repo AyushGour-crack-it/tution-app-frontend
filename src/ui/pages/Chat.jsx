@@ -5,15 +5,19 @@ import {
   FiAlertCircle,
   FiCheck,
   FiCheckCircle,
+  FiChevronDown,
   FiCopy,
   FiCornerUpLeft,
   FiEdit2,
   FiFlag,
+  FiLogOut,
   FiMoreHorizontal,
   FiPaperclip,
   FiSend,
   FiShare2,
   FiTrash2,
+  FiUserMinus,
+  FiUserPlus,
   FiUsers
 } from "react-icons/fi";
 import { api } from "../api.js";
@@ -1186,19 +1190,61 @@ export default function Chat() {
                 </div>
                 <div className="chat-thread-head-actions">
                   {selectedConversation.type === "group" && isGroupAdmin ? (
-                    <button className="btn btn-ghost" type="button" onClick={updateGroupMeta}>Manage</button>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={updateGroupMeta}
+                      title="Manage group"
+                      aria-label="Manage group"
+                    >
+                      {isMobile ? <FiEdit2 size={15} /> : "Manage"}
+                    </button>
                   ) : null}
                   {selectedConversation.type === "group" && isGroupAdmin ? (
-                    <button className="btn btn-ghost" type="button" onClick={addMemberToGroup}>Add Member</button>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={addMemberToGroup}
+                      title="Add member"
+                      aria-label="Add member"
+                    >
+                      {isMobile ? <FiUserPlus size={15} /> : "Add Member"}
+                    </button>
                   ) : null}
                   {selectedConversation.type === "group" && isGroupAdmin ? (
-                    <button className="btn btn-ghost" type="button" onClick={removeMemberFromGroup}>Remove Member</button>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={removeMemberFromGroup}
+                      title="Remove member"
+                      aria-label="Remove member"
+                    >
+                      {isMobile ? <FiUserMinus size={15} /> : "Remove Member"}
+                    </button>
                   ) : null}
                   {selectedConversation.type === "group" ? (
-                    <button className="btn btn-ghost" type="button" onClick={() => setMemberListDialogOpen(true)}>Members</button>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={() => setMemberListDialogOpen(true)}
+                      title="Members"
+                      aria-label="Members"
+                    >
+                      <FiUsers size={15} />
+                      {!isMobile ? <span style={{ marginLeft: 6 }}>Members</span> : null}
+                    </button>
                   ) : null}
                   {selectedConversation.type === "group" ? (
-                    <button className="btn btn-ghost" type="button" onClick={leaveGroup}>Leave</button>
+                    <button
+                      className="btn btn-ghost"
+                      type="button"
+                      onClick={leaveGroup}
+                      title="Leave group"
+                      aria-label="Leave group"
+                    >
+                      <FiLogOut size={15} />
+                      {!isMobile ? <span style={{ marginLeft: 6 }}>Leave</span> : null}
+                    </button>
                   ) : null}
                 </div>
               </div>
@@ -1429,8 +1475,14 @@ export default function Chat() {
 
               {!isNearBottomRef.current && visibleMessages.length ? (
                 <div className="chat-jump-latest-wrap">
-                  <button className="btn btn-ghost chat-jump-latest-btn" type="button" onClick={() => scrollToBottom(true, true)}>
-                    Jump to latest
+                  <button
+                    className="btn btn-ghost chat-jump-latest-btn"
+                    type="button"
+                    onClick={() => scrollToBottom(true, true)}
+                    title="Jump to latest"
+                    aria-label="Jump to latest"
+                  >
+                    <FiChevronDown size={16} />
                   </button>
                 </div>
               ) : null}

@@ -5932,22 +5932,50 @@ html[data-theme="dark"] .chat-group-member-chip {
   }
 
   .chat-thread-head {
-    padding: 10px;
-    align-items: flex-start;
-    flex-direction: column;
+    padding: 8px 10px;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
   }
 
   .chat-thread-head-main {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
-  .chat-thread-head > div:last-child {
-    width: 100%;
+  .chat-thread-head-title .card-title {
+    font-size: 15px;
+    line-height: 1.2;
   }
 
-  .chat-thread-head > div:last-child .btn,
-  .chat-thread-head > div:last-child .btn-ghost {
-    min-height: 38px;
+  .chat-thread-meta {
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-thread-head-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 46%;
+    gap: 5px;
+    padding-bottom: 1px;
+    scrollbar-width: none;
+  }
+
+  .chat-thread-head-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-thread-head-actions .btn,
+  .chat-thread-head-actions .btn-ghost {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 0 8px;
+    border-radius: 9px;
+    font-size: 12px;
   }
 }
 
@@ -6220,8 +6248,13 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-jump-latest-btn {
   border-radius: 999px;
-  font-size: 12px;
-  padding: 6px 12px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chat-member-count-line {
@@ -6251,6 +6284,7 @@ html[data-theme="dark"] .chat-group-member-chip {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .chat-head-icon-btn {
