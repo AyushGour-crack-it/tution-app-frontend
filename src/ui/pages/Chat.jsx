@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FiAlertCircle,
   FiCheck,
@@ -110,6 +110,7 @@ const mergeIncomingMessage = (prev, incoming) => {
 
 export default function Chat() {
   const location = useLocation();
+  const navigate = useNavigate();
   const user = useAuthUser();
   const mobileMedia = "(max-width: 980px)";
 
@@ -161,6 +162,7 @@ export default function Chat() {
   const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false);
   const [leaveGroupDialogOpen, setLeaveGroupDialogOpen] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, messageId: "", content: "" });
+  const [memberListDialogOpen, setMemberListDialogOpen] = useState(false);
 
   const chatWindowRef = useRef(null);
   const composerInputRef = useRef(null);
@@ -200,6 +202,11 @@ export default function Chat() {
       (member) => String(member.userId || "") !== String(user?.id || "")
     );
   }, [selectedConversation, user?.id]);
+
+  const groupOnlineCount = useMemo(() => {
+    if (!selectedConversation || selectedConversation.type !== "group") return 0;
+    return (selectedConversation.members || []).filter((member) => Boolean(member?.isOnline)).length;
+  }, [selectedConversation]);
 
   const loadInbox = async (options = {}) => {
     const silent = Boolean(options?.silent);
@@ -257,7 +264,9 @@ export default function Chat() {
       await markConversationRead(conversationId);
       requestAnimationFrame(() => {
         const node = chatWindowRef.current;
-        if (node) node.scrollTop = node.scrollHeight;
+        if (node) {
+          node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
+        }
       });
     } catch (error) {
       setMessages([]);
@@ -400,19 +409,23 @@ export default function Chat() {
   const keepComposerVisible = () => {
     requestAnimationFrame(() => {
       const node = chatWindowRef.current;
-      if (node) node.scrollTop = node.scrollHeight;
+      if (node) node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
       composerInputRef.current?.scrollIntoView({ block: "nearest" });
     });
     setTimeout(() => {
       const node = chatWindowRef.current;
-      if (node) node.scrollTop = node.scrollHeight;
+      if (node) node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
     }, 180);
   };
 
-  const scrollToBottom = (force = false) => {
+  const scrollToBottom = (force = false, smooth = false) => {
     const node = chatWindowRef.current;
     if (!node) return;
     if (!force && !isNearBottomRef.current) return;
+    if (smooth) {
+      node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
+      return;
+    }
     node.scrollTop = node.scrollHeight;
   };
 
@@ -420,6 +433,21 @@ export default function Chat() {
     const key = String(messageId || "");
     if (!key) return;
     setExpandedTimestamps((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const openUserProfile = (targetUserId, event) => {
+    if (event?.stopPropagation) event.stopPropagation();
+    const id = String(targetUserId || "").trim();
+    if (!id) return;
+    if (String(id) === String(user?.id || "")) {
+      navigate("/profile");
+      return;
+    }
+    if (user?.role === "teacher") {
+      navigate(`/students/${id}`);
+      return;
+    }
+    navigate(`/student/students/${id}`);
   };
 
   const sendText = async () => {
@@ -443,7 +471,7 @@ export default function Chat() {
       _local: true
     };
     setMessages((prev) => [...prev, optimistic]);
-    requestAnimationFrame(() => scrollToBottom(true));
+    requestAnimationFrame(() => scrollToBottom(true, true));
     try {
       const created = await api
         .post("/chat/messages", {
@@ -494,7 +522,7 @@ export default function Chat() {
       setMessages((prev) => mergeIncomingMessage(prev, created));
       setReplyTo(null);
       await loadInbox();
-      requestAnimationFrame(() => scrollToBottom(true));
+      requestAnimationFrame(() => scrollToBottom(true, true));
     } finally {
       event.target.value = "";
     }
@@ -656,6 +684,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!selectedConversationId) return;
+    setMemberListDialogOpen(false);
     loadMessages(selectedConversationId);
   }, [selectedConversationId]);
 
@@ -777,7 +806,7 @@ export default function Chat() {
         setMessages((prev) => mergeIncomingMessage(prev, normalized));
         markConversationDelivered(targetId);
         markConversationRead(targetId);
-        requestAnimationFrame(() => scrollToBottom(false));
+        requestAnimationFrame(() => scrollToBottom(false, true));
       }
       loadInbox({ silent: true });
     };
@@ -1045,11 +1074,19 @@ export default function Chat() {
                 }}
               >
                 <div className="chat-inbox-avatar-wrap">
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="chat-inbox-avatar" />
-                  ) : (
-                    <div className="chat-inbox-avatar chat-inbox-avatar-fallback">{String(item.title || "C").slice(0, 1).toUpperCase()}</div>
-                  )}
+                  <button
+                    type="button"
+                    className="chat-avatar-btn"
+                    onClick={(event) => openUserProfile(item?.counterpart?.userId || "", event)}
+                    disabled={item.type === "group"}
+                    title={item.type === "group" ? "Group conversation" : "Open profile"}
+                  >
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.title} className="chat-inbox-avatar" />
+                    ) : (
+                      <div className="chat-inbox-avatar chat-inbox-avatar-fallback">{String(item.title || "C").slice(0, 1).toUpperCase()}</div>
+                    )}
+                  </button>
                 </div>
                 <div className="chat-inbox-main">
                   <div className="chat-inbox-row">
@@ -1074,22 +1111,46 @@ export default function Chat() {
               <div className="chat-thread-head">
                 <div className="chat-thread-head-main">
                   {selectedConversation.imageUrl ? (
-                    <img src={selectedConversation.imageUrl} alt={selectedConversation.title} className="chat-thread-head-avatar" />
+                    <button
+                      type="button"
+                      className="chat-avatar-btn"
+                      onClick={(event) => openUserProfile(selectedConversation?.counterpart?.userId || "", event)}
+                      disabled={selectedConversation.type === "group"}
+                      title={selectedConversation.type === "group" ? "Group conversation" : "Open profile"}
+                    >
+                      <img src={selectedConversation.imageUrl} alt={selectedConversation.title} className="chat-thread-head-avatar" />
+                    </button>
                   ) : (
-                    <div className="chat-thread-head-avatar chat-inbox-avatar-fallback">
-                      {String(selectedConversation.title || "C").slice(0, 1).toUpperCase()}
-                    </div>
+                    <button
+                      type="button"
+                      className="chat-avatar-btn"
+                      onClick={(event) => openUserProfile(selectedConversation?.counterpart?.userId || "", event)}
+                      disabled={selectedConversation.type === "group"}
+                      title={selectedConversation.type === "group" ? "Group conversation" : "Open profile"}
+                    >
+                      <div className="chat-thread-head-avatar chat-inbox-avatar-fallback">
+                        {String(selectedConversation.title || "C").slice(0, 1).toUpperCase()}
+                      </div>
+                    </button>
                   )}
                   <div className="chat-thread-head-title">
                     <h3 className="card-title" style={{ margin: 0 }}>{selectedConversation.title}</h3>
                     <div className="chat-thread-meta">
-                    {selectedConversation.type === "group"
-                      ? `${selectedConversation.members?.length || 0} members`
-                      : selectedConversation?.counterpart?.isOnline
-                        ? "Online"
-                        : selectedConversation?.counterpart?.lastSeenAt
-                          ? `Last seen ${toTimeLabel(selectedConversation.counterpart.lastSeenAt)}`
-                          : "Direct chat"}
+                      {selectedConversation.type === "group" ? (
+                        <button
+                          type="button"
+                          className="chat-thread-meta-btn"
+                          onClick={() => setMemberListDialogOpen(true)}
+                        >
+                          {`${selectedConversation.members?.length || 0} members • ${groupOnlineCount} online`}
+                        </button>
+                      ) : selectedConversation?.counterpart?.isOnline ? (
+                        "Online"
+                      ) : selectedConversation?.counterpart?.lastSeenAt ? (
+                        `Last seen ${toTimeLabel(selectedConversation.counterpart.lastSeenAt)}`
+                      ) : (
+                        "Direct chat"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1105,6 +1166,9 @@ export default function Chat() {
                   ) : null}
                   {selectedConversation.type === "group" && isGroupAdmin ? (
                     <button className="btn btn-ghost" type="button" onClick={removeMemberFromGroup}>Remove Member</button>
+                  ) : null}
+                  {selectedConversation.type === "group" ? (
+                    <button className="btn btn-ghost" type="button" onClick={() => setMemberListDialogOpen(true)}>Members</button>
                   ) : null}
                   {selectedConversation.type === "group" ? (
                     <button className="btn btn-ghost" type="button" onClick={leaveGroup}>Leave</button>
@@ -1177,11 +1241,25 @@ export default function Chat() {
                       >
                         {showGroupAvatar ? (
                           msg.senderAvatar ? (
-                            <img src={msg.senderAvatar} alt={msg.senderName || "User"} className="chat-group-msg-avatar" />
+                            <button
+                              type="button"
+                              className="chat-avatar-btn"
+                              onClick={(event) => openUserProfile(msg.senderId, event)}
+                              title="Open profile"
+                            >
+                              <img src={msg.senderAvatar} alt={msg.senderName || "User"} className="chat-group-msg-avatar" />
+                            </button>
                           ) : (
-                            <div className="chat-group-msg-avatar chat-inbox-avatar-fallback">
-                              {String(msg.senderName || "U").slice(0, 1).toUpperCase()}
-                            </div>
+                            <button
+                              type="button"
+                              className="chat-avatar-btn"
+                              onClick={(event) => openUserProfile(msg.senderId, event)}
+                              title="Open profile"
+                            >
+                              <div className="chat-group-msg-avatar chat-inbox-avatar-fallback">
+                                {String(msg.senderName || "U").slice(0, 1).toUpperCase()}
+                              </div>
+                            </button>
                           )
                         ) : !mine ? (
                           <div className="chat-group-msg-avatar-placeholder" />
@@ -1321,6 +1399,14 @@ export default function Chat() {
                 <div style={{ height: `${bottomSpacerHeight}px` }} />
                 {!loadingMessages && !messageError && !visibleMessages.length ? <div className="chat-meta">No messages yet.</div> : null}
               </div>
+
+              {!isNearBottomRef.current && visibleMessages.length ? (
+                <div className="chat-jump-latest-wrap">
+                  <button className="btn btn-ghost chat-jump-latest-btn" type="button" onClick={() => scrollToBottom(true, true)}>
+                    Jump to latest
+                  </button>
+                </div>
+              ) : null}
 
               {typingState.conversationId === String(selectedConversationId) ? (
                 <div className="chat-typing-indicator">{typingState.senderName} is typing...</div>
@@ -1652,6 +1738,58 @@ export default function Chat() {
               </button>
               <button className="btn" type="button" onClick={submitEditMessage}>
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {memberListDialogOpen && selectedConversation?.type === "group" ? (
+        <div className="confirm-popup-overlay" onClick={() => setMemberListDialogOpen(false)}>
+          <div className="confirm-popup-card" onClick={(event) => event.stopPropagation()} style={{ width: "min(560px, 96vw)" }}>
+            <h3 className="confirm-popup-title">Group Members</h3>
+            <div className="chat-member-count-line">
+              {selectedConversation.members?.length || 0} members • {groupOnlineCount} online
+            </div>
+            <div className="list" style={{ maxHeight: "50vh", overflow: "auto" }}>
+              {(selectedConversation.members || []).map((member) => (
+                <div key={member.userId} className="list-item">
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {member.avatarUrl ? (
+                      <button
+                        type="button"
+                        className="chat-avatar-btn"
+                        onClick={(event) => openUserProfile(member.userId, event)}
+                        title="Open profile"
+                      >
+                        <img src={member.avatarUrl} alt={member.name} className="chat-member-avatar" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="chat-avatar-btn"
+                        onClick={(event) => openUserProfile(member.userId, event)}
+                        title="Open profile"
+                      >
+                        <div className="chat-member-avatar chat-inbox-avatar-fallback">
+                          {String(member.name || "U").slice(0, 1).toUpperCase()}
+                        </div>
+                      </button>
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{member.name}</div>
+                      <div style={{ fontSize: "12px", color: "var(--muted)" }}>{member.role || "member"}</div>
+                    </div>
+                  </div>
+                  <span className={`chat-member-presence ${member.isOnline ? "chat-member-presence-online" : ""}`}>
+                    {member.isOnline ? "Online" : "Offline"}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="confirm-popup-actions">
+              <button className="btn btn-ghost" type="button" onClick={() => setMemberListDialogOpen(false)}>
+                Close
               </button>
             </div>
           </div>

@@ -5587,6 +5587,18 @@ html[data-theme="dark"] .student-profile-quiz-total {
   flex: 0 0 auto;
 }
 
+.chat-avatar-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.chat-avatar-btn:disabled {
+  cursor: default;
+}
+
 .chat-thread-head-title {
   min-width: 0;
 }
@@ -5594,6 +5606,16 @@ html[data-theme="dark"] .student-profile-quiz-total {
 .chat-thread-meta {
   font-size: 12.5px;
   color: #738293;
+}
+
+.chat-thread-meta-btn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
 }
 
 .chat-thread-window {
@@ -6152,6 +6174,40 @@ html[data-theme="dark"] .chat-group-member-chip {
 
 .chat-inbox-page .chat-thread-compose .input::placeholder {
   color: #93a0b3;
+}
+
+.chat-jump-latest-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.chat-jump-latest-btn {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.chat-member-count-line {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.chat-member-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.chat-member-presence {
+  font-size: 12px;
+  color: #8f9aad;
+}
+
+.chat-member-presence-online {
+  color: #1ea95a;
 }
 
 .chat-thread-head-actions {

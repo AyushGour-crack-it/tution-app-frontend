@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
+import { setupPushForSession } from "../pushNotifications.js";
+import { appToast } from "../toast.js";
 
 const Field = ({ label, children }) => (
   <label className="field">
@@ -97,6 +99,7 @@ export default function Profile() {
   });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [enablingPush, setEnablingPush] = useState(false);
   const quizSubjectProgress = useMemo(() => {
     const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
       ? quizStats.subjectXP
@@ -117,6 +120,11 @@ export default function Profile() {
       .sort((a, b) => b.xp - a.xp)
       .slice(0, 6);
   }, [quizStats]);
+
+  const notificationPermission =
+    typeof window === "undefined" || !("Notification" in window)
+      ? "unsupported"
+      : Notification.permission;
 
   const load = async () => {
     setError("");
@@ -245,6 +253,30 @@ export default function Profile() {
     }
   };
 
+  const enableNotifications = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      appToast.warning("This browser does not support notifications.");
+      return;
+    }
+    setEnablingPush(true);
+    try {
+      const result = await setupPushForSession();
+      if (result?.enabled) {
+        appToast.success("Notifications enabled for this account.");
+        return;
+      }
+      if (result?.reason === "permission_denied") {
+        appToast.warning("Notifications are blocked in browser settings. Please allow this site and retry.");
+        return;
+      }
+      appToast.info("Could not enable notifications yet. Please try again.");
+    } catch {
+      appToast.error("Failed to enable notifications.");
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="page">
@@ -319,6 +351,29 @@ export default function Profile() {
                 {" "}• Click for journey
               </button>
             ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: "24px" }}>
+        <h2 className="card-title">Notifications</h2>
+        <div className="list">
+          <div className="list-item">
+            <div>
+              <div style={{ fontWeight: 700 }}>Browser Push Permission</div>
+              <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                {notificationPermission === "granted"
+                  ? "Allowed"
+                  : notificationPermission === "denied"
+                    ? "Blocked"
+                    : notificationPermission === "unsupported"
+                      ? "Not supported on this browser"
+                      : "Not granted"}
+              </div>
+            </div>
+            <button className="btn btn-ghost" type="button" onClick={enableNotifications} disabled={enablingPush}>
+              {enablingPush ? "Enabling..." : "Enable Notifications"}
+            </button>
           </div>
         </div>
       </div>
