@@ -2,6 +2,14 @@
   box-sizing: border-box;
 }
 
+img,
+.video,
+.picture {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 body {
   margin: 0;
   font-family: "Work Sans", sans-serif;

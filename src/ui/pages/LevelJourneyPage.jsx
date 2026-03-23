@@ -454,6 +454,15 @@ export default function LevelJourneyPage() {
     return () => idle.kill();
   }, []);
 
+  const scheduleCinematic = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => runCinematic(), { timeout: 750 });
+    } else {
+      window.setTimeout(runCinematic, 16);
+    }
+  }, [runCinematic]);
+
   useEffect(() => {
     if (loading || error || !levelData || !mapSectionRef.current) return;
     mapTriggerRef.current?.kill();
@@ -464,7 +473,7 @@ export default function LevelJourneyPage() {
       onEnter: () => {
         if (hasMapPlayedRef.current) return;
         hasMapPlayedRef.current = true;
-        runCinematic();
+        scheduleCinematic();
       }
     });
     return () => {
@@ -701,7 +710,7 @@ export default function LevelJourneyPage() {
               <div className="level-cinematic-rank" ref={rankRef}>
                 {rank}
               </div>
-              <button className="btn btn-ghost level-cinematic-replay" type="button" onClick={runCinematic}>
+              <button className="btn btn-ghost level-cinematic-replay" type="button" onClick={scheduleCinematic}>
                 Replay Cinematic
               </button>
             </div>

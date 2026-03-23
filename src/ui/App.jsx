@@ -104,7 +104,7 @@ const PUSH_TOAST_REASON_MAP = {
   }
 };
 
-const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
+const NavItem = React.memo(({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
@@ -119,7 +119,7 @@ const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
       <span className="nav-badge">{badgeCount > 99 ? "99+" : badgeCount}</span>
     ) : null}
   </NavLink>
-);
+));
 
 const getSession = () => {
   const raw = localStorage.getItem("auth_user");
@@ -402,6 +402,24 @@ export default function App() {
 
   React.useEffect(() => {
     setNavOpen(false);
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    const tokenizeImages = () => {
+      document.querySelectorAll("img:not([loading])").forEach((img) => {
+        img.loading = "lazy";
+        if (!img.width && !img.height) {
+          img.decoding = "async";
+        }
+      });
+    };
+    if (typeof window !== "undefined") {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(tokenizeImages, { timeout: 1500 });
+      } else {
+        window.setTimeout(tokenizeImages, 1500);
+      }
+    }
   }, [location.pathname]);
 
   React.useEffect(() => {

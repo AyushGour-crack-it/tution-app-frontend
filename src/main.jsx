@@ -1,21 +1,32 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { Toaster } from "sonner";
 import App from "./ui/App.jsx";
-import "./ui/styles.css";
 import "sonner/dist/styles.css";
+
+const Toaster = React.lazy(() =>
+  import("sonner").then((module) => ({ default: module.Toaster }))
+);
+
+const AppRoot = () => (
+  <React.Suspense fallback={<div className="loading-skeleton">Loading app...</div>}>
+    <App />
+  </React.Suspense>
+);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
-    <App />
-    <Toaster
-      position="top-right"
-      richColors
-      closeButton
-      toastOptions={{
-        duration: 3200
-      }}
-    />
+    <AppRoot />
+    <React.Suspense fallback={null}>
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        toastOptions={{
+          duration: 3200
+        }}
+      />
+    </React.Suspense>
   </BrowserRouter>
 );
+
