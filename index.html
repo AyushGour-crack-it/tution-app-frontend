@@ -14,11 +14,9 @@
       .loading-skeleton { display:grid; place-items:center; height:100vh; width:100%; color:#66757f; font-size:1rem; }
     </style>
 
-    <!-- Self-hosted fonts, preload key variants -->
-    <link rel="preload" as="font" href="/fonts/WorkSans-Variable.woff2" type="font/woff2" crossorigin />
-    <link rel="preload" as="font" href="/fonts/SpaceGrotesk-Variable.woff2" type="font/woff2" crossorigin />
-    <link rel="preload" as="style" href="/fonts/fonts.css" onload="this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="/fonts/fonts.css" /></noscript>
+    <!-- Use Google Fonts for reliable font loading (fallback if offline) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
 
     <link rel="preload" as="style" href="/src/ui/styles.css" onload="this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="/src/ui/styles.css" /></noscript>
