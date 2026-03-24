@@ -23,7 +23,9 @@ const MainApp = () => {
 
   const updateSW = registerSW({
     onNeedRefresh() {
-      setUpdateAvailable(true);
+      if (!localStorage.getItem("update_handled")) {
+        setUpdateAvailable(true);
+      }
     },
     onOfflineReady() {
       console.info("App is ready for offline usage.");
@@ -31,7 +33,8 @@ const MainApp = () => {
   });
 
   const handleRefresh = () => {
-    updateSW(true);
+    localStorage.setItem("update_handled", "true");
+    updateSW(true, true);
     setUpdateAvailable(false);
   };
 
