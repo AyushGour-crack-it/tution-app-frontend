@@ -84,6 +84,7 @@ export const setupPushForSession = async () => {
       .catch(() => false);
     if (!registered) return reportSetup({ enabled: false, reason: "token_registration_failed" });
     registeredToken = token;
+    localStorage.setItem("push_token", token);
   }
 
   if (activeUnsubscribe) {
@@ -100,9 +101,27 @@ export const teardownPushForSession = async () => {
     activeUnsubscribe();
     activeUnsubscribe = null;
   }
-  if (!registeredToken) return;
-  const tokenToRemove = registeredToken;
+
+  let tokenToRemove = registeredToken || localStorage.getItem("push_token") || "";
+
+  if (!tokenToRemove) {
+    try {
+      const messaging = await getFirebaseMessaging();
+      tokenToRemove = await getToken(messaging, { vapidKey: cleanEnv(import.meta.env.VITE_FIREBASE_VAPID_KEY) });
+    } catch {
+      tokenToRemove = "";
+    }
+  }
+
+  if (!tokenToRemove) {
+    localStorage.removeItem("push_token");
+    registeredToken = "";
+    return;
+  }
+
   registeredToken = "";
+  localStorage.removeItem("push_token");
+
   await api
     .post("/auth/push-token/delete", {
       token: tokenToRemove
