@@ -142,6 +142,7 @@ export default function App() {
   );
   const [accounts, setAccounts] = React.useState(() => getAuthAccounts());
   const [navOpen, setNavOpen] = React.useState(false);
+  const navInteractionRef = React.useRef(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
@@ -1109,8 +1110,19 @@ export default function App() {
       <button
         className="mobile-nav-toggle"
         type="button"
-        onClick={() => setNavOpen((prev) => !prev)}
-        onTouchEnd={() => setNavOpen((prev) => !prev)}
+        onTouchStart={() => { navInteractionRef.current = "touch"; }}
+        onTouchEnd={() => {
+          navInteractionRef.current = "touch";
+          setNavOpen((prev) => !prev);
+        }}
+        onClick={(event) => {
+          if (navInteractionRef.current === "touch") {
+            event.preventDefault();
+            navInteractionRef.current = null;
+            return;
+          }
+          setNavOpen((prev) => !prev);
+        }}
       >
         {navOpen ? "Close" : "Menu"}
       </button>
