@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
-import { setupPushForSession } from "../pushNotifications.js";
+import { setupPushForSession, teardownPushForSession } from "../pushNotifications.js";
 import { appToast } from "../toast.js";
 import { FiBell, FiEdit2, FiSave, FiShield } from "react-icons/fi";
 
