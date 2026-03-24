@@ -9,7 +9,7 @@ export default defineConfig({
       jsxRuntime: "automatic"
     }),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.svg", "robots.txt", "icons/*.png"],
       manifest: {
         name: "Our Tution",
