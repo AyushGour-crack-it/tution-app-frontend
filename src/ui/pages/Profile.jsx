@@ -284,12 +284,18 @@ export default function Profile() {
   const disableNotifications = async () => {
     setEnablingPush(true);
     try {
-      await teardownPushForSession();
-      setPushEnabled(false);
-      localStorage.setItem("push_enabled", "false");
-      appToast.success("Notifications disabled.");
-    } catch {
-      appToast.error("Failed to disable notifications.");
+      const result = await teardownPushForSession();
+      if (result?.success) {
+        setPushEnabled(false);
+        localStorage.setItem("push_enabled", "false");
+        appToast.success("Notifications disabled.");
+      } else {
+        const reason = result?.reason || "unknown";
+        const errorText = result?.error ? String(result.error) : "Unknown error";
+        appToast.error(`Failed to disable notifications (${reason}): ${errorText}`);
+      }
+    } catch (err) {
+      appToast.error(`Failed to disable notifications: ${String(err)}`);
     } finally {
       setEnablingPush(false);
     }

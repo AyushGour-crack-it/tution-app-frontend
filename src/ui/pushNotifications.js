@@ -108,27 +108,32 @@ export const teardownPushForSession = async () => {
     try {
       const messaging = await getFirebaseMessaging();
       tokenToRemove = await getToken(messaging, { vapidKey: cleanEnv(import.meta.env.VITE_FIREBASE_VAPID_KEY) });
-    } catch {
+    } catch (err) {
       tokenToRemove = "";
+      return { success: false, reason: "token_fetch_failed", error: err?.message || String(err) };
     }
   }
 
   if (!tokenToRemove) {
     localStorage.removeItem("push_token");
     registeredToken = "";
-    return;
+    return { success: false, reason: "no_token", error: "No push token available for teardown" };
   }
 
   registeredToken = "";
   localStorage.removeItem("push_token");
 
-  await api
-    .post("/auth/push-token/delete", {
-      token: tokenToRemove
-    }, {
-      showGlobalLoader: false
-    })
-    .catch(() => {});
+  try {
+    await api.post(
+      "/auth/push-token/delete",
+      { token: tokenToRemove },
+      { showGlobalLoader: false }
+    );
+
+    return { success: true, reason: "removed", token: tokenToRemove };
+  } catch (err) {
+    return { success: false, reason: "unregister_failed", error: err?.response?.data || err?.message || String(err), token: tokenToRemove };
+  }
 };
 
 export const getPushDebugState = () => lastPushSetup;
