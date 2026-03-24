@@ -1109,14 +1109,8 @@ export default function App() {
       <button
         className="mobile-nav-toggle"
         type="button"
-        onClick={(event) => {
-          event.preventDefault();
-          setNavOpen((prev) => !prev);
-        }}
-        onTouchStart={(event) => {
-          event.preventDefault();
-          setNavOpen((prev) => !prev);
-        }}
+        onClick={() => setNavOpen((prev) => !prev)}
+        onTouchEnd={() => setNavOpen((prev) => !prev)}
       >
         {navOpen ? "Close" : "Menu"}
       </button>
