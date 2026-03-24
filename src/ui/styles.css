@@ -4104,7 +4104,7 @@ html[data-theme="dark"] .student-profile-quiz-total {
   position: fixed;
   top: 14px;
   left: 14px;
-  z-index: 45;
+  z-index: 200;
   border: none;
   border-radius: 12px;
   padding: 10px 14px;
@@ -4112,6 +4112,7 @@ html[data-theme="dark"] .student-profile-quiz-total {
   color: #132226;
   font-weight: 700;
   display: none;
+  pointer-events: auto;
 }
 
 .mobile-nav-overlay {
