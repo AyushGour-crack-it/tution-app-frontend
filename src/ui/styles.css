@@ -131,13 +131,8 @@ html[data-theme="dark"] {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #ff7a59, #ffb66e);
-  color: #132226;
-  display: grid;
-  place-items: center;
-  font-family: "Space Grotesk", sans-serif;
-  font-weight: 700;
-  letter-spacing: 1px;
+  object-fit: cover;
+  display: block;
 }
 
 .brand-title {

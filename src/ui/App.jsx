@@ -1117,7 +1117,13 @@ export default function App() {
       {navOpen ? <div className="mobile-nav-overlay" onClick={() => setNavOpen(false)} /> : null}
       <aside className={`sidebar${navOpen ? " sidebar-open" : ""}`}>
         <div className="brand">
-          <span className="brand-mark">OT</span>
+          <img
+            className="brand-mark"
+            src="/icons/pwa-192.png"
+            alt="Our Tution"
+            width="48"
+            height="48"
+          />
           <div>
             <div className="brand-title">Our Tution</div>
             <div className="brand-subtitle">Learning Workspace</div>
