@@ -101,6 +101,7 @@ export default function Profile() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [enablingPush, setEnablingPush] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const quizSubjectProgress = useMemo(() => {
     const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
       ? quizStats.subjectXP
@@ -174,6 +175,10 @@ export default function Profile() {
 
   useEffect(() => {
     load();
+    // Check push status
+    if (typeof window !== "undefined" && window.__pushDebug) {
+      setPushEnabled(window.__pushDebug.enabled || false);
+    }
   }, []);
 
   const submit = async (event) => {
@@ -263,6 +268,7 @@ export default function Profile() {
     try {
       const result = await setupPushForSession();
       if (result?.enabled) {
+        setPushEnabled(true);
         appToast.success("Notifications enabled for this account.");
         return;
       }
@@ -273,6 +279,19 @@ export default function Profile() {
       appToast.info("Could not enable notifications yet. Please try again.");
     } catch {
       appToast.error("Failed to enable notifications.");
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
+  const disableNotifications = async () => {
+    setEnablingPush(true);
+    try {
+      await teardownPushForSession();
+      setPushEnabled(false);
+      appToast.success("Notifications disabled.");
+    } catch {
+      appToast.error("Failed to disable notifications.");
     } finally {
       setEnablingPush(false);
     }
@@ -372,9 +391,9 @@ export default function Profile() {
                       : "Not granted"}
               </div>
             </div>
-            <button className="btn btn-ghost btn-icon" type="button" onClick={enableNotifications} disabled={enablingPush}>
+            <button className="btn btn-ghost btn-icon" type="button" onClick={pushEnabled ? disableNotifications : enableNotifications} disabled={enablingPush}>
               <FiBell size={16} />
-              <span>{enablingPush ? "Enabling..." : "Enable Notifications"}</span>
+              <span>{enablingPush ? (pushEnabled ? "Disabling..." : "Enabling...") : (pushEnabled ? "Disable Notifications" : "Enable Notifications")}</span>
             </button>
           </div>
         </div>

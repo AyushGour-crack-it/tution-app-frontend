@@ -319,6 +319,16 @@ export default function App() {
   }, [user?.id]);
 
   React.useEffect(() => {
+    if (typeof window !== "undefined" && "setAppBadge" in navigator) {
+      if (unreadNotificationCount > 0) {
+        navigator.setAppBadge(unreadNotificationCount);
+      } else {
+        navigator.clearAppBadge();
+      }
+    }
+  }, [unreadNotificationCount]);
+
+  React.useEffect(() => {
     setAccounts(getAuthAccounts());
   }, [user?.id]);
 
