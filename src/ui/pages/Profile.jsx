@@ -101,7 +101,7 @@ export default function Profile() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [enablingPush, setEnablingPush] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(() => localStorage.getItem("push_enabled") === "true");
   const quizSubjectProgress = useMemo(() => {
     const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
       ? quizStats.subjectXP
@@ -175,10 +175,6 @@ export default function Profile() {
 
   useEffect(() => {
     load();
-    // Check push status
-    if (typeof window !== "undefined" && window.__pushDebug) {
-      setPushEnabled(window.__pushDebug.enabled || false);
-    }
   }, []);
 
   const submit = async (event) => {
@@ -269,6 +265,7 @@ export default function Profile() {
       const result = await setupPushForSession();
       if (result?.enabled) {
         setPushEnabled(true);
+        localStorage.setItem("push_enabled", "true");
         appToast.success("Notifications enabled for this account.");
         return;
       }
@@ -289,6 +286,7 @@ export default function Profile() {
     try {
       await teardownPushForSession();
       setPushEnabled(false);
+      localStorage.setItem("push_enabled", "false");
       appToast.success("Notifications disabled.");
     } catch {
       appToast.error("Failed to disable notifications.");
