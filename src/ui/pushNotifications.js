@@ -104,8 +104,9 @@ export const teardownPushForSession = async () => {
   const tokenToRemove = registeredToken;
   registeredToken = "";
   await api
-    .delete("/auth/push-token", {
-      data: { token: tokenToRemove },
+    .post("/auth/push-token/delete", {
+      token: tokenToRemove
+    }, {
       showGlobalLoader: false
     })
     .catch(() => {});
