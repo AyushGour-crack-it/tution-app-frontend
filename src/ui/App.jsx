@@ -250,6 +250,7 @@ export default function App() {
   const navInteractionRef = React.useRef(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
+  const [sectionUnread, setSectionUnread] = React.useState({});
   const [showWelcomePopup, setShowWelcomePopup] = React.useState(false);
   const [badgeUnlockQueue, setBadgeUnlockQueue] = React.useState([]);
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
