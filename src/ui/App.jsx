@@ -257,6 +257,7 @@ export default function App() {
   const [levelUpPayload, setLevelUpPayload] = React.useState(null);
   const [cachedDataLoaded, setCachedDataLoaded] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+  const [socketStatus, setSocketStatus] = React.useState("disconnected");
   const aotThemeAudioRef = React.useRef(null);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
