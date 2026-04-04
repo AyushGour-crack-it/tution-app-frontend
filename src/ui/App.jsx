@@ -1,9 +1,12 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { HiHome, HiSearch, HiChat, HiUser, HiBell } from "react-icons/hi";
+import { useSwipeable } from "react-swipeable";
 import { api } from "./api.js";
 import { appToast } from "./toast.js";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
 import { setupPushForSession, teardownPushForSession } from "./pushNotifications.js";
+import { OfflineIndicator } from "./offlineManager.jsx";
 import {
   clearActiveSessionOnly,
   getActiveAccountKey,
@@ -121,6 +124,107 @@ const NavItem = React.memo(({ to, label, onNavigate, badgeCount = 0 }) => (
   </NavLink>
 ));
 
+const MobileNavItem = React.memo(({ to, icon: Icon, label, onNavigate, badgeCount = 0, isActive }) => (
+  <NavLink
+    to={to}
+    className={`mobile-nav-item${isActive ? " mobile-nav-item-active" : ""}`}
+    onClick={(event) => {
+      onNavigate?.(event);
+    }}
+  >
+    <div className="mobile-nav-icon">
+      <Icon size={20} />
+      {badgeCount > 0 && (
+        <span className="mobile-nav-badge">{badgeCount > 99 ? "99+" : badgeCount}</span>
+      )}
+    </div>
+    <span className="mobile-nav-label">{label}</span>
+  </NavLink>
+));
+
+const MobileHeader = React.memo(({ onNotificationsClick, unreadNotificationCount }) => (
+  <header className="mobile-header">
+    <div className="mobile-header-left">
+      <h1 className="mobile-app-title">Our Tuition</h1>
+    </div>
+    <div className="mobile-header-right">
+      <button
+        type="button"
+        className="mobile-notification-btn"
+        onClick={onNotificationsClick}
+      >
+        <HiBell size={20} />
+        {unreadNotificationCount > 0 && (
+          <span className="mobile-notification-badge">
+            {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+          </span>
+        )}
+      </button>
+    </div>
+  </header>
+));
+
+const MobileBottomNav = React.memo(({
+  user,
+  unreadChatCount,
+  onNavigate,
+  currentPath
+}) => {
+  const isTeacher = user?.role === "teacher";
+
+  const navItems = [
+    {
+      to: isTeacher ? "/" : "/student",
+      icon: HiHome,
+      label: "Home",
+      key: "home"
+    },
+    {
+      to: isTeacher ? "/students" : "/student/students",
+      icon: HiSearch,
+      label: "Search",
+      key: "search"
+    },
+    {
+      to: "/chat",
+      icon: HiChat,
+      label: "Chat",
+      badgeCount: unreadChatCount,
+      key: "chat"
+    },
+    {
+      to: "/profile",
+      icon: HiUser,
+      label: "Profile",
+      key: "profile"
+    }
+  ];
+
+  return (
+    <nav className="mobile-bottom-nav">
+      {navItems.map((item) => {
+        const isActive = currentPath === item.to ||
+          (item.key === "home" && (
+            (isTeacher && currentPath === "/") ||
+            (!isTeacher && currentPath === "/student")
+          ));
+
+        return (
+          <MobileNavItem
+            key={item.key}
+            to={item.to}
+            icon={item.icon}
+            label={item.label}
+            badgeCount={item.badgeCount}
+            isActive={isActive}
+            onNavigate={onNavigate}
+          />
+        );
+      })}
+    </nav>
+  );
+});
+
 const getSession = () => {
   const raw = localStorage.getItem("auth_user");
   if (!raw) return null;
@@ -142,6 +246,7 @@ export default function App() {
   );
   const [accounts, setAccounts] = React.useState(() => getAuthAccounts());
   const [navOpen, setNavOpen] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(() => window.matchMedia("(max-width: 1024px)").matches);
   const navInteractionRef = React.useRef(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
@@ -150,12 +255,8 @@ export default function App() {
   const [feePaymentQueue, setFeePaymentQueue] = React.useState([]);
   const [rewardPopupQueue, setRewardPopupQueue] = React.useState([]);
   const [levelUpPayload, setLevelUpPayload] = React.useState(null);
-  const [socketStatus, setSocketStatus] = React.useState(() => getSocketStatus());
-  const [sectionUnread, setSectionUnread] = React.useState({});
-  const [showAotDetails, setShowAotDetails] = React.useState(false);
-  const [isAotThemePlaying, setIsAotThemePlaying] = React.useState(false);
-  const [aotAudioError, setAotAudioError] = React.useState("");
-  const locationPathRef = React.useRef(location.pathname);
+  const [cachedDataLoaded, setCachedDataLoaded] = React.useState(false);
+  const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
   const aotThemeAudioRef = React.useRef(null);
   const notificationSeenKey = React.useMemo(
     () => (user?.id ? `notifications_last_seen_${user.id}` : ""),
@@ -181,6 +282,58 @@ export default function App() {
       setNavOpen(false);
     }
   }, []);
+
+  // Swipe navigation for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (!isMobile) return;
+      const currentPath = location.pathname;
+      const isTeacher = user?.role === "teacher";
+      const navItems = [
+        { to: isTeacher ? "/" : "/student", key: "home" },
+        { to: isTeacher ? "/students" : "/student/students", key: "search" },
+        { to: "/chat", key: "chat" },
+        { to: "/profile", key: "profile" }
+      ];
+      const currentIndex = navItems.findIndex(item => {
+        if (item.key === "home") {
+          return currentPath === item.to || (item.key === "home" && (
+            (isTeacher && currentPath === "/") ||
+            (!isTeacher && currentPath === "/student")
+          ));
+        }
+        return currentPath === item.to;
+      });
+      if (currentIndex >= 0 && currentIndex < navItems.length - 1) {
+        navigate(navItems[currentIndex + 1].to);
+      }
+    },
+    onSwipedRight: () => {
+      if (!isMobile) return;
+      const currentPath = location.pathname;
+      const isTeacher = user?.role === "teacher";
+      const navItems = [
+        { to: isTeacher ? "/" : "/student", key: "home" },
+        { to: isTeacher ? "/students" : "/student/students", key: "search" },
+        { to: "/chat", key: "chat" },
+        { to: "/profile", key: "profile" }
+      ];
+      const currentIndex = navItems.findIndex(item => {
+        if (item.key === "home") {
+          return currentPath === item.to || (item.key === "home" && (
+            (isTeacher && currentPath === "/") ||
+            (!isTeacher && currentPath === "/student")
+          ));
+        }
+        return currentPath === item.to;
+      });
+      if (currentIndex > 0) {
+        navigate(navItems[currentIndex - 1].to);
+      }
+    },
+    preventScrollOnSwipe: true,
+    trackMouse: false
+  });
   const markNotificationsSeen = React.useCallback(() => {
     if (!notificationSeenKey) return;
     localStorage.setItem(notificationSeenKey, new Date().toISOString());
@@ -434,16 +587,57 @@ export default function App() {
   }, [location.pathname]);
 
   React.useEffect(() => {
-    const sessionUser = getSession();
-    if (sessionUser && !user) {
-      setAccounts(getAuthAccounts());
-      setUser(sessionUser);
-      return;
-    }
-    if (!sessionUser && !localStorage.getItem("auth_token") && user) {
-      setUser(null);
-    }
-  }, [location.pathname, user]);
+    // Load cached data immediately for offline support
+    const loadCachedData = async () => {
+      try {
+        const userId = user?.id || localStorage.getItem('auth_user')?.id;
+        if (userId) {
+          // Load cached notifications count
+          const cachedNotifications = offlineManager.getCachedData('notifications');
+          if (cachedNotifications) {
+            const unreadCount = cachedNotifications.filter(n => !n.read).length;
+            setUnreadNotificationCount(unreadCount);
+          }
+
+          // Load cached chat conversations for unread count
+          const cachedConversations = offlineManager.getCachedData('chat/conversations');
+          if (cachedConversations) {
+            const unreadCount = cachedConversations.reduce((total, conv) => {
+              return total + (conv.unreadCount || 0);
+            }, 0);
+            setUnreadChatCount(unreadCount);
+          }
+        }
+        setCachedDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load cached data:', error);
+        setCachedDataLoaded(true); // Still set to true to not block UI
+      }
+    };
+
+    loadCachedData();
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    // Set up online/offline listeners
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Trigger sync when coming back online
+      offlineManager.performSync();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   React.useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -707,6 +901,35 @@ export default function App() {
   React.useEffect(() => {
     const unsubscribe = subscribeSocketStatus((status) => setSocketStatus(status));
     return () => unsubscribe();
+  }, []);
+
+  // Service Worker Message Handler for offline functionality
+  React.useEffect(() => {
+    const handleServiceWorkerMessage = (event) => {
+      const { type, payload } = event.data;
+
+      switch (type) {
+        case 'QUEUE_REQUEST':
+          // Handle queued request from service worker
+          console.log('Request queued by service worker:', payload);
+          appToast.info('Request saved offline - will sync when online');
+          break;
+        case 'SYNC_PENDING_REQUESTS':
+          // Trigger sync of pending requests
+          console.log('Syncing pending requests...');
+          appToast.info('Syncing offline changes...');
+          break;
+        default:
+          break;
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      };
+    }
   }, []);
 
   React.useEffect(() => {
@@ -1005,10 +1228,29 @@ export default function App() {
     );
   }
 
+  // Show loading screen until cached data is loaded
+  // if (!cachedDataLoaded) {
+  //   return (
+  //     <div className="app-shell">
+  //       <div className="loading-screen">
+  //         <div className="loading-spinner"></div>
+  //         <div className="loading-text">Loading Our Tuition...</div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   const showAotEventPill = location.pathname === "/" || location.pathname === "/student";
 
   return (
     <div className="app-shell">
+      <OfflineIndicator />
+      {isMobile && (
+        <MobileHeader
+          onNotificationsClick={() => navigate("/notifications")}
+          unreadNotificationCount={unreadNotificationCount}
+        />
+      )}
       <React.Suspense fallback={null}>
         {levelUpPayload ? (
           <LevelUpOverlay data={levelUpPayload} onDone={() => setLevelUpPayload(null)} />
@@ -1279,7 +1521,7 @@ export default function App() {
           ) : null}
         </div>
       </aside>
-      <main className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}>
+      <main className={`main${location.pathname === "/chat" ? " main-chat" : ""}`} {...swipeHandlers}>
         {showAotEventPill ? (
           <>
             <audio
@@ -1500,6 +1742,14 @@ export default function App() {
           </Routes>
         </React.Suspense>
       </main>
+      {isMobile && (
+        <MobileBottomNav
+          user={user}
+          unreadChatCount={unreadChatCount}
+          onNavigate={closeMobileNavOnNavigate}
+          currentPath={location.pathname}
+        />
+      )}
     </div>
   );
 }

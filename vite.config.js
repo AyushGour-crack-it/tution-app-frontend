@@ -28,25 +28,40 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,svg,woff2}"]
+        globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
+        // Don't cache the custom service worker
+        globIgnores: ["sw.js"],
+        runtimeCaching: [
+          {
+            urlPattern: /\/(api|auth|notifications|chat)\//,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 120, maxAgeSeconds: 86400 }
+            }
+          },
+          {
+            urlPattern: /\/(musicthemes|public\/fonts|avatars)\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "asset-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "image-cache",
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 }
+            }
+          }
+        ]
       },
-      runtimeCaching: [
-        {
-          urlPattern: /\/(api|auth|notifications|chat)\//,
-          handler: "NetworkFirst",
-          options: { cacheName: "api-cache", networkTimeoutSeconds: 10, expiration: { maxEntries: 120, maxAgeSeconds: 86400 } }
-        },
-        {
-          urlPattern: /\/(musicthemes|public\/fonts|avatars)\//,
-          handler: "CacheFirst",
-          options: { cacheName: "asset-cache", expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 } }
-        },
-        {
-          urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/,
-          handler: "StaleWhileRevalidate",
-          options: { cacheName: "image-cache", expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 } }
-        }
-      ]
+      // Disable auto service worker generation since we have custom one
+      disable: false,
+      selfDestroying: false
     })
   ],
   server: {

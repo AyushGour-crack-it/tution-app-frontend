@@ -1,9 +1,12 @@
 import axios from "axios";
 import { getActiveAccountKey, removeAuthAccount } from "./authAccounts.js";
+import { offlineManager } from "./offlineManager.jsx";
+import { saveApiResponse, getApiResponse } from "./offlineStorage.js";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const DEFAULT_GET_CACHE_TTL_MS = 30 * 1000; // 30 sec in-memory (fast)
 const LOCAL_UI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h persistent
+const OFFLINE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days for offline
 const LOCAL_CACHE_PREFIX = "api-persistent:";
 
 export const api = axios.create({ baseURL, timeout: 12000 });
@@ -76,13 +79,27 @@ api.interceptors.request.use((config) => {
       return config;
     }
 
+    // Try IndexedDB cache first (for offline support)
+    const cachedOffline = getApiResponse(key);
+    if (cachedOffline && !navigator.onLine) {
+      config.adapter = async () => ({
+        data: await cachedOffline,
+        status: 200,
+        statusText: "OK (Offline)",
+        headers: { 'x-offline-cache': 'true' },
+        config,
+        request: null
+      });
+      return config;
+    }
+
     const cachedLocal = getLocalCache(key);
     if (!navigator.onLine && cachedLocal != null) {
       config.adapter = async () => ({
         data: cachedLocal,
         status: 200,
-        statusText: "OK",
-        headers: {},
+        statusText: "OK (Offline)",
+        headers: { 'x-offline-cache': 'true' },
         config,
         request: null
       });
@@ -115,6 +132,12 @@ api.interceptors.response.use(
     if (method === "get" && localCacheKey) {
       setLocalCache(localCacheKey, response.data);
     }
+
+    // Save to IndexedDB for offline support (longer TTL)
+    if (method === "get" && cacheKey && response.data) {
+      saveApiResponse(cacheKey, response.config?.url || '', response.data, OFFLINE_CACHE_TTL_MS);
+    }
+
     return response;
   },
   (error) => {

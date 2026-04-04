@@ -5,7 +5,7 @@ import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
 import { setupPushForSession, teardownPushForSession } from "../pushNotifications.js";
 import { appToast } from "../toast.js";
-import { FiBell, FiEdit2, FiSave, FiShield } from "react-icons/fi";
+import { FiBell, FiEdit2, FiSave, FiShield, FiHome, FiDollarSign, FiBook, FiAward, FiSettings, FiLogOut, FiChevronRight, FiSearch } from "react-icons/fi";
 
 const Field = ({ label, children }) => (
   <label className="field">
@@ -82,6 +82,24 @@ const getLevelTierClass = (levelValue) => {
   return "level-tier-starter";
 };
 
+const MobileProfileSection = ({ icon: Icon, title, subtitle, onClick, badge }) => (
+  <div className="mobile-profile-section" onClick={onClick}>
+    <div className="mobile-profile-section-left">
+      <div className="mobile-profile-section-icon">
+        <Icon size={20} />
+      </div>
+      <div className="mobile-profile-section-content">
+        <div className="mobile-profile-section-title">{title}</div>
+        {subtitle && <div className="mobile-profile-section-subtitle">{subtitle}</div>}
+      </div>
+    </div>
+    <div className="mobile-profile-section-right">
+      {badge && <span className="mobile-profile-section-badge">{badge}</span>}
+      <FiChevronRight size={16} />
+    </div>
+  </div>
+);
+
 export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -100,8 +118,7 @@ export default function Profile() {
   });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [enablingPush, setEnablingPush] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(() => localStorage.getItem("push_enabled") === "true");
+  const [showSettings, setShowSettings] = useState(false);
   const quizSubjectProgress = useMemo(() => {
     const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
       ? quizStats.subjectXP
@@ -301,6 +318,18 @@ export default function Profile() {
     }
   };
 
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Ignore logout errors
+    }
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
+    localStorage.removeItem("push_enabled");
+    window.location.href = "/login";
+  };
+
   if (!user) {
     return (
       <div className="page">
@@ -331,6 +360,352 @@ export default function Profile() {
     return String(a?.title || "").localeCompare(String(b?.title || ""));
   });
   const totalBadges = sortedEarnedBadges.length;
+
+  const isMobile = window.matchMedia("(max-width: 1024px)").matches;
+
+  if (isMobile) {
+    if (showSettings) {
+      return (
+        <div className="mobile-profile-page">
+          <div className="mobile-profile-header">
+            <button 
+              className="mobile-profile-back-btn"
+              onClick={() => setShowSettings(false)}
+            >
+              ← Back
+            </button>
+            <h1 className="mobile-profile-title">Settings</h1>
+          </div>
+
+          <div className="mobile-profile-content">
+            {/* Include the profile editing form here */}
+            <div className="card" style={{ marginTop: "16px" }}>
+              <div className="page-header">
+                <h2 className="card-title" style={{ margin: 0 }}>Edit Your Info</h2>
+              </div>
+              {message ? <div className="auth-success">{message}</div> : null}
+              {error ? <div className="auth-error">{error}</div> : null}
+              <form className="form" onSubmit={submit}>
+                <Field label="Full Name">
+                  <input
+                    className="input"
+                    value={form.name}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    required
+                  />
+                </Field>
+                <Field label="Phone">
+                  <input
+                    className="input"
+                    value={form.phone}
+                    onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                  />
+                </Field>
+                <Field label="Bio">
+                  <input
+                    className="input"
+                    value={form.bio}
+                    onChange={(event) => setForm({ ...form, bio: event.target.value })}
+                  />
+                </Field>
+                <Field label="Profile Picture">
+                  <input
+                    className="input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setForm({ ...form, avatar: event.target.files?.[0] || null })}
+                  />
+                </Field>
+
+                {user.role === "student" ? (
+                  <>
+                    <Field label="Date of Birth">
+                      <input
+                        className="input"
+                        type="date"
+                        value={form.dateOfBirth}
+                        onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Tuition Joining Date">
+                      <input
+                        className="input"
+                        type="date"
+                        value={form.joinedAt}
+                        onChange={(event) => setForm({ ...form, joinedAt: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Monthly Fee (INR)">
+                      <input
+                        className="input"
+                        type="number"
+                        min="0"
+                        value={form.monthlyFee}
+                        onChange={(event) => setForm({ ...form, monthlyFee: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Class / Grade">
+                      <input
+                        className="input"
+                        value={form.grade}
+                        onChange={(event) => setForm({ ...form, grade: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="School Name">
+                      <input
+                        className="input"
+                        value={form.schoolName}
+                        onChange={(event) => setForm({ ...form, schoolName: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Address">
+                      <input
+                        className="input"
+                        value={form.address}
+                        onChange={(event) => setForm({ ...form, address: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Guardian Name">
+                      <input
+                        className="input"
+                        value={form.guardianName}
+                        onChange={(event) => setForm({ ...form, guardianName: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Guardian Phone">
+                      <input
+                        className="input"
+                        value={form.guardianPhone}
+                        onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Guardian Relation">
+                      <input
+                        className="input"
+                        value={form.guardianRelation}
+                        onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Emergency Contact">
+                      <input
+                        className="input"
+                        value={form.emergencyContact}
+                        onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Hobbies (comma separated)">
+                      <input
+                        className="input"
+                        value={form.hobbies}
+                        onChange={(event) => setForm({ ...form, hobbies: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Strong Subjects (comma separated)">
+                      <input
+                        className="input"
+                        value={form.strongSubjects}
+                        onChange={(event) => setForm({ ...form, strongSubjects: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Weak Subjects (comma separated)">
+                      <input
+                        className="input"
+                        value={form.weakSubjects}
+                        onChange={(event) => setForm({ ...form, weakSubjects: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Goals">
+                      <input
+                        className="input"
+                        value={form.goals}
+                        onChange={(event) => setForm({ ...form, goals: event.target.value })}
+                      />
+                    </Field>
+                  </>
+                ) : null}
+
+                <button className="btn btn-icon" type="submit" disabled={saving}>
+                  <FiSave size={16} />
+                  <span>{saving ? "Saving..." : "Save All Changes"}</span>
+                </button>
+              </form>
+            </div>
+
+            <div className="card" style={{ marginTop: "16px" }}>
+              <h2 className="card-title">Change Password</h2>
+              {passwordMessage ? <div className="auth-success">{passwordMessage}</div> : null}
+              {passwordError ? <div className="auth-error">{passwordError}</div> : null}
+              <form className="form" onSubmit={changePassword}>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Current password"
+                  value={passwordForm.currentPassword}
+                  onChange={(event) =>
+                    setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
+                  }
+                  required
+                />
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="New password"
+                  value={passwordForm.newPassword}
+                  onChange={(event) =>
+                    setPasswordForm({ ...passwordForm, newPassword: event.target.value })
+                  }
+                  required
+                />
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })
+                  }
+                  required
+                />
+                <button className="btn btn-icon" type="submit">
+                  <FiShield size={16} />
+                  <span>Update Password</span>
+                </button>
+              </form>
+            </div>
+
+            <div className="card" style={{ marginTop: "16px" }}>
+              <h2 className="card-title">Notifications</h2>
+              <div className="list">
+                <div className="list-item">
+                  <div>Push Notifications</div>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={pushEnabled ? disableNotifications : enableNotifications}
+                  >
+                    <span>{enablingPush ? (pushEnabled ? "Disabling..." : "Enabling...") : (pushEnabled ? "Disable Notifications" : "Enable Notifications")}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mobile-profile-page">
+        <div className="mobile-profile-header">
+          <div className="mobile-profile-avatar-section">
+            <div className={`avatar-frame avatar-frame-profile ${profileFrame.frameClass}`} title={profileFrame.frameLabel}>
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="mobile-profile-avatar-img"
+                />
+              ) : (
+                <div className="mobile-profile-avatar-fallback">
+                  {String(user.name || "U").slice(0, 1).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="mobile-profile-user-info">
+              <div className="mobile-profile-name">{user.name}</div>
+              <div className="mobile-profile-email">{user.email}</div>
+              {badgeStats.level && (
+                <div className="mobile-profile-level">
+                  <span className={`level-pill ${getLevelTierClass(badgeStats.level.level)}`}>
+                    Lv {badgeStats.level.level}
+                  </span>
+                  <span className="mobile-profile-xp">{badgeStats.level.totalXp} XP</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mobile-profile-sections">
+          {user.role === "student" && (
+            <>
+              <MobileProfileSection
+                icon={FiHome}
+                title="Homework"
+                subtitle="View and manage assignments"
+                onClick={() => navigate("/student/homework")}
+              />
+              <MobileProfileSection
+                icon={FiDollarSign}
+                title="Fees"
+                subtitle="Payment history and details"
+                onClick={() => navigate("/student/fees")}
+              />
+              <MobileProfileSection
+                icon={FiBook}
+                title="Quiz"
+                subtitle="Practice and skill building"
+                onClick={() => navigate("/student/quiz")}
+              />
+              <MobileProfileSection
+                icon={FiAward}
+                title="Badges"
+                subtitle={`${totalBadges} badges earned`}
+                onClick={() => navigate("/student/badges")}
+                badge={totalBadges > 0 ? totalBadges : null}
+              />
+            </>
+          )}
+
+          {user.role === "teacher" && (
+            <>
+              <MobileProfileSection
+                icon={FiHome}
+                title="Dashboard"
+                subtitle="Overview and analytics"
+                onClick={() => navigate("/")}
+              />
+              <MobileProfileSection
+                icon={FiSearch}
+                title="Students"
+                subtitle="Manage student records"
+                onClick={() => navigate("/students")}
+              />
+              <MobileProfileSection
+                icon={FiBook}
+                title="Homework"
+                subtitle="Assignments and tasks"
+                onClick={() => navigate("/homework")}
+              />
+              <MobileProfileSection
+                icon={FiDollarSign}
+                title="Fees"
+                subtitle="Payment management"
+                onClick={() => navigate("/fees")}
+              />
+            </>
+          )}
+
+          <MobileProfileSection
+            icon={FiSettings}
+            title="Settings"
+            subtitle="Profile, notifications, password"
+            onClick={() => setShowSettings(true)}
+          />
+
+          <MobileProfileSection
+            icon={FiLogOut}
+            title="Logout"
+            subtitle="Sign out of your account"
+            onClick={() => {
+              if (window.confirm("Are you sure you want to logout?")) {
+                logout();
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">

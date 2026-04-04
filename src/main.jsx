@@ -5,6 +5,19 @@ import App from "./ui/App.jsx";
 import "sonner/dist/styles.css";
 import { registerSW } from "virtual:pwa-register";
 
+// Register custom service worker for offline functionality
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('Custom Service Worker registered:', registration);
+      })
+      .catch((error) => {
+        console.log('Custom Service Worker registration failed:', error);
+      });
+  });
+}
+
 const UpdatePopup = ({ onRefresh }) => (
   <div className="update-popup-overlay" onClick={onRefresh}>
     <div className="update-popup-card" onClick={(e) => e.stopPropagation()}>
