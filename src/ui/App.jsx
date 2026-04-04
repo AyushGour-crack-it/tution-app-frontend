@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { HiHome, HiSearch, HiChat, HiUser, HiBell } from "react-icons/hi";
+import "./styles.css";
 import { api } from "./api.js";
 import { appToast } from "./toast.js";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
