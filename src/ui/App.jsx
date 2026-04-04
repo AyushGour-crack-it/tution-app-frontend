@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { HiHome, HiSearch, HiChat, HiUser, HiBell } from "react-icons/hi";
-import { useSwipeable } from "react-swipeable";
 import { api } from "./api.js";
 import { appToast } from "./toast.js";
 import { LEVEL_UP_EVENT } from "./levelSystem.js";
@@ -283,57 +282,52 @@ export default function App() {
     }
   }, []);
 
-  // Swipe navigation for mobile
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (!isMobile) return;
-      const currentPath = location.pathname;
-      const isTeacher = user?.role === "teacher";
-      const navItems = [
-        { to: isTeacher ? "/" : "/student", key: "home" },
-        { to: isTeacher ? "/students" : "/student/students", key: "search" },
-        { to: "/chat", key: "chat" },
-        { to: "/profile", key: "profile" }
-      ];
-      const currentIndex = navItems.findIndex(item => {
-        if (item.key === "home") {
-          return currentPath === item.to || (item.key === "home" && (
-            (isTeacher && currentPath === "/") ||
-            (!isTeacher && currentPath === "/student")
-          ));
-        }
-        return currentPath === item.to;
-      });
-      if (currentIndex >= 0 && currentIndex < navItems.length - 1) {
-        navigate(navItems[currentIndex + 1].to);
+  // Swipe gesture detection for mobile navigation
+  const [touchStart, setTouchStart] = React.useState(null);
+  const [touchEnd, setTouchEnd] = React.useState(null);
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd || !isMobile) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50; // swipe left threshold
+    const isRightSwipe = distance < -50; // swipe right threshold
+
+    if (!isLeftSwipe && !isRightSwipe) return;
+
+    const currentPath = location.pathname;
+    const isTeacher = user?.role === "teacher";
+    const navItems = [
+      { to: isTeacher ? "/" : "/student", key: "home" },
+      { to: isTeacher ? "/students" : "/student/students", key: "search" },
+      { to: "/chat", key: "chat" },
+      { to: "/profile", key: "profile" }
+    ];
+    
+    const currentIndex = navItems.findIndex(item => {
+      if (item.key === "home") {
+        return currentPath === item.to || (item.key === "home" && (
+          (isTeacher && currentPath === "/") ||
+          (!isTeacher && currentPath === "/student")
+        ));
       }
-    },
-    onSwipedRight: () => {
-      if (!isMobile) return;
-      const currentPath = location.pathname;
-      const isTeacher = user?.role === "teacher";
-      const navItems = [
-        { to: isTeacher ? "/" : "/student", key: "home" },
-        { to: isTeacher ? "/students" : "/student/students", key: "search" },
-        { to: "/chat", key: "chat" },
-        { to: "/profile", key: "profile" }
-      ];
-      const currentIndex = navItems.findIndex(item => {
-        if (item.key === "home") {
-          return currentPath === item.to || (item.key === "home" && (
-            (isTeacher && currentPath === "/") ||
-            (!isTeacher && currentPath === "/student")
-          ));
-        }
-        return currentPath === item.to;
-      });
-      if (currentIndex > 0) {
-        navigate(navItems[currentIndex - 1].to);
-      }
-    },
-    preventScrollOnSwipe: true,
-    trackMouse: false
-  });
+      return currentPath === item.to;
+    });
+
+    if (isLeftSwipe && currentIndex >= 0 && currentIndex < navItems.length - 1) {
+      navigate(navItems[currentIndex + 1].to);
+    } else if (isRightSwipe && currentIndex > 0) {
+      navigate(navItems[currentIndex - 1].to);
+    }
+  };
   const markNotificationsSeen = React.useCallback(() => {
     if (!notificationSeenKey) return;
     localStorage.setItem(notificationSeenKey, new Date().toISOString());
@@ -1521,7 +1515,12 @@ export default function App() {
           ) : null}
         </div>
       </aside>
-      <main className={`main${location.pathname === "/chat" ? " main-chat" : ""}`} {...swipeHandlers}>
+      <main 
+        className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {showAotEventPill ? (
           <>
             <audio
