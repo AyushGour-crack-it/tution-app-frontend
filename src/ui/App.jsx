@@ -896,7 +896,9 @@ export default function App() {
   }, [user?.id, startupReady]);
 
   React.useEffect(() => {
-    const unsubscribe = subscribeSocketStatus((status) => setSocketStatus(status));
+    const unsubscribe = subscribeSocketStatus((status) => {
+      if (status) setSocketStatus(status);
+    });
     return () => unsubscribe();
   }, []);
 
@@ -1380,7 +1382,7 @@ export default function App() {
             <div className="brand-subtitle">Learning Workspace</div>
           </div>
         </div>
-        <div className={`socket-status socket-status-${socketStatus}`}>
+        <div className={`socket-status socket-status-${socketStatus || 'disconnected'}`}>
           {socketStatus === "connected"
             ? "Live"
             : socketStatus === "reconnecting" || socketStatus === "connecting"
