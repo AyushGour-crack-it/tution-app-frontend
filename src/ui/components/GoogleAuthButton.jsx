@@ -71,5 +71,9 @@ export default function GoogleAuthButton({
     return <div className="auth-note">Google sign-in is not configured.</div>;
   }
 
-  return <div className="google-auth-wrap" ref={containerRef} />;
+  return (
+    <div className="auth-google-premium">
+      <div className="google-auth-wrap" ref={containerRef} />
+    </div>
+  );
 }

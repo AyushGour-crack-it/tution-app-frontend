@@ -48,46 +48,66 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-shell auth-shell-dark">
-      <div className="card auth-card">
-        <h1 className="page-title">Welcome back</h1>
-        <p className="page-subtitle">Sign in to your Our Tution workspace.</p>
-        {error && <div className="auth-error">{error}</div>}
-        <form className="form" onSubmit={submit}>
-          <Field label="Email">
+    <div className="auth-shell-premium">
+      <div className="auth-card-premium">
+        <div className="auth-logo-premium">
+          <img src="/icons/pwa-192.png" alt="Our Tuition" />
+          <h1 className="auth-title-premium">Our Tuition</h1>
+          <p className="auth-subtitle-premium">Welcome back to your premium learning workspace</p>
+        </div>
+
+        {error && <div className="auth-error-premium">{error}</div>}
+
+        <form className="auth-form-premium" onSubmit={submit}>
+          <div className="auth-field-premium">
+            <label className="auth-field-label-premium">Email Address</label>
             <input
-              className="input"
+              className="auth-input-premium"
               type="email"
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
+              placeholder="Enter your email address"
               required
             />
-          </Field>
-          <Field label="Password">
+          </div>
+
+          <div className="auth-field-premium">
+            <label className="auth-field-label-premium">Password</label>
             <input
-              className="input"
+              className="auth-input-premium"
               type="password"
               value={form.password}
               onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder="Enter your password"
               required
             />
-          </Field>
-          <button className="btn" type="submit">
-            Sign In
+          </div>
+
+          <button className="auth-button-premium" type="submit">
+            Sign In to Your Account
           </button>
         </form>
-        <div className="auth-separator">or</div>
-        <GoogleAuthButton
-          text="signin_with"
-          onCredential={signInWithGoogle}
-          onError={setError}
-          disabled={googleLoading}
-        />
-        <div className="auth-link">
-          No account? <Link to="/register">Create one</Link>
+
+        <div className="auth-separator-premium">
+          <span>or continue with</span>
         </div>
-        <div className="auth-link">
-          <Link to="/forgot">Forgot password?</Link>
+
+        <div className="auth-google-premium">
+          <GoogleAuthButton
+            text="signin_with"
+            onCredential={signInWithGoogle}
+            onError={setError}
+            disabled={googleLoading}
+          />
+        </div>
+
+        <div className="auth-links-premium">
+          <div className="auth-link-premium">
+            Don't have an account? <Link to="/register">Create one</Link>
+          </div>
+          <div className="auth-link-premium">
+            <Link to="/forgot">Forgot password?</Link>
+          </div>
         </div>
       </div>
     </div>

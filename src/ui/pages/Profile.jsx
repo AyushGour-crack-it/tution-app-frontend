@@ -119,6 +119,8 @@ export default function Profile() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(() => localStorage.getItem("push_enabled") === "true");
   const quizSubjectProgress = useMemo(() => {
     const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
       ? quizStats.subjectXP
