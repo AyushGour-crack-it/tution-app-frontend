@@ -48,13 +48,15 @@ export default function Dashboard() {
     load();
   };
 
-  if (loading || !overview) {
+  if (loading || !overview || !overview.stats) {
     return (
       <div className="page">
         <div className="page-header">
           <div>
             <h1 className="page-title">Overview</h1>
-            <p className="page-subtitle">Loading your dashboard...</p>
+            <p className="page-subtitle">
+              {loading ? "Loading your dashboard..." : "Preparing your dashboard..."}
+            </p>
           </div>
         </div>
         {error ? (
@@ -71,10 +73,10 @@ export default function Dashboard() {
   }
 
   const stats = [
-    { label: "Active Students", value: overview.stats.students },
-    { label: "Homework Due", value: overview.stats.homeworkDue },
-    { label: "Fees Pending", value: `₹${overview.stats.feesPendingTotal}` },
-    { label: "Fees Collected", value: `₹${overview.stats.feesCollectedTotal || 0}` }
+    { label: "Active Students", value: overview.stats?.students ?? "-" },
+    { label: "Homework Due", value: overview.stats?.homeworkDue ?? "-" },
+    { label: "Fees Pending", value: overview.stats?.feesPendingTotal != null ? `₹${overview.stats.feesPendingTotal}` : "-" },
+    { label: "Fees Collected", value: `₹${overview.stats?.feesCollectedTotal || 0}` }
   ];
 
   return (
@@ -121,17 +123,17 @@ export default function Dashboard() {
           <h3 className="card-title" style={{ marginBottom: "8px" }}>Recent Payments</h3>
           <div className="list">
             {(overview.feesOverview?.recentPayments || []).map((item) => (
-              <div className="list-item" key={item.id}>
+              <div className="list-item" key={item.id || `${item.studentName}-${item.paidOn}`}> 
                 <div>
-                  <div className="dashboard-item-title">{item.studentName}</div>
+                  <div className="dashboard-item-title">{item.studentName || "Student"}</div>
                   <div className="dashboard-item-subtitle">
-                    {item.studentPhone || "No mobile"} • {item.method} • {item.paidOn ? new Date(item.paidOn).toLocaleString() : "-"}
+                    {item.studentPhone || "No mobile"} • {item.method || "-"} • {item.paidOn ? new Date(item.paidOn).toLocaleString() : "-"}
                   </div>
                   <div className="dashboard-item-subtitle">
-                    {item.daysSincePrevious === null ? "First payment record" : `${item.daysSincePrevious} day(s) since previous payment`}
+                    {item.daysSincePrevious == null ? "First payment record" : `${item.daysSincePrevious} day(s) since previous payment`}
                   </div>
                 </div>
-                <span className="pill">₹{item.amount}</span>
+                <span className="pill">₹{item.amount || 0}</span>
               </div>
             ))}
             {!(overview.feesOverview?.recentPayments || []).length ? (
@@ -145,15 +147,15 @@ export default function Dashboard() {
         <div className="card">
           <h2 className="card-title">This Week's Focus</h2>
           <div className="list">
-            {overview.focus.map((item) => (
-              <div className="list-item" key={`${item.subject}-${item.topic}`}>
+            {(overview.focus || []).map((item) => (
+              <div className="list-item" key={`${item.subject || "subject"}-${item.topic || "topic"}`}>
                 <div>
-                  <div className="dashboard-item-title">{item.topic}</div>
+                  <div className="dashboard-item-title">{item.topic || "No topic"}</div>
                   <div className="dashboard-item-subtitle">
                     Target: {item.targetDate ? new Date(item.targetDate).toLocaleDateString() : "-"}
                   </div>
                 </div>
-                <span className="pill">{item.subject}</span>
+                <span className="pill">{item.subject || "General"}</span>
               </div>
             ))}
             {!overview.focus.length && <div>No syllabus items due this week.</div>}

@@ -1402,11 +1402,13 @@ export default function App() {
               : "Offline"}
         </div>
       </aside>
-      <main 
+      <main
         className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        {...(isMobile ? {
+          onTouchStart: handleTouchStart,
+          onTouchMove: handleTouchMove,
+          onTouchEnd: handleTouchEnd
+        } : {})}
       >
         {showAotEventPill ? (
           <>
