@@ -1246,7 +1246,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <OfflineIndicator />
-      {isMobile && (
+      {isMobile && location.pathname !== "/profile" && (
         <MobileHeader
           onNotificationsClick={() => navigate("/notifications")}
           unreadNotificationCount={unreadNotificationCount}
