@@ -121,32 +121,33 @@ export default function Profile() {
   const [showSettings, setShowSettings] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
-  const quizSubjectProgress = useMemo(() => {
-    try {
-      const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
-        ? quizStats.subjectXP
-        : {};
-      return Object.entries(source)
-        .map(([subject, rawXp]) => {
-          const xp = Number(rawXp || 0);
-          const level = Number(quizStats?.subjectLevel?.[subject] || 0);
-          const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
-          return {
-            key: subject,
-            subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
-            xp,
-            level,
-            progress
-          };
-        })
-        .filter(item => item.subject && item.subject.trim())
-        .sort((a, b) => b.xp - a.xp)
-        .slice(0, 6);
-    } catch (error) {
-      console.warn("Error processing quiz subject progress:", error);
-      return [];
-    }
-  }, [quizStats]);
+ const quizSubjectProgress = useMemo(() => {
+  try {
+    const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
+      ? quizStats.subjectXP
+      : {};
+
+    return Object.entries(source)
+      .map(([subject, rawXp]) => {
+        const xp = Number(rawXp || 0);
+        const level = Number(quizStats?.subjectLevel?.[subject] || 0);
+        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
+        return {
+          key: subject,
+          subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
+          xp,
+          level,
+          progress
+        };
+      })
+      .filter(item => item.subject && item.subject.trim())
+      .sort((a, b) => b.xp - a.xp)
+      .slice(0, 6);
+  } catch (e) {
+    console.error("quizSubjectProgress error:", e);
+    return [];
+  }
+}, [quizStats]);
 
   const notificationPermission = "default";
 
@@ -412,26 +413,34 @@ export default function Profile() {
     );
   }
 
-  const profileFrame = useMemo(() => resolveAvatarFrame({
-    badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
-    totalXp: Number(badgeStats?.level?.totalXp) || 0,
-    level: Number(badgeStats?.level?.level) || 1,
-    rank: null
-  }), [badgeStats]);
+ const profileFrame = useMemo(() => {
+  try {
+    return resolveAvatarFrame({
+      badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
+      totalXp: Number(badgeStats?.level?.totalXp) || 0,
+      level: Number(badgeStats?.level?.level) || 1,
+      rank: null
+    });
+  } catch (e) {
+    console.error("profileFrame error:", e);
+    return { frameClass: "", frameLabel: "" };
+  }
+}, [badgeStats]);
 
-  const sortedEarnedBadges = useMemo(() => Array.isArray(badgeStats?.earned)
-    ? [...badgeStats.earned].sort((a, b) => {
-        try {
+ const sortedEarnedBadges = useMemo(() => {
+  try {
+    return Array.isArray(badgeStats?.earned)
+      ? [...badgeStats.earned].sort((a, b) => {
           const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
           if (xpDelta !== 0) return xpDelta;
           return String(a?.title || "").localeCompare(String(b?.title || ""));
-        } catch (error) {
-          console.warn("Error sorting badges:", error);
-          return 0;
-        }
-      })
-    : [], [badgeStats]);
-
+        })
+      : [];
+  } catch (e) {
+    console.error("badge sort error:", e);
+    return [];
+  }
+}, [badgeStats]);
   const totalBadges = sortedEarnedBadges.length;
 
   const [isMobile, setIsMobile] = useState(false);
