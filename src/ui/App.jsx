@@ -294,10 +294,14 @@ export default function App() {
   const [touchEnd, setTouchEnd] = React.useState(null);
 
   const handleTouchStart = (e) => {
+    // Only handle touch events, not mouse clicks
+    if (e.type === 'mousedown') return;
     setTouchStart(e.targetTouches[0].clientX);
   };
 
   const handleTouchMove = (e) => {
+    // Only handle touch events, not mouse clicks
+    if (e.type === 'mousemove') return;
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
@@ -305,8 +309,8 @@ export default function App() {
     if (!touchStart || !touchEnd || !isMobile) return;
 
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50; // swipe left threshold
-    const isRightSwipe = distance < -50; // swipe right threshold
+    const isLeftSwipe = distance > 80; // increased threshold
+    const isRightSwipe = distance < -80; // increased threshold
 
     if (!isLeftSwipe && !isRightSwipe) return;
 
@@ -334,6 +338,10 @@ export default function App() {
     } else if (isRightSwipe && currentIndex > 0) {
       navigate(navItems[currentIndex - 1].to);
     }
+
+    // Reset touch state
+    setTouchStart(null);
+    setTouchEnd(null);
   };
   const markNotificationsSeen = React.useCallback(() => {
     if (!notificationSeenKey) return;
@@ -1248,7 +1256,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <OfflineIndicator />
-      {isMobile && location.pathname !== "/profile" && (
+      {isMobile && location.pathname !== "/profile" && location.pathname !== "/chat" && !location.pathname.includes("/students") && !location.pathname.includes("/student/students") && (
         <MobileHeader
           onNotificationsClick={() => navigate("/notifications")}
           unreadNotificationCount={unreadNotificationCount}

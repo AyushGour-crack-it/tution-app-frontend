@@ -361,7 +361,14 @@ export default function Profile() {
   });
   const totalBadges = sortedEarnedBadges.length;
 
-  const isMobile = window.matchMedia("(max-width: 1024px)").matches;
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 1024px)").matches);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1024px)");
+    const handleChange = (e) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   if (isMobile) {
     if (showSettings) {
@@ -586,6 +593,21 @@ export default function Profile() {
                     <span>{enablingPush ? (pushEnabled ? "Disabling..." : "Enabling...") : (pushEnabled ? "Disable Notifications" : "Enable Notifications")}</span>
                   </button>
                 </div>
+                <div className="list-item">
+                  <div>Theme</div>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() => {
+                      const newTheme = localStorage.getItem("ui_theme") === "light" ? "dark" : "light";
+                      localStorage.setItem("ui_theme", newTheme);
+                      document.documentElement.setAttribute("data-theme", newTheme);
+                      appToast.success(`Switched to ${newTheme} theme`);
+                    }}
+                  >
+                    <span>{localStorage.getItem("ui_theme") === "light" ? "Dark Mode" : "Light Mode"}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -756,6 +778,21 @@ export default function Profile() {
             title="Settings"
             subtitle="Profile, notifications, password"
             onClick={() => setShowSettings(true)}
+          />
+
+          <MobileProfileSection
+            icon={FiUsers}
+            title="Add Account"
+            subtitle="Sign in with another account"
+            onClick={() => {
+              if (window.confirm("This will sign you out and allow you to add another account. Continue?")) {
+                // Clear current session
+                localStorage.removeItem("auth_token");
+                localStorage.removeItem("auth_user");
+                localStorage.removeItem("push_enabled");
+                window.location.href = "/login";
+              }
+            }}
           />
 
           <MobileProfileSection
