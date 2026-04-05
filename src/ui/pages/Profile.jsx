@@ -5,7 +5,7 @@ import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
 import { setupPushForSession, teardownPushForSession } from "../pushNotifications.js";
 import { appToast } from "../toast.js";
-import { FiBell, FiEdit2, FiSave, FiShield, FiHome, FiDollarSign, FiBook, FiAward, FiSettings, FiLogOut, FiChevronRight, FiSearch, FiUsers, FiCalendar, FiFileText, FiTrendingUp, FiMegaphone } from "react-icons/fi";
+import { FiBell, FiEdit2, FiSave, FiShield, FiHome, FiDollarSign, FiBook, FiAward, FiSettings, FiLogOut, FiChevronRight, FiSearch, FiUsers, FiCalendar, FiFileText, FiTrendingUp, FiVolume2 } from "react-icons/fi";
 
 const Field = ({ label, children }) => (
   <label className="field">
@@ -737,7 +737,7 @@ export default function Profile() {
                 onClick={() => navigate("/holidays")}
               />
               <MobileProfileSection
-                icon={FiMegaphone}
+                icon={FiVolume2}
                 title="Popup Campaigns"
                 subtitle="Manage promotional content"
                 onClick={() => navigate("/popup-campaigns")}

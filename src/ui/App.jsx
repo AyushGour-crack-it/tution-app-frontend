@@ -107,7 +107,7 @@ const PUSH_TOAST_REASON_MAP = {
   }
 };
 
-const NavItem = React.memo(({ to, label, onNavigate, badgeCount = 0 }) => (
+const NavItem = ({ to, label, onNavigate, badgeCount = 0 }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
@@ -122,9 +122,9 @@ const NavItem = React.memo(({ to, label, onNavigate, badgeCount = 0 }) => (
       <span className="nav-badge">{badgeCount > 99 ? "99+" : badgeCount}</span>
     ) : null}
   </NavLink>
-));
+);
 
-const MobileNavItem = React.memo(({ to, icon: Icon, label, onNavigate, badgeCount = 0, isActive }) => (
+const MobileNavItem = ({ to, icon: Icon, label, onNavigate, badgeCount = 0, isActive }) => (
   <NavLink
     to={to}
     className={`mobile-nav-item${isActive ? " mobile-nav-item-active" : ""}`}
@@ -140,9 +140,9 @@ const MobileNavItem = React.memo(({ to, icon: Icon, label, onNavigate, badgeCoun
     </div>
     <span className="mobile-nav-label">{label}</span>
   </NavLink>
-));
+);
 
-const MobileHeader = React.memo(({ onNotificationsClick, unreadNotificationCount }) => (
+const MobileHeader = ({ onNotificationsClick, unreadNotificationCount }) => (
   <header className="mobile-header">
     <div className="mobile-header-left">
       <h1 className="mobile-app-title">Our Tuition</h1>
@@ -162,9 +162,9 @@ const MobileHeader = React.memo(({ onNotificationsClick, unreadNotificationCount
       </button>
     </div>
   </header>
-));
+);
 
-const MobileBottomNav = React.memo(({
+const MobileBottomNav = ({
   user,
   unreadChatCount,
   onNavigate,
@@ -223,6 +223,8 @@ const MobileBottomNav = React.memo(({
       })}
     </nav>
   );
+};
+
 const getSession = () => {
   const raw = localStorage.getItem("auth_user");
   if (!raw) return null;
@@ -1390,32 +1392,6 @@ export default function App() {
             : socketStatus === "reconnecting" || socketStatus === "connecting"
               ? "Reconnecting..."
               : "Offline"}
-        </div>
-      </aside>
-                    if (next.length) {
-                      switchAccount(next[0].accountKey);
-                    } else {
-                      clearActiveSessionOnly();
-                      setUser(null);
-                      navigate("/login");
-                    }
-                  }}
-                >
-                  Remove Account
-                </button>
-              </div>
-              <button
-                className="btn btn-ghost"
-                style={{ marginTop: "10px" }}
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              >
-                {theme === "light" ? "Dark Mode" : "Light Mode"}
-              </button>
-              <button className="btn btn-ghost" style={{ marginTop: "10px" }} onClick={logout}>
-                Logout
-              </button>
-            </div>
-          ) : null}
         </div>
       </aside>
       <main 
