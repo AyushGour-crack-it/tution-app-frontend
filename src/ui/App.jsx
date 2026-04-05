@@ -248,6 +248,7 @@ export default function App() {
   const [navOpen, setNavOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(() => window.matchMedia("(max-width: 1024px)").matches);
   const navInteractionRef = React.useRef(null);
+  const locationPathRef = React.useRef(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = React.useState(0);
   const [unreadChatCount, setUnreadChatCount] = React.useState(0);
   const [sectionUnread, setSectionUnread] = React.useState({});
