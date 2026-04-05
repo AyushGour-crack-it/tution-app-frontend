@@ -138,6 +138,7 @@ export default function Profile() {
           progress
         };
       })
+      .filter(item => item.subject && item.subject.trim())
       .sort((a, b) => b.xp - a.xp)
       .slice(0, 6);
   }, [quizStats]);
@@ -151,6 +152,9 @@ export default function Profile() {
     setError("");
     try {
       const data = await api.get("/auth/me").then((res) => res.data.user);
+      if (!data || !data.email) {
+        throw new Error("Invalid user data received");
+      }
       let student = null;
       if (data.role === "student") {
         student = await api.get("/students/me").then((res) => res.data).catch(() => null);
@@ -166,11 +170,12 @@ export default function Profile() {
             api.get("/quiz/stats").then((res) => res.data || null)
           ]);
           setBadgeStats({
-            level: badgeData.level || null,
-            earned: badgeData.earned || []
+            level: badgeData?.level || null,
+            earned: Array.isArray(badgeData?.earned) ? badgeData.earned : []
           });
           setQuizStats(quizData || null);
-        } catch {
+        } catch (badgeErr) {
+          console.warn("Failed to load badge/quiz data:", badgeErr);
           setBadgeStats({ level: null, earned: [] });
           setQuizStats(null);
         }
@@ -179,16 +184,22 @@ export default function Profile() {
         setQuizStats(null);
       }
     } catch (err) {
+      console.error("Profile load error:", err);
       try {
         const cached = JSON.parse(localStorage.getItem("auth_user") || "null");
-        if (cached) {
+        if (cached && cached.email && cached.name) {
           setUser(cached);
+          setStudentProfile(null);
           setForm(buildFormState({ user: cached, student: null }));
+          setBadgeStats({ level: null, earned: [] });
+          setQuizStats(null);
+        } else {
+          throw new Error("No valid cached user data");
         }
-      } catch {
-        // no-op
+      } catch (cacheErr) {
+        console.error("Cache load error:", cacheErr);
+        setError(err.response?.data?.message || err.message || "Failed to load profile. Please log in again.");
       }
-      setError(err.response?.data?.message || "Failed to load profile. Please log in again.");
     }
   };
 
@@ -338,29 +349,79 @@ export default function Profile() {
         <div className="page-header">
           <div>
             <h1 className="page-title">Profile</h1>
-            <p className="page-subtitle">Loading profile...</p>
+            <p className="page-subtitle">
+              {error ? "Unable to load profile" : "Loading profile..."}
+            </p>
           </div>
         </div>
         {error ? (
           <div className="card" style={{ marginTop: "24px" }}>
             <div className="auth-error">{error}</div>
+            <div style={{ marginTop: "16px" }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  localStorage.removeItem("auth_token");
+                  localStorage.removeItem("auth_user");
+                  window.location.href = "/login";
+                }}
+              >
+                Go to Login
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
     );
   }
 
+  // Add error boundary for the entire component render
+  try {
+
+  // Ensure user has required properties
+  if (!user.email || !user.name) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Profile</h1>
+            <p className="page-subtitle">Invalid user data</p>
+          </div>
+        </div>
+        <div className="card" style={{ marginTop: "24px" }}>
+          <div className="auth-error">User data is corrupted. Please log in again.</div>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              className="btn"
+              onClick={() => {
+                localStorage.removeItem("auth_token");
+                localStorage.removeItem("auth_user");
+                window.location.href = "/login";
+              }}
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const profileFrame = resolveAvatarFrame({
-    badges: badgeStats.earned || [],
-    totalXp: badgeStats.level?.totalXp || 0,
-    level: badgeStats.level?.level || 1,
+    badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
+    totalXp: Number(badgeStats?.level?.totalXp) || 0,
+    level: Number(badgeStats?.level?.level) || 1,
     rank: null
   });
-  const sortedEarnedBadges = [...(badgeStats.earned || [])].sort((a, b) => {
-    const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
-    if (xpDelta !== 0) return xpDelta;
-    return String(a?.title || "").localeCompare(String(b?.title || ""));
-  });
+
+  const sortedEarnedBadges = Array.isArray(badgeStats?.earned)
+    ? [...badgeStats.earned].sort((a, b) => {
+        const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
+        if (xpDelta !== 0) return xpDelta;
+        return String(a?.title || "").localeCompare(String(b?.title || ""));
+      })
+    : [];
+
   const totalBadges = sortedEarnedBadges.length;
 
   const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 1024px)").matches);
@@ -1181,4 +1242,41 @@ export default function Profile() {
       </div>
     </div>
   );
+  } catch (renderError) {
+    console.error("Profile render error:", renderError);
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Profile</h1>
+            <p className="page-subtitle">An error occurred while loading the profile</p>
+          </div>
+        </div>
+        <div className="card" style={{ marginTop: "24px" }}>
+          <div className="auth-error">
+            Something went wrong while displaying your profile. Please try refreshing the page or contact support if the problem persists.
+          </div>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              className="btn"
+              onClick={() => window.location.reload()}
+              style={{ marginRight: "8px" }}
+            >
+              Refresh Page
+            </button>
+            <button
+              className="btn"
+              onClick={() => {
+                localStorage.removeItem("auth_token");
+                localStorage.removeItem("auth_user");
+                window.location.href = "/login";
+              }}
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
