@@ -120,7 +120,7 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(() => localStorage.getItem("push_enabled") === "true");
+  const [pushEnabled, setPushEnabled] = useState(false);
   const quizSubjectProgress = useMemo(() => {
     try {
       const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
@@ -148,10 +148,7 @@ export default function Profile() {
     }
   }, [quizStats]);
 
-  const notificationPermission =
-    typeof window === "undefined" || !("Notification" in window)
-      ? "unsupported"
-      : Notification.permission;
+  const notificationPermission = "default";
 
   const load = async () => {
     setError("");
@@ -210,6 +207,12 @@ export default function Profile() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  // Initialize pushEnabled from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("push_enabled");
+    setPushEnabled(stored === "true");
   }, []);
 
   const submit = async (event) => {
@@ -380,9 +383,6 @@ export default function Profile() {
     );
   }
 
-  // Add error boundary for the entire component render
-  try {
-
   // Ensure user has required properties
   if (!user.email || !user.name) {
     return (
@@ -412,14 +412,14 @@ export default function Profile() {
     );
   }
 
-  const profileFrame = resolveAvatarFrame({
+  const profileFrame = useMemo(() => resolveAvatarFrame({
     badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
     totalXp: Number(badgeStats?.level?.totalXp) || 0,
     level: Number(badgeStats?.level?.level) || 1,
     rank: null
-  });
+  }), [badgeStats]);
 
-  const sortedEarnedBadges = Array.isArray(badgeStats?.earned)
+  const sortedEarnedBadges = useMemo(() => Array.isArray(badgeStats?.earned)
     ? [...badgeStats.earned].sort((a, b) => {
         try {
           const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
@@ -430,30 +430,33 @@ export default function Profile() {
           return 0;
         }
       })
-    : [];
+    : [], [badgeStats]);
 
   const totalBadges = sortedEarnedBadges.length;
 
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 1024px)").matches;
-  });
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // Initialize mobile state
+    const checkMobile = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth <= 1024);
+      }
+    };
 
-    const mediaQuery = window.matchMedia("(max-width: 1024px)");
-    const handleChange = (e) => setIsMobile(e.matches);
+    checkMobile();
 
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    } else {
-      // Fallback for older browsers
-      mediaQuery.addListener(handleChange);
-      return () => mediaQuery.removeListener(handleChange);
-    }
+    let timeoutId;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkMobile, 100); // Debounce resize events
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   if (isMobile) {
@@ -1265,41 +1268,4 @@ export default function Profile() {
       </div>
     </div>
   );
-  } catch (renderError) {
-    console.error("Profile render error:", renderError);
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Profile</h1>
-            <p className="page-subtitle">An error occurred while loading the profile</p>
-          </div>
-        </div>
-        <div className="card" style={{ marginTop: "24px" }}>
-          <div className="auth-error">
-            Something went wrong while displaying your profile. Please try refreshing the page or contact support if the problem persists.
-          </div>
-          <div style={{ marginTop: "16px" }}>
-            <button
-              className="btn"
-              onClick={() => window.location.reload()}
-              style={{ marginRight: "8px" }}
-            >
-              Refresh Page
-            </button>
-            <button
-              className="btn"
-              onClick={() => {
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("auth_user");
-                window.location.href = "/login";
-              }}
-            >
-              Go to Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 }
