@@ -121,33 +121,70 @@ export default function Profile() {
   const [showSettings, setShowSettings] = useState(false);
   const [enablingPush, setEnablingPush] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
- const quizSubjectProgress = useMemo(() => {
-  try {
-    const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
-      ? quizStats.subjectXP
-      : {};
+  const [isMobile, setIsMobile] = useState(false);
 
-    return Object.entries(source)
-      .map(([subject, rawXp]) => {
-        const xp = Number(rawXp || 0);
-        const level = Number(quizStats?.subjectLevel?.[subject] || 0);
-        const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
-        return {
-          key: subject,
-          subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
-          xp,
-          level,
-          progress
-        };
-      })
-      .filter(item => item.subject && item.subject.trim())
-      .sort((a, b) => b.xp - a.xp)
-      .slice(0, 6);
-  } catch (e) {
-    console.error("quizSubjectProgress error:", e);
-    return [];
-  }
-}, [quizStats]);
+  // ─── ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURNS ───────────────────
+
+  const quizSubjectProgress = useMemo(() => {
+    try {
+      const source = quizStats?.subjectXP && typeof quizStats.subjectXP === "object"
+        ? quizStats.subjectXP
+        : {};
+
+      return Object.entries(source)
+        .map(([subject, rawXp]) => {
+          const xp = Number(rawXp || 0);
+          const level = Number(quizStats?.subjectLevel?.[subject] || 0);
+          const progress = Math.max(0, Math.min(100, Math.round(((xp % 150) / 150) * 100)));
+          return {
+            key: subject,
+            subject: String(subject || "").replace(/\b\w/g, (ch) => ch.toUpperCase()),
+            xp,
+            level,
+            progress
+          };
+        })
+        .filter(item => item.subject && item.subject.trim())
+        .sort((a, b) => b.xp - a.xp)
+        .slice(0, 6);
+    } catch (e) {
+      console.error("quizSubjectProgress error:", e);
+      return [];
+    }
+  }, [quizStats]);
+
+  // FIX: moved above early returns so hook order is always consistent
+  const profileFrame = useMemo(() => {
+    try {
+      return resolveAvatarFrame({
+        badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
+        totalXp: Number(badgeStats?.level?.totalXp) || 0,
+        level: Number(badgeStats?.level?.level) || 1,
+        rank: null
+      });
+    } catch (e) {
+      console.error("profileFrame error:", e);
+      return { frameClass: "", frameLabel: "" };
+    }
+  }, [badgeStats]);
+
+  // FIX: moved above early returns so hook order is always consistent
+  const sortedEarnedBadges = useMemo(() => {
+    try {
+      return Array.isArray(badgeStats?.earned)
+        ? [...badgeStats.earned].sort((a, b) => {
+            const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
+            if (xpDelta !== 0) return xpDelta;
+            return String(a?.title || "").localeCompare(String(b?.title || ""));
+          })
+        : [];
+    } catch (e) {
+      console.error("badge sort error:", e);
+      return [];
+    }
+  }, [badgeStats]);
+
+  const totalBadges = sortedEarnedBadges.length;
 
   const notificationPermission = "default";
 
@@ -210,11 +247,96 @@ export default function Profile() {
     load();
   }, []);
 
-  // Initialize pushEnabled from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("push_enabled");
     setPushEnabled(stored === "true");
   }, []);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth <= 1024);
+      }
+    };
+
+    checkMobile();
+
+    let timeoutId;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkMobile, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // ─── EARLY RETURNS (all hooks are above, so this is safe) ──────────────────
+
+  if (!user) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Profile</h1>
+            <p className="page-subtitle">
+              {error ? "Unable to load profile" : "Loading profile..."}
+            </p>
+          </div>
+        </div>
+        {error ? (
+          <div className="card" style={{ marginTop: "24px" }}>
+            <div className="auth-error">{error}</div>
+            <div style={{ marginTop: "16px" }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  localStorage.removeItem("auth_token");
+                  localStorage.removeItem("auth_user");
+                  window.location.href = "/login";
+                }}
+              >
+                Go to Login
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!user.email || !user.name) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Profile</h1>
+            <p className="page-subtitle">Invalid user data</p>
+          </div>
+        </div>
+        <div className="card" style={{ marginTop: "24px" }}>
+          <div className="auth-error">User data is corrupted. Please log in again.</div>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              className="btn"
+              onClick={() => {
+                localStorage.removeItem("auth_token");
+                localStorage.removeItem("auth_user");
+                window.location.href = "/login";
+              }}
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── EVENT HANDLERS ────────────────────────────────────────────────────────
 
   const submit = async (event) => {
     event.preventDefault();
@@ -352,128 +474,14 @@ export default function Profile() {
     window.location.href = "/login";
   };
 
-  if (!user) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Profile</h1>
-            <p className="page-subtitle">
-              {error ? "Unable to load profile" : "Loading profile..."}
-            </p>
-          </div>
-        </div>
-        {error ? (
-          <div className="card" style={{ marginTop: "24px" }}>
-            <div className="auth-error">{error}</div>
-            <div style={{ marginTop: "16px" }}>
-              <button
-                className="btn"
-                onClick={() => {
-                  localStorage.removeItem("auth_token");
-                  localStorage.removeItem("auth_user");
-                  window.location.href = "/login";
-                }}
-              >
-                Go to Login
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
-  // Ensure user has required properties
-  if (!user.email || !user.name) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Profile</h1>
-            <p className="page-subtitle">Invalid user data</p>
-          </div>
-        </div>
-        <div className="card" style={{ marginTop: "24px" }}>
-          <div className="auth-error">User data is corrupted. Please log in again.</div>
-          <div style={{ marginTop: "16px" }}>
-            <button
-              className="btn"
-              onClick={() => {
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("auth_user");
-                window.location.href = "/login";
-              }}
-            >
-              Go to Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
- const profileFrame = useMemo(() => {
-  try {
-    return resolveAvatarFrame({
-      badges: Array.isArray(badgeStats?.earned) ? badgeStats.earned : [],
-      totalXp: Number(badgeStats?.level?.totalXp) || 0,
-      level: Number(badgeStats?.level?.level) || 1,
-      rank: null
-    });
-  } catch (e) {
-    console.error("profileFrame error:", e);
-    return { frameClass: "", frameLabel: "" };
-  }
-}, [badgeStats]);
-
- const sortedEarnedBadges = useMemo(() => {
-  try {
-    return Array.isArray(badgeStats?.earned)
-      ? [...badgeStats.earned].sort((a, b) => {
-          const xpDelta = (Number(b?.xpValue) || 0) - (Number(a?.xpValue) || 0);
-          if (xpDelta !== 0) return xpDelta;
-          return String(a?.title || "").localeCompare(String(b?.title || ""));
-        })
-      : [];
-  } catch (e) {
-    console.error("badge sort error:", e);
-    return [];
-  }
-}, [badgeStats]);
-  const totalBadges = sortedEarnedBadges.length;
-
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    // Initialize mobile state
-    const checkMobile = () => {
-      if (typeof window !== "undefined") {
-        setIsMobile(window.innerWidth <= 1024);
-      }
-    };
-
-    checkMobile();
-
-    let timeoutId;
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkMobile, 100); // Debounce resize events
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
+  // ─── MOBILE RENDER ─────────────────────────────────────────────────────────
 
   if (isMobile) {
     if (showSettings) {
       return (
         <div className="mobile-profile-page">
           <div className="mobile-profile-header">
-            <button 
+            <button
               className="mobile-profile-back-btn"
               onClick={() => setShowSettings(false)}
             >
@@ -483,7 +491,6 @@ export default function Profile() {
           </div>
 
           <div className="mobile-profile-content">
-            {/* Include the profile editing form here */}
             <div className="card" style={{ marginTop: "16px" }}>
               <div className="page-header">
                 <h2 className="card-title" style={{ margin: 0 }}>Edit Your Info</h2>
@@ -884,7 +891,6 @@ export default function Profile() {
             subtitle="Sign in with another account"
             onClick={() => {
               if (window.confirm("This will sign you out and allow you to add another account. Continue?")) {
-                // Clear current session
                 localStorage.removeItem("auth_token");
                 localStorage.removeItem("auth_user");
                 localStorage.removeItem("push_enabled");
@@ -907,6 +913,8 @@ export default function Profile() {
       </div>
     );
   }
+
+  // ─── DESKTOP RENDER ────────────────────────────────────────────────────────
 
   return (
     <div className="page">
