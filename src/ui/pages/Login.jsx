@@ -16,6 +16,8 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const finishAuth = async (data) => {
     setActiveAuthSession({ token: data.token, user: data.user });
@@ -26,11 +28,23 @@ export default function Login() {
   const submit = async (event) => {
     event.preventDefault();
     setError("");
+    setLoginLoading(true);
+
     try {
       const { data } = await api.post("/auth/login", form);
+      setRetryCount(0); // Reset retry count on success
       await finishAuth(data);
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      const errorMessage = err.response?.data?.message || err.message || "Login failed";
+      setError(errorMessage);
+
+      // If it's a network error and we haven't retried too many times, suggest retry
+      if ((!err.response || err.code === 'NETWORK_ERROR') && retryCount < 2) {
+        setRetryCount(prev => prev + 1);
+        setError(`${errorMessage}. Please try again (${retryCount + 1}/3 attempts).`);
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -83,8 +97,8 @@ export default function Login() {
             />
           </div>
 
-          <button className="auth-button-premium" type="submit">
-            Sign In to Your Account
+          <button className="auth-button-premium" type="submit" disabled={loginLoading}>
+            {loginLoading ? "Signing In..." : "Sign In to Your Account"}
           </button>
         </form>
 

@@ -9,7 +9,7 @@ const LOCAL_UI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h persistent
 const OFFLINE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days for offline
 const LOCAL_CACHE_PREFIX = "api-persistent:";
 
-export const api = axios.create({ baseURL, timeout: 12000 });
+export const api = axios.create({ baseURL, timeout: 30000 }); // Increased to 30 seconds
 const responseCache = new Map();
 const SESSION_ERROR_MESSAGES = new Set(["invalid token", "session expired", "missing token"]);
 
