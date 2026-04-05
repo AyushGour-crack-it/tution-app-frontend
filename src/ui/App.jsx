@@ -1253,6 +1253,39 @@ export default function App() {
 
   const showAotEventPill = location.pathname === "/" || location.pathname === "/student";
 
+  const teacherNavItems = [
+    { to: "/", label: "Overview", key: "overview" },
+    { to: "/classes", label: "Classes", key: "classes" },
+    { to: "/students", label: "Students", key: "students" },
+    { to: "/homework", label: "Homework", key: "homework" },
+    { to: "/syllabus", label: "Syllabus", key: "syllabus" },
+    { to: "/attendance", label: "Attendance", key: "attendance" },
+    { to: "/marks", label: "Marks", key: "marks" },
+    { to: "/fees", label: "Fees", key: "fees" },
+    { to: "/holidays", label: "Holidays", key: "holidays" },
+    { to: "/popup-campaigns", label: "Campaigns", key: "popup-campaigns" },
+    { to: "/leaderboard", label: "Leaderboard", key: "leaderboard" },
+    { to: "/badge-requests", label: "Badge Requests", key: "badge-requests" }
+  ];
+
+  const studentNavItems = [
+    { to: "/student", label: "Overview", key: "overview" },
+    { to: "/student/homework", label: "Homework", key: "homework" },
+    { to: "/student/fees", label: "Fees", key: "fees" },
+    { to: "/student/quiz", label: "Quiz", key: "quiz" },
+    { to: "/student/students", label: "Directory", key: "directory" },
+    { to: "/student/badges", label: "Badges", key: "badges" },
+    { to: "/student/level-journey", label: "Journey", key: "journey" }
+  ];
+
+  const commonNavItems = [
+    { to: "/chat", label: "Chat", key: "chat", badgeCount: unreadChatCount },
+    { to: "/notifications", label: "Notifications", key: "notifications", badgeCount: unreadNotificationCount },
+    { to: "/profile", label: "Profile", key: "profile" }
+  ];
+
+  const sidebarNavItems = user?.role === "teacher" ? teacherNavItems : studentNavItems;
+
   return (
     <div className="app-shell">
       <OfflineIndicator />
@@ -1401,6 +1434,26 @@ export default function App() {
               ? "Reconnecting..."
               : "Offline"}
         </div>
+        <nav className="nav">
+          {sidebarNavItems.map((item) => (
+            <NavItem
+              key={item.key}
+              to={item.to}
+              label={item.label}
+              badgeCount={item.badgeCount || 0}
+              onNavigate={closeMobileNavOnNavigate}
+            />
+          ))}
+          {commonNavItems.map((item) => (
+            <NavItem
+              key={item.key}
+              to={item.to}
+              label={item.label}
+              badgeCount={item.badgeCount || 0}
+              onNavigate={closeMobileNavOnNavigate}
+            />
+          ))}
+        </nav>
       </aside>
       <main
         className={`main${location.pathname === "/chat" ? " main-chat" : ""}`}
