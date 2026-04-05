@@ -223,8 +223,6 @@ const MobileBottomNav = React.memo(({
       })}
     </nav>
   );
-});
-
 const getSession = () => {
   const raw = localStorage.getItem("auth_user");
   if (!raw) return null;
@@ -303,7 +301,7 @@ export default function App() {
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd || !isMobile) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50; // swipe left threshold
     const isRightSwipe = distance < -50; // swipe right threshold
@@ -318,7 +316,7 @@ export default function App() {
       { to: "/chat", key: "chat" },
       { to: "/profile", key: "profile" }
     ];
-    
+
     const currentIndex = navItems.findIndex(item => {
       if (item.key === "home") {
         return currentPath === item.to || (item.key === "home" && (
@@ -1393,111 +1391,7 @@ export default function App() {
               ? "Reconnecting..."
               : "Offline"}
         </div>
-        {user?.role === "teacher" ? (
-          <nav className="nav">
-            <NavItem to="/" label="Overview" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/classes" label="Classes" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/classes"] || 0} />
-            <NavItem to="/students" label="Students" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/students"] || 0} />
-            <NavItem to="/homework" label="Homework" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/homework"] || 0} />
-            <NavItem to="/syllabus" label="Syllabus" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/syllabus"] || 0} />
-            <NavItem to="/attendance" label="Attendance" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/attendance"] || 0} />
-            <NavItem to="/marks" label="Marks" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/marks"] || 0} />
-            <NavItem to="/fees" label="Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
-            <NavItem to="/leaderboard" label="Leaderboard" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/leaderboard"] || 0} />
-            <NavItem to="/badge-requests" label="Badge Requests" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/badge-requests"] || 0} />
-            <NavItem to="/holidays" label="Holidays" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/holidays"] || 0} />
-            <NavItem to="/popup-campaigns" label="Popup Campaigns" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/popup-campaigns"] || 0} />
-            <NavItem
-              to="/chat"
-              label="Chat"
-              onNavigate={() => {
-                markChatSeen();
-                closeMobileNavOnNavigate();
-              }}
-              badgeCount={unreadChatCount}
-            />
-            <NavItem
-              to="/notifications"
-              label="Notifications"
-              onNavigate={() => {
-                markNotificationsSeen();
-                closeMobileNavOnNavigate();
-              }}
-              badgeCount={unreadNotificationCount}
-            />
-            <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
-          </nav>
-        ) : (
-          <nav className="nav">
-            <NavItem to="/student" label="My Dashboard" onNavigate={closeMobileNavOnNavigate} />
-            <NavItem to="/student/homework" label="My Homework" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/homework"] || 0} />
-            <NavItem to="/student/fees" label="My Fees" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/fees"] || 0} />
-            <NavItem to="/student/quiz" label="Skill Quiz" onNavigate={closeMobileNavOnNavigate} />
-            {user?.role === "student" ? (
-              <NavItem to="/student/badges" label="My Badges" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/student/badges"] || 0} />
-            ) : null}
-            <NavItem to="/student/students" label="Students" onNavigate={closeMobileNavOnNavigate} badgeCount={sectionUnread["/students"] || 0} />
-            <NavItem
-              to="/chat"
-              label="Chat"
-              onNavigate={() => {
-                markChatSeen();
-                closeMobileNavOnNavigate();
-              }}
-              badgeCount={unreadChatCount}
-            />
-            <NavItem
-              to="/notifications"
-              label="Notifications"
-              onNavigate={() => {
-                markNotificationsSeen();
-                closeMobileNavOnNavigate();
-              }}
-              badgeCount={unreadNotificationCount}
-            />
-            <NavItem to="/profile" label="Profile" onNavigate={closeMobileNavOnNavigate} />
-          </nav>
-        )}
-        <div className="sidebar-footer">
-          {user ? (
-            <div className="mini-card">
-              {user.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt={user.name}
-                  style={{ width: "56px", height: "56px", borderRadius: "16px", objectFit: "cover" }}
-                />
-              ) : null}
-              <div className="mini-title">Signed in</div>
-              <div className="mini-value">{user.name}</div>
-              <div className="mini-note">{user.role}</div>
-              {user.bio ? <div className="mini-note">{user.bio}</div> : null}
-              <div className="mini-note" style={{ marginTop: "10px" }}>Accounts</div>
-              <select
-                className="select"
-                style={{ marginTop: "6px" }}
-                value={getActiveAccountKey() || accounts?.[0]?.accountKey || ""}
-                onChange={(event) => switchAccount(event.target.value)}
-              >
-                {(accounts || []).map((item) => (
-                  <option key={item.accountKey} value={item.accountKey}>
-                    {item.user?.name || "User"} ({item.user?.role || "member"})
-                  </option>
-                ))}
-              </select>
-              <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                <button className="btn btn-ghost" type="button" onClick={addAnotherAccount}>
-                  Add Account
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  type="button"
-                  onClick={() => {
-                    const activeKey = getActiveAccountKey();
-                    if (!activeKey) return;
-                    removeAuthAccount(activeKey);
-                    const next = getAuthAccounts();
-                    setAccounts(next);
+      </aside>
                     if (next.length) {
                       switchAccount(next[0].accountKey);
                     } else {

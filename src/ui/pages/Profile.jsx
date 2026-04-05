@@ -5,7 +5,7 @@ import { resolveAvatarFrame } from "../avatarFrame.js";
 import { setActiveAuthSession } from "../authAccounts.js";
 import { setupPushForSession, teardownPushForSession } from "../pushNotifications.js";
 import { appToast } from "../toast.js";
-import { FiBell, FiEdit2, FiSave, FiShield, FiHome, FiDollarSign, FiBook, FiAward, FiSettings, FiLogOut, FiChevronRight, FiSearch } from "react-icons/fi";
+import { FiBell, FiEdit2, FiSave, FiShield, FiHome, FiDollarSign, FiBook, FiAward, FiSettings, FiLogOut, FiChevronRight, FiSearch, FiUsers, FiCalendar, FiFileText, FiTrendingUp, FiMegaphone } from "react-icons/fi";
 
 const Field = ({ label, children }) => (
   <label className="field">
@@ -653,6 +653,18 @@ export default function Profile() {
                 onClick={() => navigate("/student/badges")}
                 badge={totalBadges > 0 ? totalBadges : null}
               />
+              <MobileProfileSection
+                icon={FiSearch}
+                title="Students"
+                subtitle="Connect with classmates"
+                onClick={() => navigate("/student/students")}
+              />
+              <MobileProfileSection
+                icon={FiBell}
+                title="Notifications"
+                subtitle="View all notifications"
+                onClick={() => navigate("/notifications")}
+              />
             </>
           )}
 
@@ -672,15 +684,69 @@ export default function Profile() {
               />
               <MobileProfileSection
                 icon={FiBook}
+                title="Classes"
+                subtitle="Manage class schedules"
+                onClick={() => navigate("/classes")}
+              />
+              <MobileProfileSection
+                icon={FiBook}
                 title="Homework"
                 subtitle="Assignments and tasks"
                 onClick={() => navigate("/homework")}
+              />
+              <MobileProfileSection
+                icon={FiBook}
+                title="Syllabus"
+                subtitle="Curriculum management"
+                onClick={() => navigate("/syllabus")}
+              />
+              <MobileProfileSection
+                icon={FiCalendar}
+                title="Attendance"
+                subtitle="Track student attendance"
+                onClick={() => navigate("/attendance")}
+              />
+              <MobileProfileSection
+                icon={FiFileText}
+                title="Marks"
+                subtitle="Grade management"
+                onClick={() => navigate("/marks")}
               />
               <MobileProfileSection
                 icon={FiDollarSign}
                 title="Fees"
                 subtitle="Payment management"
                 onClick={() => navigate("/fees")}
+              />
+              <MobileProfileSection
+                icon={FiTrendingUp}
+                title="Leaderboard"
+                subtitle="Student rankings"
+                onClick={() => navigate("/leaderboard")}
+              />
+              <MobileProfileSection
+                icon={FiAward}
+                title="Badge Requests"
+                subtitle="Review badge applications"
+                onClick={() => navigate("/badge-requests")}
+              />
+              <MobileProfileSection
+                icon={FiCalendar}
+                title="Holidays"
+                subtitle="Holiday management"
+                onClick={() => navigate("/holidays")}
+              />
+              <MobileProfileSection
+                icon={FiMegaphone}
+                title="Popup Campaigns"
+                subtitle="Manage promotional content"
+                onClick={() => navigate("/popup-campaigns")}
+              />
+              <MobileProfileSection
+                icon={FiBell}
+                title="Notifications"
+                subtitle="View all notifications"
+                onClick={() => navigate("/notifications")}
               />
             </>
           )}

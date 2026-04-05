@@ -54,7 +54,7 @@ body {
 /* Desktop layout */
 @media (min-width: 1025px) {
   .app-shell {
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 }
 
@@ -6947,4 +6947,23 @@ html[data-theme="dark"] .chat-group-member-chip {
   --warning-bg-dark: #2d1b0f;
   --warning-border-dark: #5d3a1a;
   --warning-text-dark: #ffcc02;
+}
+
+/* Hide mobile nav toggle since no sidebar */
+.mobile-nav-toggle {
+  display: none !important;
+}
+
+/* Smooth swipe transitions */
+.mobile-bottom-nav {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-nav-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-nav-item-active {
+  transform: scale(1.05);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
