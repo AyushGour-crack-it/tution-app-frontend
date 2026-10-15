@@ -214,6 +214,41 @@ html[data-theme="dark"] {
   z-index: 40;
 }
 
+html[data-theme="light"] .sidebar {
+  color: #122033;
+}
+
+html[data-theme="light"] .nav-link {
+  background: rgba(18, 32, 51, 0.035);
+}
+
+html[data-theme="light"] .nav-link-active {
+  background: #c9dcf1;
+}
+
+html[data-theme="light"] .nav-link:hover {
+  background: #d2e3f4;
+}
+
+html[data-theme="light"] .socket-status-connected {
+  color: #067647;
+  background: #d1fae5;
+  border-color: #86efac;
+}
+
+html[data-theme="light"] .socket-status-reconnecting,
+html[data-theme="light"] .socket-status-connecting {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+html[data-theme="light"] .socket-status-disconnected {
+  color: #b42318;
+  background: #fee4e2;
+  border-color: #fda29b;
+}
+
 .brand {
   display: flex;
   align-items: center;
