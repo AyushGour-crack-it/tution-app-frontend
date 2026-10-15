@@ -710,6 +710,56 @@ html[data-theme="light"] .socket-status-disconnected {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
+.form-section {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card-bg) 72%, var(--bg-main));
+}
+
+.form-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.form-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.form-section summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.form-section[open] summary::after {
+  content: "-";
+}
+
+.form-section summary span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.form-section-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
 .field {
   display: grid;
   gap: 6px;

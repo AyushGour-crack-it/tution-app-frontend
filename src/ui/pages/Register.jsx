@@ -174,32 +174,11 @@ export default function Register() {
               required
             />
           </Field>
-          <Field label="Phone (OTP Recovery)">
-            <input
-              className="input"
-              value={form.phone}
-              onChange={(event) => setForm({ ...form, phone: event.target.value })}
-            />
-          </Field>
-          <Field label="Bio (Optional)">
-            <input
-              className="input"
-              value={form.bio}
-              onChange={(event) => setForm({ ...form, bio: event.target.value })}
-            />
-          </Field>
-          <Field label="Profile Photo (Optional)">
-            <input
-              className="input"
-              type="file"
-              accept="image/*"
-              onChange={(event) => setForm({ ...form, avatar: event.target.files?.[0] || null })}
-            />
-          </Field>
           <Field label="Password">
             <input
               className="input"
               type="password"
+              autoComplete="new-password"
               value={form.password}
               onChange={(event) => setForm({ ...form, password: event.target.value })}
               required
@@ -215,6 +194,36 @@ export default function Register() {
               <option value="student">Student</option>
             </select>
           </Field>
+          <details className="form-section">
+            <summary>Contact and profile <span>Optional</span></summary>
+            <div className="form-section-fields">
+              <Field label="Phone (OTP recovery)">
+                <input
+                  className="input"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={form.phone}
+                  onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                />
+              </Field>
+              <Field label="Bio">
+                <input
+                  className="input"
+                  value={form.bio}
+                  onChange={(event) => setForm({ ...form, bio: event.target.value })}
+                />
+              </Field>
+              <Field label="Profile photo">
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setForm({ ...form, avatar: event.target.files?.[0] || null })}
+                />
+              </Field>
+            </div>
+          </details>
           {form.role === "teacher" && (
             <Field label="Teacher ID">
               <input
@@ -249,89 +258,56 @@ export default function Register() {
                 <input
                   className="input"
                   type="number"
+                  inputMode="decimal"
                   min="1"
                   value={form.monthlyFee}
                   onChange={(event) => setForm({ ...form, monthlyFee: event.target.value })}
                   required
                 />
               </Field>
-              <Field label="Class / Grade">
-                <input
-                  className="input"
-                  value={form.grade}
-                  onChange={(event) => setForm({ ...form, grade: event.target.value })}
-                />
-              </Field>
-              <Field label="School Name">
-                <input
-                  className="input"
-                  value={form.schoolName}
-                  onChange={(event) => setForm({ ...form, schoolName: event.target.value })}
-                />
-              </Field>
-              <Field label="Address">
-                <input
-                  className="input"
-                  value={form.address}
-                  onChange={(event) => setForm({ ...form, address: event.target.value })}
-                />
-              </Field>
-              <Field label="Guardian Name">
-                <input
-                  className="input"
-                  value={form.guardianName}
-                  onChange={(event) => setForm({ ...form, guardianName: event.target.value })}
-                />
-              </Field>
-              <Field label="Guardian Phone">
-                <input
-                  className="input"
-                  value={form.guardianPhone}
-                  onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })}
-                />
-              </Field>
-              <Field label="Guardian Relation">
-                <input
-                  className="input"
-                  value={form.guardianRelation}
-                  onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })}
-                />
-              </Field>
-              <Field label="Emergency Contact">
-                <input
-                  className="input"
-                  value={form.emergencyContact}
-                  onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })}
-                />
-              </Field>
-              <Field label="Hobbies (Optional, comma separated)">
-                <input
-                  className="input"
-                  value={form.hobbies}
-                  onChange={(event) => setForm({ ...form, hobbies: event.target.value })}
-                />
-              </Field>
-              <Field label="Strong Subjects (Optional, comma separated)">
-                <input
-                  className="input"
-                  value={form.strongSubjects}
-                  onChange={(event) => setForm({ ...form, strongSubjects: event.target.value })}
-                />
-              </Field>
-              <Field label="Weak Subjects (Optional, comma separated)">
-                <input
-                  className="input"
-                  value={form.weakSubjects}
-                  onChange={(event) => setForm({ ...form, weakSubjects: event.target.value })}
-                />
-              </Field>
-              <Field label="Goals (Optional)">
-                <input
-                  className="input"
-                  value={form.goals}
-                  onChange={(event) => setForm({ ...form, goals: event.target.value })}
-                />
-              </Field>
+              <details className="form-section">
+                <summary>School and guardian details <span>Optional</span></summary>
+                <div className="form-section-fields">
+                  <Field label="Class / Grade">
+                    <input className="input" value={form.grade} onChange={(event) => setForm({ ...form, grade: event.target.value })} />
+                  </Field>
+                  <Field label="School name">
+                    <input className="input" value={form.schoolName} onChange={(event) => setForm({ ...form, schoolName: event.target.value })} />
+                  </Field>
+                  <Field label="Address">
+                    <input className="input" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} />
+                  </Field>
+                  <Field label="Guardian name">
+                    <input className="input" value={form.guardianName} onChange={(event) => setForm({ ...form, guardianName: event.target.value })} />
+                  </Field>
+                  <Field label="Guardian phone">
+                    <input className="input" type="tel" inputMode="tel" value={form.guardianPhone} onChange={(event) => setForm({ ...form, guardianPhone: event.target.value })} />
+                  </Field>
+                  <Field label="Guardian relation">
+                    <input className="input" value={form.guardianRelation} onChange={(event) => setForm({ ...form, guardianRelation: event.target.value })} />
+                  </Field>
+                  <Field label="Emergency contact">
+                    <input className="input" type="tel" inputMode="tel" value={form.emergencyContact} onChange={(event) => setForm({ ...form, emergencyContact: event.target.value })} />
+                  </Field>
+                </div>
+              </details>
+              <details className="form-section">
+                <summary>Interests and goals <span>Optional</span></summary>
+                <div className="form-section-fields">
+                  <Field label="Hobbies (comma separated)">
+                    <input className="input" value={form.hobbies} onChange={(event) => setForm({ ...form, hobbies: event.target.value })} />
+                  </Field>
+                  <Field label="Strong subjects">
+                    <input className="input" value={form.strongSubjects} onChange={(event) => setForm({ ...form, strongSubjects: event.target.value })} />
+                  </Field>
+                  <Field label="Subjects to improve">
+                    <input className="input" value={form.weakSubjects} onChange={(event) => setForm({ ...form, weakSubjects: event.target.value })} />
+                  </Field>
+                  <Field label="Goals">
+                    <input className="input" value={form.goals} onChange={(event) => setForm({ ...form, goals: event.target.value })} />
+                  </Field>
+                </div>
+              </details>
             </>
           ) : null}
           <button className="btn" type="submit">

@@ -531,6 +531,9 @@ export default function Profile() {
 
                 {user.role === "student" ? (
                   <>
+                    <details className="form-section">
+                      <summary>Student details <span>Optional</span></summary>
+                      <div className="form-section-fields">
                     <Field label="Date of Birth">
                       <input
                         className="input"
@@ -633,6 +636,8 @@ export default function Profile() {
                         onChange={(event) => setForm({ ...form, goals: event.target.value })}
                       />
                     </Field>
+                      </div>
+                    </details>
                   </>
                 ) : null}
 
@@ -1125,6 +1130,9 @@ export default function Profile() {
 
             {user.role === "student" ? (
               <>
+                <details className="form-section">
+                  <summary>Student details <span>Optional</span></summary>
+                  <div className="form-section-fields">
                 <Field label="Date of Birth">
                   <input
                     className="input"
@@ -1227,6 +1235,8 @@ export default function Profile() {
                     onChange={(event) => setForm({ ...form, goals: event.target.value })}
                   />
                 </Field>
+                  </div>
+                </details>
               </>
             ) : null}
 
