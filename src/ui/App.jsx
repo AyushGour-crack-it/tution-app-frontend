@@ -245,7 +245,7 @@ export default function App() {
     if (typeof window === "undefined") {
       return "dark";
     }
-    const savedTheme = localStorage.getItem("ui_theme");
+    const savedTheme = localStorage.getItem("ui_theme_v2");
     return savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
   });
   const [accounts, setAccounts] = React.useState(() => getAuthAccounts());
@@ -574,7 +574,7 @@ export default function App() {
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("ui_theme", theme);
+    localStorage.setItem("ui_theme_v2", theme);
   }, [theme]);
 
   React.useEffect(() => {

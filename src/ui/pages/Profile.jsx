@@ -705,7 +705,7 @@ export default function Profile() {
                     type="button"
                     onClick={() => {
                       const currentTheme = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
-                      localStorage.setItem("ui_theme", currentTheme);
+                      localStorage.setItem("ui_theme_v2", currentTheme);
                       document.documentElement.setAttribute("data-theme", currentTheme);
                       appToast.success(`Switched to ${currentTheme} theme`);
                     }}
