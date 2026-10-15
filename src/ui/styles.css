@@ -7506,6 +7506,67 @@ html[data-theme="dark"] .chat-group-member-chip {
   }
 }
 
+.auth-card-premium {
+  border: 1px solid #334155;
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  color: #e2e8f0;
+}
+
+.auth-title-premium {
+  color: #f8fafc;
+  background: none;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+.auth-subtitle-premium,
+.auth-field-label-premium {
+  color: #cbd5e1;
+}
+
+.auth-input-premium {
+  color: #f8fafc;
+  background: #0f172a;
+  border: 1px solid #475569;
+}
+
+.auth-input-premium::placeholder {
+  color: #94a3b8;
+}
+
+.auth-separator-premium span {
+  background: #1e293b;
+}
+
+html[data-theme="light"] .auth-card-premium {
+  border-color: #d9e2ec;
+  background: #ffffff;
+  color: #122033;
+}
+
+html[data-theme="light"] .auth-title-premium {
+  color: #122033;
+  -webkit-text-fill-color: #122033;
+}
+
+html[data-theme="light"] .auth-subtitle-premium,
+html[data-theme="light"] .auth-field-label-premium {
+  color: #334155;
+}
+
+html[data-theme="light"] .auth-input-premium {
+  color: #122033;
+  background: #ffffff;
+  border-color: #94a3b8;
+}
+
+html[data-theme="light"] .auth-input-premium::placeholder {
+  color: #64748b;
+}
+
+html[data-theme="light"] .auth-separator-premium span {
+  background: #ffffff;
+}
+
 /* Mobile Profile Styles */
 .mobile-profile-page {
   min-height: 100vh;
