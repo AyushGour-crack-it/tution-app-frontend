@@ -241,9 +241,13 @@ export default function App() {
   const [user, setUser] = React.useState(() => getSession());
   const [authReady, setAuthReady] = React.useState(false);
   const [startupReady, setStartupReady] = React.useState(false);
-  const [theme, setTheme] = React.useState(
-    () => localStorage.getItem("ui_theme") || "light"
-  );
+  const [theme, setTheme] = React.useState(() => {
+    if (typeof window === "undefined") {
+      return "dark";
+    }
+    const savedTheme = localStorage.getItem("ui_theme");
+    return savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+  });
   const [accounts, setAccounts] = React.useState(() => getAuthAccounts());
   const [navOpen, setNavOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(() => window.matchMedia("(max-width: 1024px)").matches);

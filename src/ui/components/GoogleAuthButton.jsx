@@ -37,21 +37,29 @@ export default function GoogleAuthButton({
   React.useEffect(() => {
     let active = true;
     if (!clientId || !containerRef.current || disabled) return undefined;
+
     loadGoogleScript()
       .then(() => {
         if (!active || !window.google?.accounts?.id || !containerRef.current) return;
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response) => {
-            if (!response?.credential) {
-              onError?.("Google sign-in failed.");
-              return;
+
+        const currentClientId = window.__gsiClientId || "";
+        if (currentClientId !== clientId) {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response) => {
+              if (!response?.credential) {
+                onError?.("Google sign-in failed.");
+                return;
+              }
+              onCredential(response.credential);
             }
-            onCredential(response.credential);
-          }
-        });
-        containerRef.current.innerHTML = "";
-        window.google.accounts.id.renderButton(containerRef.current, {
+          });
+          window.__gsiClientId = clientId;
+        }
+
+        const container = containerRef.current;
+        container.innerHTML = "";
+        window.google.accounts.id.renderButton(container, {
           theme: "outline",
           size: "large",
           shape: "pill",
@@ -60,10 +68,17 @@ export default function GoogleAuthButton({
         });
       })
       .catch(() => {
-        onError?.("Unable to load Google sign-in.");
+        const currentOrigin = window.location.origin;
+        onError?.(
+          `Google sign-in is blocked for ${currentOrigin}. Add this URL to your Google OAuth authorized JavaScript origins and reload.`
+        );
       });
+
     return () => {
       active = false;
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
     };
   }, [clientId, disabled, onCredential, onError, text]);
 

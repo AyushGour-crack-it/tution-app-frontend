@@ -704,13 +704,13 @@ export default function Profile() {
                     className="btn btn-ghost"
                     type="button"
                     onClick={() => {
-                      const newTheme = localStorage.getItem("ui_theme") === "light" ? "dark" : "light";
-                      localStorage.setItem("ui_theme", newTheme);
-                      document.documentElement.setAttribute("data-theme", newTheme);
-                      appToast.success(`Switched to ${newTheme} theme`);
+                      const currentTheme = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+                      localStorage.setItem("ui_theme", currentTheme);
+                      document.documentElement.setAttribute("data-theme", currentTheme);
+                      appToast.success(`Switched to ${currentTheme} theme`);
                     }}
                   >
-                    <span>{localStorage.getItem("ui_theme") === "light" ? "Dark Mode" : "Light Mode"}</span>
+                    <span>{document.documentElement.getAttribute("data-theme") === "light" ? "Dark Mode" : "Light Mode"}</span>
                   </button>
                 </div>
               </div>
